@@ -47,9 +47,6 @@ export async function getHome(homeId: string): Promise<Home | null> {
 }
 
 export async function deleteHome(homeId: string): Promise<void> {
-  // Potentially delete subcollections (rooms, photos) here too if needed
-  // For now, just deleting the home document
-  // Get all rooms for this home and delete them first
   const roomsSnapshot = await getDocs(collection(db, `homes/${homeId}/rooms`));
   const deleteRoomPromises = roomsSnapshot.docs.map(roomDoc => deleteDoc(roomDoc.ref));
   await Promise.all(deleteRoomPromises);
@@ -64,8 +61,9 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
   const docRef = await addDoc(roomsCollectionRef, {
     ...data,
     createdAt: serverTimestamp(),
-    objectDescription: null,
+    objectNames: null, // Changed from objectDescription
     isAnalyzing: false,
+    lastAnalyzedAt: null,
   });
   return docRef.id;
 }
@@ -89,16 +87,25 @@ export async function getRoom(homeId: string, roomId: string): Promise<Room | nu
   return null;
 }
 
-export async function updateRoomObjectDescription(
+export async function updateRoomObjectNames( // Renamed and updated
   homeId: string,
   roomId: string,
-  description: string
+  names: string[]
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
   await updateDoc(roomDocRef, {
-    objectDescription: description,
+    objectNames: names,
     isAnalyzing: false,
     lastAnalyzedAt: serverTimestamp(),
+  });
+}
+
+export async function clearRoomObjectNames(homeId: string, roomId: string): Promise<void> {
+  const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
+  await updateDoc(roomDocRef, {
+    objectNames: null,
+    isAnalyzing: false, 
+    lastAnalyzedAt: null,
   });
 }
 
@@ -114,4 +121,3 @@ export async function setRoomAnalyzingStatus(
 export async function deleteRoom(homeId: string, roomId: string): Promise<void> {
   await deleteDoc(doc(db, `homes/${homeId}/rooms`, roomId));
 }
-

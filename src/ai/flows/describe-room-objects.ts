@@ -3,7 +3,7 @@
 /**
  * @fileOverview Describes objects present in a room based on uploaded photos.
  *
- * - describeRoomObjects - A function that takes room photos and returns a description of the objects.
+ * - describeRoomObjects - A function that takes room photos and returns a list of object names.
  * - DescribeRoomObjectsInput - The input type for the describeRoomObjects function.
  * - DescribeRoomObjectsOutput - The return type for the describeRoomObjects function.
  */
@@ -21,9 +21,9 @@ const DescribeRoomObjectsInputSchema = z.object({
 export type DescribeRoomObjectsInput = z.infer<typeof DescribeRoomObjectsInputSchema>;
 
 const DescribeRoomObjectsOutputSchema = z.object({
-  objectDescription: z
-    .string()
-    .describe('A detailed description of all objects present in the room.'),
+  objectNames: z
+    .array(z.string())
+    .describe('A list of names of all distinct objects identified in the room photos.'),
 });
 export type DescribeRoomObjectsOutput = z.infer<typeof DescribeRoomObjectsOutputSchema>;
 
@@ -37,18 +37,25 @@ const prompt = ai.definePrompt({
   name: 'describeRoomObjectsPrompt',
   input: {schema: DescribeRoomObjectsInputSchema},
   output: {schema: DescribeRoomObjectsOutputSchema},
-  prompt: `You are an expert interior designer. Based on the provided images, generate a detailed description of the objects present in the room.
+  prompt: `You are an expert at identifying objects in images.
+Analyze the provided images of a room.
+Your task is to list the name of each and every single distinct item visible in the photos. Be highly accurate and comprehensive.
+Return only a list of object names.
 
-      {{#each photoDataUris}}
-      Photo {{@index}}:
-      {{media url=this}}
-      {{/each}}`,
+{{#each photoDataUris}}
+Photo {{@index}}:
+{{media url=this}}
+{{/each}}`,
 });
 
 const describeRoomObjectsFlow = ai.defineFlow(
   {name: 'describeRoomObjectsFlow', inputSchema: DescribeRoomObjectsInputSchema, outputSchema: DescribeRoomObjectsOutputSchema},
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output || !output.objectNames) {
+      // Handle cases where output might be null or missing objectNames, though schema should enforce
+      return { objectNames: [] };
+    }
+    return output;
   }
 );

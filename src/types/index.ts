@@ -19,9 +19,9 @@ export interface Room extends FirebaseDocument {
   name: string;
   homeId?: string; // May not be needed if always fetched via subcollection path
   createdAt: Timestamp;
-  objectDescription: string | null;
+  objectNames: string[] | null; // Changed from objectDescription
   isAnalyzing?: boolean;
-  lastAnalyzedAt?: Timestamp;
+  lastAnalyzedAt?: Timestamp | null; // Allow null for cleared results
 }
 
 export interface CreateRoomData {

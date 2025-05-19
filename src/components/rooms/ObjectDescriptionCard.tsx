@@ -1,19 +1,53 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Room } from "@/types";
-import { Eye, ListTree, Sparkles } from "lucide-react";
+import { Eye, ListTree, Sparkles, Download, Trash2, Loader2 } from "lucide-react"; // Changed Wand2 to Loader2
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
 
-interface ObjectDescriptionCardProps {
+interface ObjectAnalysisCardProps {
   room: Room | null;
+  onClearResults: () => Promise<void>;
+  homeName?: string;
 }
 
-export function ObjectDescriptionCard({ room }: ObjectDescriptionCardProps) {
+export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAnalysisCardProps) {
+  const handleDownloadPdf = () => {
+    if (!room || !room.objectNames || !room.name) return;
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text(`Object Analysis for: ${homeName ? homeName + " - " : ""}${room.name}`, 14, 22);
+    
+    doc.setFontSize(12);
+    if (room.lastAnalyzedAt) {
+      doc.text(`Analyzed on: ${format(room.lastAnalyzedAt.toDate(), "PPP 'at' p")}`, 14, 30);
+    }
+
+    doc.setFontSize(14);
+    doc.text("Identified Objects:", 14, 45);
+    
+    let yPos = 55;
+    room.objectNames.forEach((name, index) => {
+      if (yPos > 270) { // Simple page break logic
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.text(`${index + 1}. ${name}`, 14, yPos);
+      yPos += 10;
+    });
+
+    const fileName = `${room.name.replace(/ /g, "_")}_analysis.pdf`;
+    doc.save(fileName);
+  };
+
+
   if (!room) {
     return (
-      <Card className="bg-muted/30">
+      <Card className="shadow-lg bg-card/80 mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ListTree className="h-6 w-6 text-muted-foreground" /> Object Analysis
@@ -27,7 +61,7 @@ export function ObjectDescriptionCard({ room }: ObjectDescriptionCardProps) {
   }
   
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg mt-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Eye className="h-6 w-6 text-primary" /> Object Analysis Results
@@ -41,31 +75,38 @@ export function ObjectDescriptionCard({ room }: ObjectDescriptionCardProps) {
       </CardHeader>
       <CardContent>
         {room.isAnalyzing ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <Wand2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="font-medium">AI is analyzing the room...</p>
-              <p className="text-sm">This may take a few moments.</p>
-            </div>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="font-semibold text-lg text-foreground">AI is analyzing the room...</p>
+            <p className="text-sm text-muted-foreground">This may take a few moments. Results will appear here.</p>
           </div>
-        ) : room.objectDescription ? (
-          <div className="prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap bg-background p-4 rounded-md border">
-            {room.objectDescription}
+        ) : room.objectNames && room.objectNames.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
+            <ul className="list-disc list-inside space-y-1 bg-background/50 p-4 rounded-md border max-h-60 overflow-y-auto">
+              {room.objectNames.map((name, index) => (
+                <li key={index} className="text-foreground">{name}</li>
+              ))}
+            </ul>
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <ListTree className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="font-medium">No objects described yet.</p>
-            <p className="text-sm">Upload photos and click "Analyze Objects" to see results here.</p>
+            <p className="text-sm">Upload photos and click "Analyze Images" to see results here.</p>
           </div>
         )}
       </CardContent>
+      {(room.objectNames && room.objectNames.length > 0 && !room.isAnalyzing) && (
+        <CardFooter className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={handleDownloadPdf}>
+            <Download className="mr-2 h-4 w-4" /> Download PDF
+          </Button>
+          <Button variant="destructive-outline" onClick={onClearResults}>
+            <Trash2 className="mr-2 h-4 w-4" /> Clear Results
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
-
-// For Wand2 spin animation
-const Wand2 = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L11.28 9.72a1.21 1.21 0 0 0 0 1.72l6.36 6.36a1.21 1.21 0 0 0 1.72 0l6.36-6.36a1.21 1.21 0 0 0 0-1.72Z"/><path d="M14 7.5 12 9.5l-5 5L2.5 19l1.5-6.5Z"/><path d="M6.5 12.5 5 11l-2 6 6-2 1.5-1.5Z"/><path d="M12.5 6.5 11 5l-2 6 6-2 1.5-1.5Z"/></svg>
-);
-

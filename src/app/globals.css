@@ -8,77 +8,79 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 93.3%; /* Light gray #EEEEEE */
-    --foreground: 0 0% 3.9%; /* Dark text for readability */
+    /* New Theme based on gradient */
+    --background: 197 63% 16%; /* Base for cards if not transparent; from #0f3443 */
+    --foreground: 0 0% 98%; /* Light text for readability on dark backgrounds */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 3.9%;
+    --card: 197 50% 20%; /* Slightly lighter, less saturated dark blue for cards */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover: 197 50% 22%; /* Similar to card */
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 207 87% 68%; /* Calm blue #64B5F6 */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 153 78% 50%; /* Green from gradient #34e89e, adjusted */
+    --primary-foreground: 0 0% 10%; /* Dark text for contrast on green primary */
 
-    --secondary: 0 0% 96.1%; /* Default light gray from shadcn */
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 197 30% 35%; /* Muted blue/gray */
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 90%; /* Slightly darker than background for muted elements */
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 197 20% 25%; /* Darker, less saturated blue/gray */
+    --muted-foreground: 0 0% 65%; /* Lighter gray for muted text */
 
-    --accent: 30 100% 75.3%; /* Soft orange #FFCC80 */
-    --accent-foreground: 0 0% 3.9%; /* Dark text on accent */
+    --accent: 50 100% 60%; /* Bright yellow/gold for accents */
+    --accent-foreground: 0 0% 10%; /* Dark text for contrast on yellow accent */
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 70% 55%; /* A clearer red for destructive actions */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 85%; /* Adjusted for light theme */
-    --input: 0 0% 89.8%; /* Adjusted for light theme */
-    --ring: 207 87% 68%; /* Primary color for focus rings */
+    --border: 197 40% 30%; /* Border color */
+    --input: 197 40% 25%;  /* Input background */
+    --ring: 153 78% 50%; /* Primary color for focus rings */
 
     --radius: 0.5rem;
 
     /* Sidebar specific variables, can be adjusted if sidebar is heavily used */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* For now, making them consistent with the dark theme */
+    --sidebar-background: 197 60% 12%; /* Darker variant of main background */
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 153 78% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 197 50% 25%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 197 50% 28%;
+    --sidebar-ring: 153 78% 50%;
   }
 
   .dark {
-    /* Keeping dark mode defaults from shadcn, but app primarily targets light theme */
-    --background: 0 0% 3.9%;
+    /* Keeping dark mode variables, they are now the default effectively */
+    --background: 197 63% 16%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 197 50% 20%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 197 50% 22%;
     --popover-foreground: 0 0% 98%;
-    --primary: 207 87% 68%; /* Calm blue for dark mode too */
-    --primary-foreground: 0 0% 3.9%; /* Darker text for blue in dark mode */
-    --secondary: 0 0% 14.9%;
+    --primary: 153 78% 50%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 197 30% 35%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 30 100% 75.3%; /* Soft orange for dark mode too */
-    --accent-foreground: 0 0% 3.9%; /* Darker text for orange in dark mode */
-    --destructive: 0 62.8% 30.6%;
+    --muted: 197 20% 25%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 50 100% 60%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 207 87% 68%; /* Primary color for rings in dark mode */
+    --border: 197 40% 30%;
+    --input: 197 40% 25%;
+    --ring: 153 78% 50%;
     
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 197 60% 12%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 153 78% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 197 50% 25%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 197 50% 28%;
+    --sidebar-ring: 153 78% 50%;
   }
 }
 
@@ -87,7 +89,10 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: #0f3443; /* Fallback */
+    background: -webkit-linear-gradient(to right, #0f3443, #34e89e);
+    background: linear-gradient(to right, #0f3443, #34e89e);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
