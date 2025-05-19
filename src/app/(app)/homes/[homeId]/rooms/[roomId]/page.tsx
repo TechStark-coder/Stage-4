@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { getHome, getRoom, clearRoomObjectNames } from "@/lib/firestore"; // Removed setRoomAnalyzingStatus as it's handled in PhotoUploader
+import { getHome, getRoom, clearRoomObjectNames } from "@/lib/firestore";
 import type { Home, Room } from "@/types";
 import { PhotoUploader } from "@/components/rooms/PhotoUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
@@ -35,7 +35,6 @@ interface PersistedPhotoInfo {
 
 const dataURLtoFile = (dataurl: string, filename: string, filetype?: string): File => {
   const arr = dataurl.split(',');
-  // Fallback for mime type if not in data URL (though it should be)
   const mime = arr[0].match(/:(.*?);/)?.[1] || filetype || 'application/octet-stream';
   const bstr = atob(arr[1]);
   let n = bstr.length;
@@ -53,11 +52,11 @@ export default function RoomDetailPage() {
   const homeId = params.homeId as string;
   const roomId = params.roomId as string;
   const { toast } = useToast();
-  const { showAiLoader, hideAiLoader, isAiAnalyzing } = useAiAnalysisLoader();
+  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
-  const [pageLoading, setPageLoading] = useState(true); // Renamed from loading to avoid conflict
+  const [pageLoading, setPageLoading] = useState(true);
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
 
   const sessionStorageKey = roomId ? `pendingRoomPhotos_${roomId}` : null;
@@ -71,14 +70,9 @@ export default function RoomDetailPage() {
           setHome(currentHome);
           const currentRoom = await getRoom(homeId, roomId);
           setRoom(currentRoom);
-          // If the page loads and Firestore says it's analyzing, but our global AI loader isn't active,
-          // it might mean analysis was triggered in another session/tab or a previous unfinished one.
-          // For now, we won't automatically show the global loader here, ObjectAnalysisCard can show a textual hint.
-          // The global AI loader is primarily for user-initiated actions in *this* session.
         } else {
           setHome(null);
           setRoom(null);
-          // Potentially redirect or show a more prominent error if home/room access is denied
         }
       } catch (error) {
         console.error("Failed to fetch room details:", error);
@@ -93,7 +87,6 @@ export default function RoomDetailPage() {
     fetchRoomDetails();
   }, [fetchRoomDetails]);
 
-  // Load photos from session storage on initial mount for this room
   useEffect(() => {
     if (sessionStorageKey && uploadedPhotos.length === 0) {
       const storedPhotosJson = sessionStorage.getItem(sessionStorageKey);
@@ -108,15 +101,14 @@ export default function RoomDetailPage() {
           }
         } catch (e) {
           console.error("Error parsing photos from session storage:", e);
-          sessionStorage.removeItem(sessionStorageKey); // Clear corrupted data
+          sessionStorage.removeItem(sessionStorageKey);
         }
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [roomId]); // Only re-run if roomId changes, sessionStorageKey depends on roomId
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
 
 
-  // Save photos to session storage when they change
   useEffect(() => {
     if (sessionStorageKey) {
       if (uploadedPhotos.length > 0) {
@@ -128,19 +120,31 @@ export default function RoomDetailPage() {
                 return { name: file.name, type: file.type, dataUrl };
               })
             );
-            sessionStorage.setItem(sessionStorageKey, JSON.stringify(photosToStore));
+            try {
+              sessionStorage.setItem(sessionStorageKey, JSON.stringify(photosToStore));
+            } catch (e: any) {
+              if (e.name === 'QuotaExceededError') {
+                console.warn("Session storage quota exceeded. Pending photos might not persist on page reload/navigation.", e);
+                toast({
+                  title: "Storage Warning",
+                  description: "Too many/large photos selected. They may not be saved if you navigate away before analysis. Please consider reducing the number of photos.",
+                  variant: "default",
+                  duration: 7000,
+                });
+              } else {
+                console.error("Error saving photos to session storage:", e);
+              }
+            }
           } catch (error) {
-            console.error("Error saving photos to session storage:", error);
-            // Optionally toast an error if saving fails, though it's a background task
+            console.error("Error preparing photos for session storage:", error);
           }
         };
         savePhotosToSession();
       } else {
-        // If uploadedPhotos is empty, remove from session storage
         sessionStorage.removeItem(sessionStorageKey);
       }
     }
-  }, [uploadedPhotos, sessionStorageKey]);
+  }, [uploadedPhotos, sessionStorageKey, toast]);
 
 
   const handlePhotosChange = (newPhotos: File[]) => {
@@ -150,44 +154,42 @@ export default function RoomDetailPage() {
   const handleRemovePhoto = (indexToRemove: number) => {
     setUploadedPhotos(prevPhotos => prevPhotos.filter((_, index) => index !== indexToRemove));
   };
-  
+
   const handleAnalysisInitiated = () => {
     showAiLoader();
   };
 
   const handleAnalysisComplete = (analysisSuccessful: boolean) => {
     hideAiLoader();
-    fetchRoomDetails(); // Re-fetch to get updated objectNames and final analyzing status
+    fetchRoomDetails();
     if (analysisSuccessful) {
       if (sessionStorageKey) {
-        sessionStorage.removeItem(sessionStorageKey); // Clear persisted photos only after successful analysis
+        sessionStorage.removeItem(sessionStorageKey);
       }
-      setUploadedPhotos([]); // Clear local photo state only after successful analysis
+      setUploadedPhotos([]);
     }
-    // If analysis was not successful, photos remain in state & sessionStorage for retry.
   };
 
   const handleClearResults = async () => {
     if (!homeId || !roomId) return;
-    // Use the general page loader for this action
-    // showLoader(); // This would be from a general LoaderContext, not AiAnalysisLoaderContext
+    setPageLoading(true); // Using pageLoading for this general action
     try {
       await clearRoomObjectNames(homeId, roomId);
       toast({ title: "Results Cleared", description: "The object analysis results have been cleared." });
-      fetchRoomDetails(); 
+      fetchRoomDetails();
     } catch (error) {
       console.error("Failed to clear results:", error);
       toast({ title: "Error", description: "Failed to clear analysis results.", variant: "destructive" });
     } finally {
-      // hideLoader(); // From general LoaderContext
+      setPageLoading(false);
     }
   };
 
-  if (pageLoading && !room) { 
+  if (pageLoading && !room) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-40 mb-4" /> 
-        <Skeleton className="h-10 w-72 mb-6" /> 
+        <Skeleton className="h-8 w-40 mb-4" />
+        <Skeleton className="h-10 w-72 mb-6" />
         <div className="grid lg:grid-cols-2 gap-8">
           <Skeleton className="h-96 rounded-lg" />
           <Skeleton className="h-96 rounded-lg" />
@@ -212,7 +214,7 @@ export default function RoomDetailPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-8">
       <Button variant="outline" size="sm" asChild className="mb-6 bg-card/80 hover:bg-card">
@@ -230,7 +232,7 @@ export default function RoomDetailPage() {
           Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
         </p>
       </div>
-      
+
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         <div className="space-y-6">
           <PhotoUploader
@@ -246,13 +248,11 @@ export default function RoomDetailPage() {
             <ImageGallery photos={uploadedPhotos} onRemovePhoto={handleRemovePhoto} />
         </div>
       </div>
-       <ObjectAnalysisCard 
-         room={room} 
-         onClearResults={handleClearResults} 
+       <ObjectAnalysisCard
+         room={room}
+         onClearResults={handleClearResults}
          homeName={home.name}
         />
     </div>
   );
 }
-
-    
