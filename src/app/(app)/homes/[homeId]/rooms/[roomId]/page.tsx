@@ -61,7 +61,7 @@ export default function RoomDetailPage() {
     setUploadedPhotos(prevPhotos => prevPhotos.filter((_, index) => index !== indexToRemove));
   };
   
-  const handleAnalysisComplete = ()_ => {
+  const handleAnalysisComplete = () => {
     fetchRoomDetails(); // Re-fetch to get updated objectNames and analyzing status
     // Photos are managed locally until analysis, no need to clear them here unless desired
   };
