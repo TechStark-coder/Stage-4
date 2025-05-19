@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // Added import
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addHome } from "@/lib/firestore";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { createHomeSchema, type CreateHomeFormData } from "@/schemas/homeSchemas";
-import { HousePlus, PlusCircle, ImageUp } from "lucide-react";
+import { HousePlus, PlusCircle } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -29,6 +30,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Image from "next/image";
+import type { CreateHomeData } from "@/types";
+
 
 interface CreateHomeDialogProps {
   onHomeCreated: () => void;
@@ -44,26 +47,24 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     resolver: zodResolver(createHomeSchema),
     defaultValues: {
       name: "",
-      coverImage: null,
+      coverImage: undefined, // Changed to undefined for clearer optional handling
     },
   });
 
-  const coverImageRef = form.register("coverImage");
+  const coverImageWatch = form.watch("coverImage");
 
   useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "coverImage") {
-        const files = value.coverImage;
-        if (files && files.length > 0) {
-          const file = files[0];
-          setImagePreview(URL.createObjectURL(file));
-        } else {
-          setImagePreview(null);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, form]);
+    if (coverImageWatch && coverImageWatch.length > 0) {
+      const file = coverImageWatch[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
+  }, [coverImageWatch]);
 
   async function onSubmit(data: CreateHomeFormData) {
     if (!user) {
@@ -71,14 +72,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       return;
     }
     try {
-      const homeData: CreateHomeData = { name: data.name };
+      const homeDataToSubmit: CreateHomeData = { name: data.name };
       if (data.coverImage && data.coverImage.length > 0) {
-        homeData.coverImage = data.coverImage[0];
+        homeDataToSubmit.coverImage = data.coverImage[0];
       }
       
-      await addHome(user.uid, homeData);
+      await addHome(user.uid, homeDataToSubmit);
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset();
+      form.reset({ name: "", coverImage: undefined });
       setImagePreview(null);
       onHomeCreated();
       setOpen(false);
@@ -92,7 +93,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (!isOpen) {
-        form.reset();
+        form.reset({ name: "", coverImage: undefined });
         setImagePreview(null);
       }
     }}>
@@ -128,14 +129,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={() => ( // field is not directly used here
+              render={({ field }) => ( 
                 <FormItem>
                   <FormLabel>Cover Image (Optional)</FormLabel>
                   <FormControl>
                     <Input 
                       type="file" 
                       accept="image/jpeg,image/png,image/webp" 
-                      {...coverImageRef}
+                      onChange={(e) => field.onChange(e.target.files)} // Use field.onChange
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>
@@ -154,7 +155,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
-                form.reset();
+                form.reset({ name: "", coverImage: undefined });
                 setImagePreview(null);
               }}>
                 Cancel
@@ -169,3 +170,4 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     </Dialog>
   );
 }
+
