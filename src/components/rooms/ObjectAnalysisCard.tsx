@@ -10,20 +10,20 @@ import jsPDF from "jspdf";
 import { useLoader } from "@/contexts/LoaderContext";
 import { useToast } from "@/hooks/use-toast";
 
-
 interface ObjectAnalysisCardProps {
   room: Room | null;
   onClearResults: () => Promise<void>; 
   homeName?: string;
+  showSpinner?: boolean; // New prop to directly control spinner visibility
 }
 
-export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAnalysisCardProps) {
-  const { showLoader, hideLoader } = useLoader();
+export function ObjectAnalysisCard({ room, onClearResults, homeName, showSpinner }: ObjectAnalysisCardProps) {
+  const { showLoader: showGlobalLoader, hideLoader: hideGlobalLoader } = useLoader(); // Renamed to avoid conflict
   const { toast } = useToast();
 
   const handleDownloadPdf = () => {
     if (!room || !room.objectNames || !room.name) return;
-    showLoader();
+    showGlobalLoader();
     try {
       const doc = new jsPDF();
       doc.setFontSize(18);
@@ -54,25 +54,22 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
         console.error("Failed to generate PDF:", error);
         toast({title: "PDF Generation Failed", description: "Could not generate the PDF.", variant: "destructive"})
     } finally {
-        hideLoader();
+        hideGlobalLoader();
     }
   };
 
   const handleClear = async () => {
-    showLoader();
+    showGlobalLoader();
     try {
       await onClearResults();
-      // Toast is handled in page.tsx after successful clear
     } catch (error) {
-      // Error toast is handled in page.tsx
       console.error("Error in handleClear (ObjectAnalysisCard):", error);
     } finally {
-      hideLoader();
+      hideGlobalLoader();
     }
   };
 
-
-  if (!room) {
+  if (!room && !showSpinner) { // If no room and not explicitly told to show spinner, show loading card
     return (
       <Card className="shadow-lg bg-card/80 mt-6">
         <CardHeader>
@@ -87,13 +84,17 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     );
   }
   
+  // Determine if spinner should be displayed based on prop or room status
+  // The `showSpinner` prop takes precedence for immediate UI feedback.
+  const displaySpinner = showSpinner || room?.isAnalyzing;
+
   return (
     <Card className="shadow-lg mt-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Eye className="h-6 w-6 text-primary" /> Object Analysis Results
         </CardTitle>
-        {room.lastAnalyzedAt && (
+        {room?.lastAnalyzedAt && !displaySpinner && ( // Only show if not analyzing
            <CardDescription className="flex items-center gap-1 text-xs pt-1">
             <Sparkles className="h-3 w-3" />
             Last analyzed on {format(room.lastAnalyzedAt.toDate(), "PPP 'at' p")}
@@ -101,7 +102,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
         )}
       </CardHeader>
       <CardContent>
-        {room.isAnalyzing ? (
+        {displaySpinner ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="spinner">
               <div className="spinner1"></div>
@@ -109,7 +110,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
             <p className="font-semibold text-lg text-foreground mt-4">AI is analyzing the room...</p>
             <p className="text-sm text-muted-foreground">This may take a few moments. Results will appear here.</p>
           </div>
-        ) : room.objectNames && room.objectNames.length > 0 ? (
+        ) : room?.objectNames && room.objectNames.length > 0 ? (
           <div className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
             <ul className="list-disc list-inside space-y-1 bg-background/50 p-4 rounded-md border max-h-60 overflow-y-auto">
@@ -126,7 +127,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
           </div>
         )}
       </CardContent>
-      {(room.objectNames && room.objectNames.length > 0 && !room.isAnalyzing) && (
+      {(room?.objectNames && room.objectNames.length > 0 && !displaySpinner) && (
         <CardFooter className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
           <Button variant="outline" onClick={handleDownloadPdf}>
             <Download className="mr-2 h-4 w-4" /> Download PDF

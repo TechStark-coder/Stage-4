@@ -1,15 +1,15 @@
 
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { getHome, getRoom, clearRoomObjectNames } from "@/lib/firestore"; // Added clearRoomObjectNames
+import { getHome, getRoom, clearRoomObjectNames } from "@/lib/firestore";
 import type { Home, Room } from "@/types";
 import { PhotoUploader } from "@/components/rooms/PhotoUploader";
-import { ObjectAnalysisCard } from "@/components/rooms/ObjectDescriptionCard"; // Renamed
-import { ImageGallery } from "@/components/rooms/ImageGallery"; // New
+import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
+import { ImageGallery } from "@/components/rooms/ImageGallery";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
@@ -26,6 +26,7 @@ export default function RoomDetailPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
+  const [isAwaitingAnalysisResult, setIsAwaitingAnalysisResult] = useState(false);
 
   const fetchRoomDetails = useCallback(async () => {
     if (user && homeId && roomId) {
@@ -36,6 +37,10 @@ export default function RoomDetailPage() {
           setHome(currentHome);
           const currentRoom = await getRoom(homeId, roomId);
           setRoom(currentRoom);
+          // If fetched room data indicates it's no longer analyzing, update local awaiting state
+          if (currentRoom && !currentRoom.isAnalyzing) {
+            setIsAwaitingAnalysisResult(false);
+          }
         } else {
           setHome(null);
           setRoom(null);
@@ -43,6 +48,7 @@ export default function RoomDetailPage() {
       } catch (error) {
         console.error("Failed to fetch room details:", error);
         toast({ title: "Error", description: "Failed to fetch room details.", variant: "destructive" });
+        setIsAwaitingAnalysisResult(false); // Reset on error
       } finally {
         setLoading(false);
       }
@@ -61,9 +67,16 @@ export default function RoomDetailPage() {
     setUploadedPhotos(prevPhotos => prevPhotos.filter((_, index) => index !== indexToRemove));
   };
   
+  const handleAnalysisInitiated = () => {
+    setIsAwaitingAnalysisResult(true);
+    // Optionally, immediately fetch room details to get isAnalyzing=true from DB
+    // but this might be redundant if ObjectAnalysisCard also uses room.isAnalyzing
+    // fetchRoomDetails(); 
+  };
+
   const handleAnalysisComplete = () => {
-    fetchRoomDetails(); // Re-fetch to get updated objectNames and analyzing status
-    // Photos are managed locally until analysis, no need to clear them here unless desired
+    setIsAwaitingAnalysisResult(false); // Analysis process (incl. AI and DB updates) is complete
+    fetchRoomDetails(); // Re-fetch to get updated objectNames and final analyzing status
   };
 
   const handleClearResults = async () => {
@@ -71,14 +84,14 @@ export default function RoomDetailPage() {
     try {
       await clearRoomObjectNames(homeId, roomId);
       toast({ title: "Results Cleared", description: "The object analysis results have been cleared." });
-      fetchRoomDetails(); // Re-fetch to update UI
+      fetchRoomDetails(); 
     } catch (error) {
       console.error("Failed to clear results:", error);
       toast({ title: "Error", description: "Failed to clear analysis results.", variant: "destructive" });
     }
   };
 
-  if (loading) {
+  if (loading && !room) { // Show full page skeleton only on initial load
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-40 mb-4" /> 
@@ -107,6 +120,10 @@ export default function RoomDetailPage() {
       </div>
     );
   }
+  
+  // Determine if the spinner should be shown
+  // Show if local state indicates waiting OR if room data from DB indicates analyzing
+  const showSpinner = isAwaitingAnalysisResult || (room?.isAnalyzing ?? false);
 
   return (
     <div className="space-y-8">
@@ -131,6 +148,7 @@ export default function RoomDetailPage() {
           <PhotoUploader
             homeId={homeId}
             roomId={roomId}
+            onAnalysisInitiated={handleAnalysisInitiated}
             onAnalysisComplete={handleAnalysisComplete}
             currentPhotos={uploadedPhotos}
             onPhotosChange={handlePhotosChange}
@@ -140,7 +158,12 @@ export default function RoomDetailPage() {
             <ImageGallery photos={uploadedPhotos} onRemovePhoto={handleRemovePhoto} />
         </div>
       </div>
-       <ObjectAnalysisCard room={room} onClearResults={handleClearResults} homeName={home.name} />
+       <ObjectAnalysisCard 
+         room={room} 
+         onClearResults={handleClearResults} 
+         homeName={home.name}
+         showSpinner={showSpinner} 
+        />
     </div>
   );
 }
