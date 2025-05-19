@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteRoom } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { EditRoomDialog } from "./EditRoomDialog"; // Import EditRoomDialog
+import { EditRoomDialog } from "./EditRoomDialog"; 
 import { useLoader } from "@/contexts/LoaderContext";
 
 interface RoomCardProps {
   room: Room;
   homeId: string;
   onRoomDeleted: () => void;
-  onRoomUpdated: () => void; // Add callback for updates
+  onRoomUpdated: () => void; 
 }
 
 export function RoomCard({ room, homeId, onRoomDeleted, onRoomUpdated }: RoomCardProps) {
@@ -44,6 +44,7 @@ export function RoomCard({ room, homeId, onRoomDeleted, onRoomUpdated }: RoomCar
       });
       onRoomDeleted();
     } catch (error) {
+      console.error("Error deleting room:", error)
       toast({
         title: "Error Deleting Room",
         description: "Could not delete the room. Please try again.",

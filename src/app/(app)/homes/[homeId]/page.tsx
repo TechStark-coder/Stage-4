@@ -13,11 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function HomeDetailPage() {
   const { user } = useAuthContext();
   const params = useParams();
   const homeId = params.homeId as string;
+  const { toast } = useToast();
 
   const [home, setHome] = useState<Home | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -28,23 +30,23 @@ export default function HomeDetailPage() {
       setLoading(true);
       try {
         const currentHome = await getHome(homeId);
-        // Basic check if user owns this home
         if (currentHome && currentHome.ownerId === user.uid) {
           setHome(currentHome);
           const homeRooms = await getRooms(homeId);
           setRooms(homeRooms);
         } else {
-          setHome(null); // Or redirect, show error
+          setHome(null);
           setRooms([]);
-          // console.error("Home not found or access denied");
+          toast({ title: "Access Denied", description: "Home not found or you do not have access.", variant: "destructive" });
         }
       } catch (error) {
         console.error("Failed to fetch home details:", error);
+        toast({ title: "Error", description: "Failed to fetch home details.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     }
-  }, [user, homeId]);
+  }, [user, homeId, toast]);
 
   useEffect(() => {
     fetchHomeAndRooms();
@@ -126,7 +128,13 @@ export default function HomeDetailPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} homeId={homeId} onRoomDeleted={fetchHomeAndRooms} />
+            <RoomCard 
+              key={room.id} 
+              room={room} 
+              homeId={homeId} 
+              onRoomDeleted={fetchHomeAndRooms} 
+              onRoomUpdated={fetchHomeAndRooms} // Ensure this prop is passed
+            />
           ))}
         </div>
       )}

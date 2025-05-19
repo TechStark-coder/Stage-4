@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { updateRoom } from "@/lib/firestore";
-import { createRoomSchema, type CreateRoomFormData } from "@/schemas/roomSchemas"; // Re-use schema for name validation
+import { createRoomSchema, type CreateRoomFormData } from "@/schemas/roomSchemas"; 
 import type { Room, UpdateRoomData } from "@/types";
 import { Pencil } from "lucide-react";
 import {
@@ -42,7 +42,7 @@ export function EditRoomDialog({ room, homeId, onRoomUpdated }: EditRoomDialogPr
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
 
-  const form = useForm<CreateRoomFormData>({ // Using CreateRoomFormData as it fits for name editing
+  const form = useForm<CreateRoomFormData>({ 
     resolver: zodResolver(createRoomSchema),
     defaultValues: {
       name: room.name,
@@ -57,14 +57,22 @@ export function EditRoomDialog({ room, homeId, onRoomUpdated }: EditRoomDialogPr
 
   async function onSubmit(data: CreateRoomFormData) {
     showLoader();
+    console.log("Attempting to update room. Home ID:", homeId, "Room ID:", room.id, "New Data:", data);
     try {
       const roomUpdateData: UpdateRoomData = { name: data.name };
       await updateRoom(homeId, room.id, roomUpdateData);
       toast({ title: "Room Updated", description: `Room "${data.name}" has been successfully updated.` });
-      onRoomUpdated();
+      
+      if (typeof onRoomUpdated === 'function') {
+        onRoomUpdated();
+      } else {
+        console.error("onRoomUpdated is not a function in EditRoomDialog. Received:", onRoomUpdated);
+      }
+      
       setOpen(false);
     } catch (error: any) {
-      toast({ title: "Failed to Update Room", description: error.message, variant: "destructive" });
+      console.error("Failed to update room:", error);
+      toast({ title: "Failed to Update Room", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     } finally {
       hideLoader();
     }
