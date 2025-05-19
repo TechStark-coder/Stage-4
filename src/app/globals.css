@@ -705,3 +705,25 @@ body {
   border-radius: 3px;
   height: 100%;
 }
+
+/* Welcome Message Shine Effect */
+.welcome-message-shine {
+  /* color: #fff; */ /* Base color of text, will be overridden by -webkit-text-fill-color */
+  background: linear-gradient(to right, hsl(var(--foreground)) 20%, hsl(var(--primary)) 40%, hsl(var(--foreground)) 60%, hsl(var(--foreground)) 100%);
+  background-size: 200% auto; /* Ensure gradient is large enough for animation */
+  background-position: 0;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: welcome-shine 4s linear infinite; /* Slower animation for welcome message */
+  -webkit-text-size-adjust: none;
+  white-space: nowrap; /* Keep welcome message on one line if desired */
+}
+
+@keyframes welcome-shine {
+  0% {
+    background-position: 200% center; /* Start from one end */
+  }
+  100% {
+    background-position: -200% center; /* Move to the other end */
+  }
+}

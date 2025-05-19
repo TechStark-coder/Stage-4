@@ -28,7 +28,8 @@ export function AppHeader() {
     } finally {
       // hideLoader will be called by AppRouterEvents on successful navigation
       // but call it here too for cases where navigation might not happen (e.g. error before push)
-      hideLoader(); 
+      // Forcing hideLoader to ensure it's always called if the navigation doesn't happen fast enough
+      setTimeout(hideLoader, 0);
     }
   };
 
@@ -43,7 +44,7 @@ export function AppHeader() {
         </Link>
         <div className="flex-grow text-center">
           {user && (
-            <span className="text-sm font-medium text-foreground sm:text-base">
+            <span className="text-sm font-medium text-foreground sm:text-base welcome-message-shine">
               Welcome, {userName}!
             </span>
           )}
