@@ -13,12 +13,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger, // Added DialogTrigger here
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { addHome } from "@/lib/firestore";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { createHomeSchema, type CreateHomeFormData } from "@/schemas/homeSchemas";
-import { HousePlus, PlusCircle } from "lucide-react"; // Changed HomePlus to HousePlus
+import { HousePlus, PlusCircle } from "lucide-react"; 
 import {
   Form,
   FormControl,
