@@ -612,10 +612,22 @@ body {
   animation: moveBox-9 4s infinite;
 }
 
-/* CSS for the new "Analyze Images" spinner */
-.spinner {
-  position: relative; /* Changed from absolute for easier centering in card */
-  margin: 20px auto; /* Added for centering within its container */
+/* AI Analysis Loader Styles */
+.ai-analysis-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for AI loader */
+  z-index: 10000; /* Ensure it's above the banter loader */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-spinner { /* Renamed from .spinner to .ai-spinner */
+  position: relative; /* Will be centered by overlay */
   background-image: linear-gradient(rgb(186, 66, 255) 35%,rgb(0, 225, 255));
   width: 100px;
   height: 100px;
@@ -626,7 +638,7 @@ body {
   box-shadow: 0px -5px 20px 0px rgb(186, 66, 255), 0px 5px 20px 0px rgb(0, 225, 255);
 }
 
-.spinner1 {
+.ai-spinner-inner { /* Renamed from .spinner1 to .ai-spinner-inner */
   background-color: rgb(36, 36, 36);
   width: 100px;
   height: 100px;
@@ -638,4 +650,58 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* From Uiverse.io by SelfMadeSystem - Codepen Button */
+.codepen-button {
+  display: block;
+  cursor: pointer;
+  color: white;
+  /* margin: 0 auto; */ /* Removed to allow flex alignment in CardFooter */
+  position: relative;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 3px;
+  isolation: isolate;
+}
+
+.codepen-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400%;
+  height: 100%;
+  background: linear-gradient(115deg,#4fcf70,#fad648,#a767e5,#12bcfe,#44ce7b);
+  background-size: 25% 100%;
+  animation: an-at-keyframe-css-at-rule-that-translates-via-the-transform-property-the-background-by-negative-25-percent-of-its-width-so-that-it-gives-a-nice-border-animation_-We-use-the-translate-property-to-have-a-nice-transition-so-it_s-not-a-jerk-of-a-start-or-stop .75s linear infinite;
+  animation-play-state: paused;
+  translate: -5% 0%;
+  transition: translate 0.25s ease-out;
+}
+
+.codepen-button:hover::before {
+  animation-play-state: running;
+  transition-duration: 0.75s;
+  translate: 0% 0%;
+}
+
+@keyframes an-at-keyframe-css-at-rule-that-translates-via-the-transform-property-the-background-by-negative-25-percent-of-its-width-so-that-it-gives-a-nice-border-animation_-We-use-the-translate-property-to-have-a-nice-transition-so-it_s-not-a-jerk-of-a-start-or-stop {
+  to {
+    transform: translateX(-25%);
+  }
+}
+
+.codepen-button span {
+  position: relative;
+  display: flex; /* Use flex to align icon and text */
+  align-items: center; /* Vertically align icon and text */
+  justify-content: center; /* Horizontally center content */
+  padding: 0.8rem 1.3rem; /* Adjusted padding slightly */
+  font-size: 0.9rem; /* Adjusted font size to better fit with other buttons */
+  background: hsl(var(--card)); /* Use card background from theme */
+  border-radius: 3px;
+  height: 100%;
 }
