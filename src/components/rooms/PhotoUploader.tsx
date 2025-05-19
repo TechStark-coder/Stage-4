@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useForm } from "react-hook-form"; // Import useForm directly from react-hook-form
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ interface PhotoUploaderProps {
   homeId: string;
   roomId: string;
   onAnalysisInitiated: () => void;
-  onAnalysisComplete: () => void;
+  onAnalysisComplete: (analysisSuccessful: boolean) => void; // Modified to accept success status
   currentPhotos: File[];
   onPhotosChange: (photos: File[]) => void;
 }
@@ -38,25 +38,26 @@ export function PhotoUploader({
   onPhotosChange
 }: PhotoUploaderProps) {
   const { toast } = useToast();
-  const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false);
+  const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false); // For disabling the button
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<PhotoUploadFormData>({
     resolver: zodResolver(photoUploadSchema),
-    values: { photos: currentPhotos as any }, // Keep values in sync with prop
+    // `values` prop for `useForm` is for default values.
+    // `currentPhotos` prop will drive the UI for the image gallery directly.
+    // We ensure the form schema checks `currentPhotos` length before submission.
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       const newFilesArray = Array.from(files);
-      // Prevent duplicates if the same file is selected again
       const uniqueNewFiles = newFilesArray.filter(
         (newFile) => !currentPhotos.some((existingFile) => existingFile.name === newFile.name && existingFile.size === newFile.size)
       );
       onPhotosChange([...currentPhotos, ...uniqueNewFiles]);
       if (event.target) {
-        event.target.value = ""; // Reset file input to allow selecting the same file again if removed
+        event.target.value = ""; 
       }
     }
   };
@@ -75,41 +76,34 @@ export function PhotoUploader({
       return;
     }
 
-    setIsAnalyzingLocal(true); // Disable button immediately
-    
+    setIsAnalyzingLocal(true);
+    onAnalysisInitiated(); // Trigger global AI loader immediately
 
+    let analysisSuccessful = false;
     try {
-      await setRoomAnalyzingStatus(homeId, roomId, true); // Mark in DB that analysis is starting
-      onAnalysisInitiated();     // Inform parent page that processing has started
-    } catch (statusError) {
-      console.error("Failed to set room analyzing status to true:", statusError);
-      toast({ title: "Error", description: "Could not initiate analysis process.", variant: "destructive" });
-      setIsAnalyzingLocal(false);
-      onAnalysisComplete(); // Inform parent that the attempt is over
-      return;
-    }
+      await setRoomAnalyzingStatus(homeId, roomId, true);
 
-    const photoDataUris: string[] = [];
-    try {
-      for (const file of currentPhotos) {
-        const reader = new FileReader();
-        const promise = new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = (e) => reject(e);
-          reader.readAsDataURL(file);
-        });
-        photoDataUris.push(await promise);
+      const photoDataUris: string[] = [];
+      try {
+        for (const file of currentPhotos) {
+          const reader = new FileReader();
+          const promise = new Promise<string>((resolve, reject) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(file);
+          });
+          photoDataUris.push(await promise);
+        }
+      } catch (fileError) {
+        console.error("Error processing photos:", fileError);
+        toast({ title: "Photo Processing Error", description: "Could not read photo files.", variant: "destructive" });
+        // Still need to set analyzing status to false if this specific part fails
+        try { await setRoomAnalyzingStatus(homeId, roomId, false); } catch (e) { /* best effort */ }
+        analysisSuccessful = false; // Explicitly mark as failed
+        // The finally block will handle loader and button state
+        return; // Exit early if photo processing fails
       }
-    } catch (fileError) {
-      console.error("Error processing photos:", fileError);
-      toast({ title: "Photo Processing Error", description: "Could not read photo files.", variant: "destructive" });
-      setIsAnalyzingLocal(false);
-      try { await setRoomAnalyzingStatus(homeId, roomId, false); } catch (e) { /* best effort */ }
-      onAnalysisComplete();
-      return;
-    }
 
-    try {
       const aiInput: DescribeRoomObjectsInput = { photoDataUris };
       const result = await describeRoomObjects(aiInput);
       await updateRoomObjectNames(homeId, roomId, result.objectNames);
@@ -117,6 +111,9 @@ export function PhotoUploader({
         title: "Analysis Complete",
         description: "Object names have been updated.",
       });
+      analysisSuccessful = true; 
+      // Clearing photos from parent state (and thus sessionStorage) will be handled by onAnalysisComplete(true) in RoomDetailPage
+      // onPhotosChange([]); // No longer call this directly here
     } catch (error: any) {
       console.error("AI Analysis or Firestore update error:", error);
       toast({
@@ -124,15 +121,16 @@ export function PhotoUploader({
         description: error.message || "Could not analyze photos or save description.",
         variant: "destructive",
       });
-      // Ensure isAnalyzing is false on AI error, but do this before onAnalysisComplete
+      analysisSuccessful = false;
       try {
+        // Ensure isAnalyzing is set to false in Firestore if AI part fails
         await setRoomAnalyzingStatus(homeId, roomId, false);
       } catch (statusError) {
         console.error("Error setting analyzing status to false after AI failure:", statusError);
       }
     } finally {
-      setIsAnalyzingLocal(false); // Re-enable button
-      onAnalysisComplete();     // Inform parent page the whole process (AI+DB) is finished
+      setIsAnalyzingLocal(false);
+      onAnalysisComplete(analysisSuccessful); // Pass success status to parent
     }
   }
 
@@ -146,37 +144,46 @@ export function PhotoUploader({
           Add photos of the room for analysis. You can remove them from the gallery.
         </CardDescription>
       </CardHeader>
+      {/* Form is used for schema validation of currentPhotos.length before onSubmit */}
       <Form {...form}>
-        <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="photos" // This field is mainly for schema validation trigger, actual files managed by currentPhotos prop
-              render={() => (
-                <FormItem>
-                   <Input
-                      id="photos-input"
-                      type="file"
-                      multiple
-                      accept="image/jpeg,image/png,image/webp,image/gif" // Added more common image types
-                      onChange={handleFileChange}
-                      ref={fileInputRef}
-                      className="hidden" // Keep input hidden, triggered by button
-                    />
-                  <FormMessage /> {/* For displaying validation errors from schema if any */}
-                </FormItem>
-              )}
-            />
-             <Button type="button" onClick={triggerFileInput} variant="outline" className="w-full">
-                <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
-              </Button>
-        </CardContent>
-        <CardFooter>
-          <Button type="button" onClick={onSubmit} className="w-full" disabled={isAnalyzingLocal || currentPhotos.length === 0}>
-            <Wand2 className="mr-2 h-4 w-4" />
-            {isAnalyzingLocal ? "Analyzing..." : "Analyze Images"}
-          </Button>
-        </CardFooter>
+        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}> {/* Use onSubmit from component scope */}
+          <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="photos" 
+                // This field definition is mainly for react-hook-form to be aware of 'photos'
+                // for validation purposes if we were to use form.handleSubmit.
+                // Since we manually check currentPhotos.length, its direct control isn't critical here.
+                render={() => (
+                  <FormItem>
+                    <Input
+                        id="photos-input"
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp,image/gif" 
+                        onChange={handleFileChange}
+                        ref={fileInputRef}
+                        className="hidden" 
+                      />
+                    {/* Display form-level error messages if needed, though toast is primary feedback */}
+                    <FormMessage /> 
+                  </FormItem>
+                )}
+              />
+              <Button type="button" onClick={triggerFileInput} variant="outline" className="w-full">
+                  <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
+                </Button>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={isAnalyzingLocal || currentPhotos.length === 0}>
+              <Wand2 className="mr-2 h-4 w-4" />
+              {isAnalyzingLocal ? "Analyzing..." : "Analyze Images"}
+            </Button>
+          </CardFooter>
+        </form>
       </Form>
     </Card>
   );
 }
+
+    
