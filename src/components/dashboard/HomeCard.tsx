@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import Image from "next/image";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,8 +48,23 @@ export function HomeCard({ home, onHomeDeleted }: HomeCardProps) {
   };
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader>
+    <Card className="flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] dark:hover:shadow-primary/40">
+      <CardHeader className="pb-2">
+        {home.coverImageUrl ? (
+          <div className="relative w-full h-40 mb-4 rounded-t-lg overflow-hidden">
+            <Image 
+              src={home.coverImageUrl} 
+              alt={`${home.name} cover image`} 
+              layout="fill" 
+              objectFit="cover" 
+              data-ai-hint="house exterior"
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-t-lg">
+            <ImageOff className="h-16 w-16 text-muted-foreground/50" />
+          </div>
+        )}
         <CardTitle className="flex items-center gap-2">
           <HomeIcon className="h-6 w-6 text-primary" />
           {home.name}
@@ -60,7 +76,7 @@ export function HomeCard({ home, onHomeDeleted }: HomeCardProps) {
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow pt-2">
         <p className="text-sm text-muted-foreground">
           Manage rooms and analyze objects within this home.
         </p>
@@ -77,7 +93,7 @@ export function HomeCard({ home, onHomeDeleted }: HomeCardProps) {
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete the home
-                "{home.name}" and all its associated rooms and data.
+                "{home.name}" and all its associated rooms and data, including its cover image.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

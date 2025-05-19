@@ -4,7 +4,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Skeleton } from "@/components/ui/skeleton"; // Re-using skeleton from AuthContext
+import { Skeleton } from "@/components/ui/skeleton"; 
 
 export default function HomePage() {
   const { user, loading } = useAuthContext();
@@ -26,7 +26,7 @@ export default function HomePage() {
           <Skeleton className="h-12 w-12 mx-auto rounded-full bg-primary/20" />
           <Skeleton className="h-6 w-3/4 mx-auto bg-muted" />
           <Skeleton className="h-4 w-1/2 mx-auto bg-muted" />
-          <p className="text-sm text-muted-foreground pt-2">Loading HomeLens...</p>
+          <p className="text-sm text-muted-foreground pt-2">Loading ARC Stay...</p>
         </div>
       </div>
   );

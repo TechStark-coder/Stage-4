@@ -7,7 +7,7 @@ import { auth } from "@/config/firebase";
 import { signOut } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { Aperture, LogOut, LayoutDashboard } from "lucide-react";
+import { Aperture, LogOut } from "lucide-react";
 import { useAuthContext } from "@/hooks/useAuthContext";
 
 export function AppHeader() {
@@ -25,27 +25,28 @@ export function AppHeader() {
     }
   };
 
+  const userName = user?.displayName || user?.email?.split('@')[0] || "User";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+      <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
         <Link href="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-primary">
           <Aperture className="h-7 w-7" />
-          <span>HomeLens</span>
+          <span>ARC Stay</span>
         </Link>
-        <nav className="flex items-center gap-4">
+        <div className="flex-grow text-center">
           {user && (
-            <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard">
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
-            </>
+            <span className="text-sm font-medium text-foreground sm:text-base">
+              Welcome, {userName}!
+            </span>
+          )}
+        </div>
+        <nav className="flex items-center gap-2 sm:gap-4">
+          {user && (
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-0 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           )}
         </nav>
       </div>

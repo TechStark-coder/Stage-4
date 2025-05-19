@@ -12,19 +12,41 @@ import {
   where,
   orderBy,
   Timestamp,
+  writeBatch,
 } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { db, storage } from "@/config/firebase"; // Import storage
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import type { Home, Room, CreateHomeData, CreateRoomData } from "@/types";
 
 // Homes
 export async function addHome(userId: string, data: CreateHomeData): Promise<string> {
   const homesCollectionRef = collection(db, "homes");
-  const docRef = await addDoc(homesCollectionRef, {
-    ...data,
+  let coverImageUrl: string | undefined = undefined;
+
+  const newHomeRef = doc(homesCollectionRef); // Generate ID upfront for storage path
+
+  if (data.coverImage && data.coverImage instanceof File) {
+    const imageFile = data.coverImage;
+    const storageRef = ref(
+      storage,
+      `homeCovers/${userId}/${newHomeRef.id}/${imageFile.name}`
+    );
+    await uploadBytes(storageRef, imageFile);
+    coverImageUrl = await getDownloadURL(storageRef);
+  }
+
+  await setDoc(newHomeRef, { // Use setDoc with the generated ref
+    name: data.name,
     ownerId: userId,
     createdAt: serverTimestamp(),
+    ...(coverImageUrl && { coverImageUrl }), // Conditionally add coverImageUrl
   });
-  return docRef.id;
+  return newHomeRef.id;
 }
 
 export async function getHomes(userId: string): Promise<Home[]> {
@@ -47,11 +69,35 @@ export async function getHome(homeId: string): Promise<Home | null> {
 }
 
 export async function deleteHome(homeId: string): Promise<void> {
-  const roomsSnapshot = await getDocs(collection(db, `homes/${homeId}/rooms`));
-  const deleteRoomPromises = roomsSnapshot.docs.map(roomDoc => deleteDoc(roomDoc.ref));
-  await Promise.all(deleteRoomPromises);
+  const homeDocRef = doc(db, "homes", homeId);
+  const homeDoc = await getDoc(homeDocRef);
+
+  if (homeDoc.exists()) {
+    const homeData = homeDoc.data() as Home;
+    // Delete cover image from storage if it exists
+    if (homeData.coverImageUrl) {
+      try {
+        const imageRef = ref(storage, homeData.coverImageUrl);
+        await deleteObject(imageRef);
+      } catch (error) {
+        console.error("Error deleting cover image from storage:", error);
+        // Optionally, decide if you want to proceed with deleting Firestore doc even if image deletion fails
+      }
+    }
+  }
+
+  // Delete rooms subcollection
+  const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
+  const roomsSnapshot = await getDocs(roomsCollectionRef);
   
-  await deleteDoc(doc(db, "homes", homeId));
+  const batch = writeBatch(db);
+  roomsSnapshot.docs.forEach(roomDoc => {
+    batch.delete(roomDoc.ref);
+  });
+  await batch.commit();
+  
+  // Delete the home document
+  await deleteDoc(homeDocRef);
 }
 
 
@@ -61,7 +107,7 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
   const docRef = await addDoc(roomsCollectionRef, {
     ...data,
     createdAt: serverTimestamp(),
-    objectNames: null, // Changed from objectDescription
+    objectNames: null,
     isAnalyzing: false,
     lastAnalyzedAt: null,
   });
@@ -87,7 +133,7 @@ export async function getRoom(homeId: string, roomId: string): Promise<Room | nu
   return null;
 }
 
-export async function updateRoomObjectNames( // Renamed and updated
+export async function updateRoomObjectNames(
   homeId: string,
   roomId: string,
   names: string[]
@@ -121,3 +167,5 @@ export async function setRoomAnalyzingStatus(
 export async function deleteRoom(homeId: string, roomId: string): Promise<void> {
   await deleteDoc(doc(db, `homes/${homeId}/rooms`, roomId));
 }
+// Need to import setDoc
+import { setDoc } from "firebase/firestore";

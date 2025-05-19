@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-3xl font-bold text-primary">
             <Aperture className="h-8 w-8" />
-            HomeLens
+            ARC Stay
           </Link>
           <p className="mt-2 text-muted-foreground">
             Your Home, Analyzed.

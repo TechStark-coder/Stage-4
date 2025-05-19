@@ -2,6 +2,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage"; // Added FirebaseStorage
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -38,6 +39,7 @@ if (!firebaseConfig.apiKey ||
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let storage: FirebaseStorage; // Added storage
 
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
@@ -47,5 +49,6 @@ if (getApps().length === 0) {
 
 auth = getAuth(app);
 db = getFirestore(app);
+storage = getStorage(app); // Initialize storage
 
-export { app, auth, db };
+export { app, auth, db, storage }; // Export storage

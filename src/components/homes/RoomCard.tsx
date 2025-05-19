@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Room } from "@/types";
-import { ArrowRight, CalendarDays, DoorOpen, Trash2, Wand2 } from "lucide-react";
+import { ArrowRight, CalendarDays, DoorOpen, Trash2, Loader2 } from "lucide-react"; // Changed Wand2 to Loader2
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -48,7 +48,7 @@ export function RoomCard({ room, homeId, onRoomDeleted }: RoomCardProps) {
   };
   
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] dark:hover:shadow-primary/40">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DoorOpen className="h-6 w-6 text-primary" />
@@ -62,18 +62,17 @@ export function RoomCard({ room, homeId, onRoomDeleted }: RoomCardProps) {
         )}
       </CardHeader>
       <CardContent className="flex-grow">
-        {room.objectDescription ? (
+        {room.isAnalyzing ? (
+          <p className="text-sm text-accent-foreground mt-2 flex items-center gap-1">
+            <Loader2 className="h-4 w-4 animate-spin" /> Analyzing photos...
+          </p>
+        ) : room.objectNames && room.objectNames.length > 0 ? (
           <p className="text-sm text-muted-foreground line-clamp-3">
-            <span className="font-medium text-foreground">Last analysis:</span> {room.objectDescription}
+            <span className="font-medium text-foreground">Last analysis:</span> {room.objectNames.join(', ').substring(0, 100)}{room.objectNames.join(', ').length > 100 ? '...' : ''}
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
             No objects analyzed yet. Upload photos to describe this room.
-          </p>
-        )}
-         {room.isAnalyzing && (
-          <p className="text-sm text-accent-foreground mt-2 flex items-center gap-1">
-            <Wand2 className="h-4 w-4 animate-pulse" /> Analyzing photos...
           </p>
         )}
       </CardContent>

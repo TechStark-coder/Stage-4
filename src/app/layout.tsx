@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HomeLens - Your Home, Analyzed",
+  title: "ARC Stay - Your Home, Analyzed",
   description: "Upload room photos and get AI-powered object descriptions.",
 };
 
