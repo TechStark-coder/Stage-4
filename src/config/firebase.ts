@@ -12,6 +12,29 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// --- VITAL DIAGNOSTIC LOG ---
+// Check your browser's developer console for this output.
+// This shows the exact configuration your Firebase app is trying to use.
+console.log("Firebase Initialization - Attempting to use config:", firebaseConfig);
+
+// Explicitly check if the API key is missing, a placeholder, or too short.
+if (!firebaseConfig.apiKey || 
+    firebaseConfig.apiKey === "YOUR_FIREBASE_API_KEY" || // Check for common placeholder
+    firebaseConfig.apiKey.includes("YOUR_") || // Check for other placeholder patterns
+    firebaseConfig.apiKey.length < 10) { // Basic sanity check for length
+  console.error(
+    "******************************************************************************************\n" +
+    "CRITICAL FIREBASE CONFIG ERROR: Invalid or Missing API Key.\n" +
+    "NEXT_PUBLIC_FIREBASE_API_KEY from your .env (or .env.local) file is problematic.\n" +
+    "Observed apiKey value: '", firebaseConfig.apiKey, "'\n" +
+    "Troubleshooting Steps:\n" +
+    "1. Ensure .env (or .env.local) file exists in your project root.\n" +
+    "2. Verify NEXT_PUBLIC_FIREBASE_API_KEY is correctly set to your *actual* Firebase project's Web API Key.\n" +
+    "3. IMPORTANT: You MUST RESTART your Next.js development server after editing the .env file.\n" +
+    "******************************************************************************************"
+  );
+}
+
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
