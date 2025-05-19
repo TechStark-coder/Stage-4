@@ -22,21 +22,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteHome } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { EditHomeDialog } from "./EditHomeDialog"; // Import EditHomeDialog
+import { EditHomeDialog } from "./EditHomeDialog"; 
+import { useLoader } from "@/contexts/LoaderContext";
 
 interface HomeCardProps {
   home: Home;
-  onHomeAction: () => void; // Renamed from onHomeDeleted to onHomeAction, as it's used for update too
+  onHomeAction: () => void; 
 }
 
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   const { toast } = useToast();
+  const { showLoader, hideLoader } = useLoader();
   const [coverImageSrc, setCoverImageSrc] = useState<string | null>(null);
   const [isLoadingImage, setIsLoadingImage] = useState(true);
 
   useEffect(() => {
     setIsLoadingImage(true);
-    // Attempt to load image from local storage
     const storedImage = localStorage.getItem(`homeCover_${home.id}`);
     if (storedImage) {
       setCoverImageSrc(storedImage);
@@ -44,12 +45,12 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
       setCoverImageSrc(null);
     }
     setIsLoadingImage(false);
-  }, [home.id, onHomeAction]); // Re-check image if onHomeAction is called (e.g., after edit)
+  }, [home.id, onHomeAction]); 
 
   const handleDelete = async () => {
+    showLoader();
     try {
       await deleteHome(home.id);
-      // Remove image from local storage
       localStorage.removeItem(`homeCover_${home.id}`);
       toast({
         title: "Home Deleted",
@@ -62,6 +63,8 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
         description: "Could not delete the home. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      hideLoader();
     }
   };
 
@@ -70,7 +73,6 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
       <CardHeader className="pb-2">
         {isLoadingImage ? (
            <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-t-lg animate-pulse">
-             {/* Skeleton or loader for image */}
            </div>
         ) : coverImageSrc ? (
           <div className="relative w-full h-40 mb-4 rounded-t-lg overflow-hidden">

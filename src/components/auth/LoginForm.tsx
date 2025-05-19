@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInWithEmail } from "@/lib/auth";
 import { auth } from "@/config/firebase";
@@ -21,10 +20,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useLoader } from "@/contexts/LoaderContext";
 
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { showLoader, hideLoader } = useLoader();
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -34,13 +35,14 @@ export function LoginForm() {
   });
 
   async function onSubmit(data: LoginFormData) {
+    showLoader();
     try {
       await signInWithEmail(auth, data);
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-      router.push("/dashboard");
+      router.push("/dashboard"); // This will trigger routeChangeStart/Complete for loader
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
@@ -48,6 +50,8 @@ export function LoginForm() {
         description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
+    } finally {
+      hideLoader();
     }
   }
 

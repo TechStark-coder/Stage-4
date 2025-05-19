@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { addRoom } from "@/lib/firestore";
-import { createRoomSchema, type CreateRoomFormData } from "@/schemas/roomSchemas";
-import { DoorOpen, PlusCircle } from "lucide-react";
+import { updateRoom } from "@/lib/firestore";
+import { createRoomSchema, type CreateRoomFormData } from "@/schemas/roomSchemas"; // Re-use schema for name validation
+import type { Room, UpdateRoomData } from "@/types";
+import { Pencil } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -29,32 +30,41 @@ import {
 } from "@/components/ui/form";
 import { useLoader } from "@/contexts/LoaderContext";
 
-interface CreateRoomDialogProps {
+
+interface EditRoomDialogProps {
+  room: Room;
   homeId: string;
-  onRoomCreated: () => void;
+  onRoomUpdated: () => void;
 }
 
-export function CreateRoomDialog({ homeId, onRoomCreated }: CreateRoomDialogProps) {
+export function EditRoomDialog({ room, homeId, onRoomUpdated }: EditRoomDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
-  const form = useForm<CreateRoomFormData>({
+
+  const form = useForm<CreateRoomFormData>({ // Using CreateRoomFormData as it fits for name editing
     resolver: zodResolver(createRoomSchema),
     defaultValues: {
-      name: "",
+      name: room.name,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({ name: room.name });
+    }
+  }, [open, room, form]);
 
   async function onSubmit(data: CreateRoomFormData) {
     showLoader();
     try {
-      await addRoom(homeId, data);
-      toast({ title: "Room Created", description: `Room "${data.name}" has been successfully added.` });
-      form.reset();
-      onRoomCreated();
+      const roomUpdateData: UpdateRoomData = { name: data.name };
+      await updateRoom(homeId, room.id, roomUpdateData);
+      toast({ title: "Room Updated", description: `Room "${data.name}" has been successfully updated.` });
+      onRoomUpdated();
       setOpen(false);
     } catch (error: any) {
-      toast({ title: "Failed to Create Room", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to Update Room", description: error.message, variant: "destructive" });
     } finally {
       hideLoader();
     }
@@ -63,17 +73,15 @@ export function CreateRoomDialog({ homeId, onRoomCreated }: CreateRoomDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Room
+        <Button variant="outline" size="sm">
+          <Pencil className="mr-1 h-3 w-3" /> Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <DoorOpen className="h-5 w-5" /> Add a New Room
-          </DialogTitle>
+          <DialogTitle>Edit Room</DialogTitle>
           <DialogDescription>
-            Enter a name for the new room in this home.
+            Update the name for your room.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -85,7 +93,7 @@ export function CreateRoomDialog({ homeId, onRoomCreated }: CreateRoomDialogProp
                 <FormItem>
                   <FormLabel>Room Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Living Room, Kitchen" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -96,7 +104,7 @@ export function CreateRoomDialog({ homeId, onRoomCreated }: CreateRoomDialogProp
                 Cancel
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Adding..." : "Add Room"}
+                {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>

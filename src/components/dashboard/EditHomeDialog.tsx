@@ -30,13 +30,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Image from "next/image";
+import { useLoader } from "@/contexts/LoaderContext";
 
 interface EditHomeDialogProps {
   home: Home;
   onHomeUpdated: () => void;
 }
 
-// Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -50,22 +50,26 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
+  const { showLoader, hideLoader } = useLoader();
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: home.name,
-      coverImage: undefined, // FileList cannot be pre-filled, user must re-select
+      coverImage: undefined, 
+      // ownerDisplayName is not part of HomeFormData by default, 
+      // but homeFormSchema was updated to include it optionally.
+      // For editing, we usually don't re-edit ownerDisplayName here, but if needed,
+      // it could be added. For now, assuming it's not edited here.
     },
   });
 
   useEffect(() => {
-    // Load existing image from local storage for preview if no new image is selected
     const existingImage = localStorage.getItem(`homeCover_${home.id}`);
     if (existingImage) {
       setImagePreview(existingImage);
     }
-  }, [home.id, open]); // Re-check when dialog opens
+  }, [home.id, open]); 
 
   const coverImageWatch = form.watch("coverImage");
 
@@ -77,23 +81,20 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    } else if (!form.formState.isDirty && open) { // If form hasn't been touched and dialog is open, try to load existing
+    } else if (!form.formState.isDirty && open) { 
       const existingImage = localStorage.getItem(`homeCover_${home.id}`);
       if (existingImage) setImagePreview(existingImage);
       else setImagePreview(null);
-    } else if (!coverImageWatch || coverImageWatch.length === 0) {
-       // If file is cleared, clear preview unless it's the initial load
-       //setImagePreview(null); // This might clear preview too aggressively.
-    }
+    } 
   }, [coverImageWatch, home.id, open, form.formState.isDirty]);
 
 
   async function onSubmit(data: HomeFormData) {
+    showLoader();
     try {
       const homeUpdateData: UpdateHomeData = { name: data.name };
       await updateHome(home.id, homeUpdateData);
 
-      // Handle local storage for cover image
       if (data.coverImage && data.coverImage.length > 0) {
         const imageFile = data.coverImage[0];
         try {
@@ -104,22 +105,30 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
           toast({ title: "Image Warning", description: "Home updated, but new cover image could not be saved locally.", variant: "default" });
         }
       }
-      // No 'else if' needed here, if they don't upload a new file, the existing localStorage item (or lack thereof) remains.
-
+      
       toast({ title: "Home Updated", description: `Home "${data.name}" has been successfully updated.` });
-      form.reset({ name: data.name, coverImage: undefined }); // Reset FileList
+      form.reset({ name: data.name, coverImage: undefined });
       onHomeUpdated();
       setOpen(false);
     } catch (error: any) {
       toast({ title: "Failed to Update Home", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+    } finally {
+      hideLoader();
     }
   }
 
   const handleRemoveCoverImage = () => {
-    localStorage.removeItem(`homeCover_${home.id}`);
-    setImagePreview(null);
-    form.setValue("coverImage", undefined); // Clear file input in form
-    toast({ title: "Cover Image Removed", description: "The cover image has been removed from local storage." });
+    showLoader();
+    try {
+      localStorage.removeItem(`homeCover_${home.id}`);
+      setImagePreview(null);
+      form.setValue("coverImage", undefined); 
+      toast({ title: "Cover Image Removed", description: "The cover image has been removed from local storage." });
+    } catch (error) {
+      toast({ title: "Error", description: "Could not remove cover image.", variant: "destructive"});
+    } finally {
+      hideLoader();
+    }
   };
 
 
@@ -129,9 +138,8 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
       if (!isOpen) {
         form.reset({ name: home.name, coverImage: undefined });
         const existingImage = localStorage.getItem(`homeCover_${home.id}`);
-        setImagePreview(existingImage || null); // Reset preview on close
+        setImagePreview(existingImage || null); 
       } else {
-        // When opening, ensure form is set to current home name
         form.reset({ name: home.name, coverImage: undefined });
       }
     }}>

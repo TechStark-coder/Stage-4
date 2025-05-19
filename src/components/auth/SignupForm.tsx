@@ -21,10 +21,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useLoader } from "@/contexts/LoaderContext";
 
 export function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { showLoader, hideLoader } = useLoader();
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -36,14 +38,13 @@ export function SignupForm() {
   });
 
   async function onSubmit(data: SignupFormData) {
+    showLoader();
     try {
       const user = await signUpWithEmail(auth, data); 
       
-      // Create a user document in Firestore
-      // Use user.displayName which should be set by signUpWithEmail via updateProfile
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid, 
-        displayName: user.displayName || data.displayName, // Fallback to form data if auth profile update is slow
+        displayName: user.displayName || data.displayName,
         email: user.email,
         createdAt: serverTimestamp(),
       });
@@ -51,7 +52,7 @@ export function SignupForm() {
         title: "Signup Successful",
         description: "Your account has been created.",
       });
-      router.push("/dashboard");
+      router.push("/dashboard"); 
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -59,6 +60,8 @@ export function SignupForm() {
         description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
+    } finally {
+      hideLoader();
     }
   }
 

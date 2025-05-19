@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Room } from "@/types";
-import { ArrowRight, CalendarDays, DoorOpen, Trash2, Loader2 } from "lucide-react"; // Changed Wand2 to Loader2
+import { ArrowRight, CalendarDays, DoorOpen, Trash2, Loader2 } from "lucide-react"; 
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -20,17 +20,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteRoom } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { EditRoomDialog } from "./EditRoomDialog"; // Import EditRoomDialog
+import { useLoader } from "@/contexts/LoaderContext";
 
 interface RoomCardProps {
   room: Room;
   homeId: string;
   onRoomDeleted: () => void;
+  onRoomUpdated: () => void; // Add callback for updates
 }
 
-export function RoomCard({ room, homeId, onRoomDeleted }: RoomCardProps) {
+export function RoomCard({ room, homeId, onRoomDeleted, onRoomUpdated }: RoomCardProps) {
   const { toast } = useToast();
+  const { showLoader, hideLoader } = useLoader();
 
   const handleDelete = async () => {
+    showLoader();
     try {
       await deleteRoom(homeId, room.id);
       toast({
@@ -44,6 +49,8 @@ export function RoomCard({ room, homeId, onRoomDeleted }: RoomCardProps) {
         description: "Could not delete the room. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      hideLoader();
     }
   };
   
@@ -77,28 +84,31 @@ export function RoomCard({ room, homeId, onRoomDeleted }: RoomCardProps) {
         )}
       </CardContent>
       <CardFooter className="flex justify-between items-center">
-         <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive-outline" size="sm" className="text-destructive hover:bg-destructive/10 border-destructive/50 hover:border-destructive">
-              <Trash2 className="h-4 w-4 mr-1" /> Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the room
-                "{room.name}" and all its associated data.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                Yes, delete room
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex gap-2">
+          <EditRoomDialog room={room} homeId={homeId} onRoomUpdated={onRoomUpdated} />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive-outline" size="sm" className="text-destructive hover:bg-destructive/10 border-destructive/50 hover:border-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the room
+                  "{room.name}" and all its associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                  Yes, delete room
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
         <Button asChild variant="default" size="sm">
           <Link href={`/homes/${homeId}/rooms/${room.id}`}>
             Manage Room <ArrowRight className="ml-2 h-4 w-4" />

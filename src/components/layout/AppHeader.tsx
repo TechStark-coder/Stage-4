@@ -9,23 +9,29 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Aperture, LogOut } from "lucide-react";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useLoader } from "@/contexts/LoaderContext";
 
 export function AppHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuthContext();
+  const { showLoader, hideLoader } = useLoader();
 
   const handleLogout = async () => {
+    showLoader();
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      router.push("/login");
+      router.push("/login"); 
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message, variant: "destructive" });
+    } finally {
+      // hideLoader will be called by AppRouterEvents on successful navigation
+      // but call it here too for cases where navigation might not happen (e.g. error before push)
+      hideLoader(); 
     }
   };
 
-  // Prioritize displayName, then email prefix, then "User"
   const userName = user?.displayName || (user?.email ? user.email.split('@')[0] : "User");
 
   return (

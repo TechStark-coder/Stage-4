@@ -1,8 +1,10 @@
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google"; // Using Geist as it's already set up
+import { Geist, Geist_Mono } from "next/font/google"; 
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { GlobalLoader } from "@/components/layout/GlobalLoader"; // Import GlobalLoader
+import { AppRouterEvents } from "@/components/layout/AppRouterEvents"; // Import AppRouterEvents
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <AppRouterEvents /> {/* Component to handle router events for loader */}
+          <GlobalLoader /> {/* Render the loader globally */}
+          {children}
+        </Providers>
       </body>
     </html>
   );

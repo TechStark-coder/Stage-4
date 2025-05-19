@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addHome } from "@/lib/firestore";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { homeFormSchema, type HomeFormData } from "@/schemas/homeSchemas";
-import { HousePlus, PlusCircle, UserCircle } from "lucide-react"; // Added UserCircle
+import { HousePlus, PlusCircle } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -31,8 +31,9 @@ import {
 } from "@/components/ui/form";
 import Image from "next/image";
 import type { CreateHomeData } from "@/types";
-import { updateProfile } from "firebase/auth"; // Import updateProfile
-import { auth } from "@/config/firebase"; // Import auth
+import { updateProfile } from "firebase/auth";
+import { auth } from "@/config/firebase";
+import { useLoader } from "@/contexts/LoaderContext";
 
 interface CreateHomeDialogProps {
   onHomeCreated: () => void;
@@ -52,19 +53,19 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { user } = useAuthContext();
   const { toast } = useToast();
+  const { showLoader, hideLoader } = useLoader();
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: "",
-      ownerDisplayName:  "", // Initial default
+      ownerDisplayName:  "", 
       coverImage: undefined,
     },
   });
 
   useEffect(() => {
     if (open && user) {
-      // Pre-fill ownerDisplayName when dialog opens if user is available
       form.setValue("ownerDisplayName", user.displayName || "");
     }
   }, [open, user, form]);
@@ -89,11 +90,11 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       toast({ title: "Error", description: "You must be logged in to create a home.", variant: "destructive" });
       return;
     }
+    showLoader();
     try {
-      // Update user's display name in Firebase Auth if provided and different
       if (data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
         try {
-          await updateProfile(user, { displayName: data.ownerDisplayName });
+          await updateProfile(auth.currentUser!, { displayName: data.ownerDisplayName }); // Ensure auth.currentUser is not null
           toast({ title: "Profile Updated", description: "Your display name has been updated." });
         } catch (profileError: any) {
           console.error("Failed to update profile name:", profileError);
@@ -116,13 +117,15 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       }
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", coverImage: undefined }); // Reset with current/new display name
+      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", coverImage: undefined });
       setImagePreview(null);
       onHomeCreated();
       setOpen(false);
     } catch (error: any) {
       console.error("Failed to create home:", error);
       toast({ title: "Failed to Create Home", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+    } finally {
+      hideLoader();
     }
   }
 
@@ -132,7 +135,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       if (!isOpen) {
         form.reset({ name: "", ownerDisplayName: user?.displayName || "", coverImage: undefined });
         setImagePreview(null);
-      } else if (user) { // When opening, ensure ownerDisplayName is pre-filled
+      } else if (user) { 
         form.setValue("ownerDisplayName", user.displayName || "");
       }
     }}>
