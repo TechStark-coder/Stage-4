@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addHome } from "@/lib/firestore";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { homeFormSchema, type HomeFormData } from "@/schemas/homeSchemas";
-import { HousePlus, PlusCircle } from "lucide-react";
+import { HousePlus, PlusCircle, UserCircle } from "lucide-react"; // Added UserCircle
 import {
   Form,
   FormControl,
@@ -31,12 +31,13 @@ import {
 } from "@/components/ui/form";
 import Image from "next/image";
 import type { CreateHomeData } from "@/types";
+import { updateProfile } from "firebase/auth"; // Import updateProfile
+import { auth } from "@/config/firebase"; // Import auth
 
 interface CreateHomeDialogProps {
   onHomeCreated: () => void;
 }
 
-// Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -56,9 +57,17 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: "",
+      ownerDisplayName:  "", // Initial default
       coverImage: undefined,
     },
   });
+
+  useEffect(() => {
+    if (open && user) {
+      // Pre-fill ownerDisplayName when dialog opens if user is available
+      form.setValue("ownerDisplayName", user.displayName || "");
+    }
+  }, [open, user, form]);
 
   const coverImageWatch = form.watch("coverImage");
 
@@ -81,24 +90,33 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       return;
     }
     try {
-      // Only name is passed to addHome for Firestore
+      // Update user's display name in Firebase Auth if provided and different
+      if (data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
+        try {
+          await updateProfile(user, { displayName: data.ownerDisplayName });
+          toast({ title: "Profile Updated", description: "Your display name has been updated." });
+        } catch (profileError: any) {
+          console.error("Failed to update profile name:", profileError);
+          toast({ title: "Profile Update Failed", description: "Could not update your display name. Home creation will proceed.", variant: "default" });
+        }
+      }
+
       const homeDataToSubmit: CreateHomeData = { name: data.name };
       const newHomeId = await addHome(user.uid, homeDataToSubmit);
 
-      // Handle local storage for cover image
       if (data.coverImage && data.coverImage.length > 0) {
         const imageFile = data.coverImage[0];
         try {
           const base64Image = await fileToBase64(imageFile);
           localStorage.setItem(`homeCover_${newHomeId}`, base64Image);
         } catch (error) {
-          console.error("Failed to convert image to base64 or save to local storage:", error);
+          console.error("Failed to convert image or save to local storage:", error);
           toast({ title: "Image Warning", description: "Home created, but cover image could not be saved locally.", variant: "default" });
         }
       }
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ name: "", coverImage: undefined });
+      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", coverImage: undefined }); // Reset with current/new display name
       setImagePreview(null);
       onHomeCreated();
       setOpen(false);
@@ -112,8 +130,10 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (!isOpen) {
-        form.reset({ name: "", coverImage: undefined });
+        form.reset({ name: "", ownerDisplayName: user?.displayName || "", coverImage: undefined });
         setImagePreview(null);
+      } else if (user) { // When opening, ensure ownerDisplayName is pre-filled
+        form.setValue("ownerDisplayName", user.displayName || "");
       }
     }}>
       <DialogTrigger asChild>
@@ -127,7 +147,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <HousePlus className="h-5 w-5" /> Create a New Home
           </DialogTitle>
           <DialogDescription>
-            Enter a name and optionally upload a cover image for your new home. The image will be stored in your browser.
+            Enter details for your new home. The cover image will be stored in your browser.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -140,6 +160,19 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
                   <FormLabel>Home Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., My Summer House" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ownerDisplayName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Your Name (for welcome message)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Asif Khan" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,7 +207,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
-                form.reset({ name: "", coverImage: undefined });
+                form.reset({ name: "", ownerDisplayName: user?.displayName || "", coverImage: undefined });
                 setImagePreview(null);
               }}>
                 Cancel

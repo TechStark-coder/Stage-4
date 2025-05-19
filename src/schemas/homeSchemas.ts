@@ -4,8 +4,9 @@ import { z } from "zod";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-export const homeFormSchema = z.object({ // Renamed for clarity, can be used for create and edit
+export const homeFormSchema = z.object({
   name: z.string().min(1, { message: "Home name is required" }).max(50, { message: "Home name must be 50 characters or less" }),
+  ownerDisplayName: z.string().min(1, { message: "Your name is required" }).max(50, { message: "Name must be 50 characters or less" }).optional(),
   coverImage: z
     .custom<FileList>()
     .refine((files) => files === null || files === undefined || files.length === 0 || (files.length === 1 && files[0].size <= MAX_FILE_SIZE), {
@@ -19,3 +20,4 @@ export const homeFormSchema = z.object({ // Renamed for clarity, can be used for
     .optional(),
 });
 export type HomeFormData = z.infer<typeof homeFormSchema>;
+
