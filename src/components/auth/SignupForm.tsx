@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// FormLabel is part of FormField, direct Label import might not be needed if only used within Form
 import { useToast } from "@/hooks/use-toast";
 import { signUpWithEmail } from "@/lib/auth";
 import { auth, db } from "@/config/firebase";
@@ -39,12 +38,12 @@ export function SignupForm() {
   async function onSubmit(data: SignupFormData) {
     try {
       const user = await signUpWithEmail(auth, data); 
-      // The user object returned by signUpWithEmail should now have displayName if updateProfile was successful
       
-      // Create a user document in Firestore with the displayName
+      // Create a user document in Firestore
+      // Use user.displayName which should be set by signUpWithEmail via updateProfile
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid, 
-        displayName: user.displayName, // Use displayName from the auth user object
+        displayName: user.displayName || data.displayName, // Fallback to form data if auth profile update is slow
         email: user.email,
         createdAt: serverTimestamp(),
       });

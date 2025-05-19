@@ -13,40 +13,33 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
+  setDoc, // Ensure setDoc is imported
 } from "firebase/firestore";
-import { db, storage } from "@/config/firebase"; // Import storage
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import type { Home, Room, CreateHomeData, CreateRoomData } from "@/types";
+import { db } from "@/config/firebase"; // Removed storage import as it's not used here for home covers
+import type { Home, Room, CreateHomeData, CreateRoomData, UpdateHomeData, UpdateRoomData } from "@/types";
 
 // Homes
 export async function addHome(userId: string, data: CreateHomeData): Promise<string> {
   const homesCollectionRef = collection(db, "homes");
-  let coverImageUrl: string | undefined = undefined;
+  const newHomeRef = doc(homesCollectionRef); // Generate ID upfront
 
-  const newHomeRef = doc(homesCollectionRef); // Generate ID upfront for storage path
-
-  if (data.coverImage && data.coverImage instanceof File) {
-    const imageFile = data.coverImage;
-    const storageRef = ref(
-      storage,
-      `homeCovers/${userId}/${newHomeRef.id}/${imageFile.name}`
-    );
-    await uploadBytes(storageRef, imageFile);
-    coverImageUrl = await getDownloadURL(storageRef);
-  }
-
-  await setDoc(newHomeRef, { // Use setDoc with the generated ref
+  // No cover image upload to Firebase Storage here
+  await setDoc(newHomeRef, {
     name: data.name,
     ownerId: userId,
     createdAt: serverTimestamp(),
-    ...(coverImageUrl && { coverImageUrl }), // Conditionally add coverImageUrl
   });
   return newHomeRef.id;
+}
+
+export async function updateHome(homeId: string, data: UpdateHomeData): Promise<void> {
+  const homeDocRef = doc(db, "homes", homeId);
+  const updateData: Partial<Home> = {};
+  if (data.name) {
+    updateData.name = data.name;
+  }
+  // No cover image handling for Firebase Storage here
+  await updateDoc(homeDocRef, updateData);
 }
 
 export async function getHomes(userId: string): Promise<Home[]> {
@@ -70,32 +63,18 @@ export async function getHome(homeId: string): Promise<Home | null> {
 
 export async function deleteHome(homeId: string): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
-  const homeDoc = await getDoc(homeDocRef);
-
-  if (homeDoc.exists()) {
-    const homeData = homeDoc.data() as Home;
-    // Delete cover image from storage if it exists
-    if (homeData.coverImageUrl) {
-      try {
-        const imageRef = ref(storage, homeData.coverImageUrl);
-        await deleteObject(imageRef);
-      } catch (error) {
-        console.error("Error deleting cover image from storage:", error);
-        // Optionally, decide if you want to proceed with deleting Firestore doc even if image deletion fails
-      }
-    }
-  }
+  // No cover image deletion from Firebase Storage here
 
   // Delete rooms subcollection
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
-  
+
   const batch = writeBatch(db);
   roomsSnapshot.docs.forEach(roomDoc => {
     batch.delete(roomDoc.ref);
   });
   await batch.commit();
-  
+
   // Delete the home document
   await deleteDoc(homeDocRef);
 }
@@ -113,6 +92,12 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
   });
   return docRef.id;
 }
+
+export async function updateRoom(homeId: string, roomId: string, data: UpdateRoomData): Promise<void> {
+  const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
+  await updateDoc(roomDocRef, data);
+}
+
 
 export async function getRooms(homeId: string): Promise<Room[]> {
   const roomsCollectionRef = collection(db, "homes", homeId, "rooms");
@@ -150,7 +135,7 @@ export async function clearRoomObjectNames(homeId: string, roomId: string): Prom
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
   await updateDoc(roomDocRef, {
     objectNames: null,
-    isAnalyzing: false, 
+    isAnalyzing: false,
     lastAnalyzedAt: null,
   });
 }
@@ -167,5 +152,3 @@ export async function setRoomAnalyzingStatus(
 export async function deleteRoom(homeId: string, roomId: string): Promise<void> {
   await deleteDoc(doc(db, `homes/${homeId}/rooms`, roomId));
 }
-// Need to import setDoc
-import { setDoc } from "firebase/firestore";

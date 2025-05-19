@@ -17,10 +17,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { addHome } from "@/lib/firestore";
-import { useAuthContext } from "@/hooks/useAuthContext";
+import { updateHome } from "@/lib/firestore";
 import { homeFormSchema, type HomeFormData } from "@/schemas/homeSchemas";
-import { HousePlus, PlusCircle } from "lucide-react";
+import { Pencil } from "lucide-react";
+import type { Home, UpdateHomeData } from "@/types";
 import {
   Form,
   FormControl,
@@ -30,10 +30,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Image from "next/image";
-import type { CreateHomeData } from "@/types";
 
-interface CreateHomeDialogProps {
-  onHomeCreated: () => void;
+interface EditHomeDialogProps {
+  home: Home;
+  onHomeUpdated: () => void;
 }
 
 // Helper to convert file to base64
@@ -46,19 +46,26 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
+export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const { user } = useAuthContext();
   const { toast } = useToast();
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
-      name: "",
-      coverImage: undefined,
+      name: home.name,
+      coverImage: undefined, // FileList cannot be pre-filled, user must re-select
     },
   });
+
+  useEffect(() => {
+    // Load existing image from local storage for preview if no new image is selected
+    const existingImage = localStorage.getItem(`homeCover_${home.id}`);
+    if (existingImage) {
+      setImagePreview(existingImage);
+    }
+  }, [home.id, open]); // Re-check when dialog opens
 
   const coverImageWatch = form.watch("coverImage");
 
@@ -70,64 +77,74 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    } else {
-      setImagePreview(null);
+    } else if (!form.formState.isDirty && open) { // If form hasn't been touched and dialog is open, try to load existing
+      const existingImage = localStorage.getItem(`homeCover_${home.id}`);
+      if (existingImage) setImagePreview(existingImage);
+      else setImagePreview(null);
+    } else if (!coverImageWatch || coverImageWatch.length === 0) {
+       // If file is cleared, clear preview unless it's the initial load
+       //setImagePreview(null); // This might clear preview too aggressively.
     }
-  }, [coverImageWatch]);
+  }, [coverImageWatch, home.id, open, form.formState.isDirty]);
+
 
   async function onSubmit(data: HomeFormData) {
-    if (!user) {
-      toast({ title: "Error", description: "You must be logged in to create a home.", variant: "destructive" });
-      return;
-    }
     try {
-      // Only name is passed to addHome for Firestore
-      const homeDataToSubmit: CreateHomeData = { name: data.name };
-      const newHomeId = await addHome(user.uid, homeDataToSubmit);
+      const homeUpdateData: UpdateHomeData = { name: data.name };
+      await updateHome(home.id, homeUpdateData);
 
       // Handle local storage for cover image
       if (data.coverImage && data.coverImage.length > 0) {
         const imageFile = data.coverImage[0];
         try {
           const base64Image = await fileToBase64(imageFile);
-          localStorage.setItem(`homeCover_${newHomeId}`, base64Image);
+          localStorage.setItem(`homeCover_${home.id}`, base64Image);
         } catch (error) {
           console.error("Failed to convert image to base64 or save to local storage:", error);
-          toast({ title: "Image Warning", description: "Home created, but cover image could not be saved locally.", variant: "default" });
+          toast({ title: "Image Warning", description: "Home updated, but new cover image could not be saved locally.", variant: "default" });
         }
       }
+      // No 'else if' needed here, if they don't upload a new file, the existing localStorage item (or lack thereof) remains.
 
-      toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ name: "", coverImage: undefined });
-      setImagePreview(null);
-      onHomeCreated();
+      toast({ title: "Home Updated", description: `Home "${data.name}" has been successfully updated.` });
+      form.reset({ name: data.name, coverImage: undefined }); // Reset FileList
+      onHomeUpdated();
       setOpen(false);
     } catch (error: any) {
-      console.error("Failed to create home:", error);
-      toast({ title: "Failed to Create Home", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+      toast({ title: "Failed to Update Home", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   }
+
+  const handleRemoveCoverImage = () => {
+    localStorage.removeItem(`homeCover_${home.id}`);
+    setImagePreview(null);
+    form.setValue("coverImage", undefined); // Clear file input in form
+    toast({ title: "Cover Image Removed", description: "The cover image has been removed from local storage." });
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (!isOpen) {
-        form.reset({ name: "", coverImage: undefined });
-        setImagePreview(null);
+        form.reset({ name: home.name, coverImage: undefined });
+        const existingImage = localStorage.getItem(`homeCover_${home.id}`);
+        setImagePreview(existingImage || null); // Reset preview on close
+      } else {
+        // When opening, ensure form is set to current home name
+        form.reset({ name: home.name, coverImage: undefined });
       }
     }}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Create New Home
+        <Button variant="outline" size="sm">
+          <Pencil className="mr-1 h-3 w-3" /> Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <HousePlus className="h-5 w-5" /> Create a New Home
-          </DialogTitle>
+          <DialogTitle>Edit Home</DialogTitle>
           <DialogDescription>
-            Enter a name and optionally upload a cover image for your new home. The image will be stored in your browser.
+            Update the name or cover image for your home. Cover image is stored in your browser.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -139,7 +156,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
                 <FormItem>
                   <FormLabel>Home Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., My Summer House" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -150,7 +167,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
               name="coverImage"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cover Image (Optional, stored in browser)</FormLabel>
+                  <FormLabel>New Cover Image (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
@@ -165,22 +182,26 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             />
             {imagePreview && (
               <div className="mt-2 space-y-2">
-                <Label>Image Preview:</Label>
-                <div className="relative w-full h-40 rounded-md overflow-hidden border">
+                <Label>Current Cover Image Preview:</Label>
+                 <div className="relative w-full h-40 rounded-md overflow-hidden border">
                   <Image src={imagePreview} alt="Cover image preview" layout="fill" objectFit="cover" data-ai-hint="home preview"/>
                 </div>
+                <Button type="button" variant="outline" size="sm" onClick={handleRemoveCoverImage} className="w-full">
+                  Remove Cover Image
+                </Button>
               </div>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
-                form.reset({ name: "", coverImage: undefined });
-                setImagePreview(null);
+                form.reset({ name: home.name, coverImage: undefined });
+                 const existingImage = localStorage.getItem(`homeCover_${home.id}`);
+                setImagePreview(existingImage || null);
               }}>
                 Cancel
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating..." : "Create Home"}
+                {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>

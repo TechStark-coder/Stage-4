@@ -4,7 +4,7 @@ import { z } from "zod";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-export const createHomeSchema = z.object({
+export const homeFormSchema = z.object({ // Renamed for clarity, can be used for create and edit
   name: z.string().min(1, { message: "Home name is required" }).max(50, { message: "Home name must be 50 characters or less" }),
   coverImage: z
     .custom<FileList>()
@@ -18,4 +18,4 @@ export const createHomeSchema = z.object({
     .nullable()
     .optional(),
 });
-export type CreateHomeFormData = z.infer<typeof createHomeSchema>;
+export type HomeFormData = z.infer<typeof homeFormSchema>;

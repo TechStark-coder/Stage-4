@@ -16,7 +16,8 @@ export default function DashboardPage() {
   const [homes, setHomes] = useState<Home[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchHomes = async () => {
+  // Renamed from fetchHomes to handleHomesUpdated for clarity
+  const handleHomesUpdated = async () => {
     if (user) {
       setLoading(true);
       try {
@@ -32,7 +33,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchHomes();
+    handleHomesUpdated();
   }, [user]);
 
   if (loading) {
@@ -58,7 +59,7 @@ export default function DashboardPage() {
           <HomeIcon className="h-8 w-8 text-primary" />
           My Homes
         </h1>
-        <CreateHomeDialog onHomeCreated={fetchHomes} />
+        <CreateHomeDialog onHomeCreated={handleHomesUpdated} />
       </div>
 
       {homes.length === 0 ? (
@@ -75,12 +76,12 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mb-6">
             Get started by creating your first home.
           </p>
-          <CreateHomeDialog onHomeCreated={fetchHomes} />
+          <CreateHomeDialog onHomeCreated={handleHomesUpdated} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {homes.map((home) => (
-            <HomeCard key={home.id} home={home} onHomeDeleted={fetchHomes} />
+            <HomeCard key={home.id} home={home} onHomeAction={handleHomesUpdated} />
           ))}
         </div>
       )}

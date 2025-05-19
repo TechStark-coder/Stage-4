@@ -9,26 +9,36 @@ export interface Home extends FirebaseDocument {
   name: string;
   ownerId: string;
   createdAt: Timestamp;
-  coverImageUrl?: string; // Added for home cover image
+  // coverImageUrl?: string; // Removed: No longer storing Firebase Storage URL
 }
 
 export interface CreateHomeData {
   name: string;
-  coverImage?: File | null; // For handling file upload in form
-  coverImageUrl?: string; // For storing URL in Firestore
+  // coverImage?: File | null; // This is part of form data, not direct Firestore data
+  // coverImageUrl?: string; // Removed
 }
+
+export interface UpdateHomeData {
+  name?: string;
+  // coverImage?: File | null; // For form handling
+}
+
 
 export interface Room extends FirebaseDocument {
   name: string;
-  homeId?: string; // May not be needed if always fetched via subcollection path
+  homeId?: string;
   createdAt: Timestamp;
-  objectNames: string[] | null; 
+  objectNames: string[] | null;
   isAnalyzing?: boolean;
-  lastAnalyzedAt?: Timestamp | null; 
+  lastAnalyzedAt?: Timestamp | null;
 }
 
 export interface CreateRoomData {
-  name: string;
+  name:string;
+}
+
+export interface UpdateRoomData {
+  name?: string;
 }
 
 export interface PhotoUploadData {
