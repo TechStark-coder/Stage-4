@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addHome } from "@/lib/firestore";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { createHomeSchema, type CreateHomeFormData } from "@/schemas/homeSchemas";
-import { HomePlus, PlusCircle } from "lucide-react";
+import { HousePlus, PlusCircle } from "lucide-react"; // Changed HomePlus to HousePlus
 import {
   Form,
   FormControl,
@@ -70,7 +70,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <HomePlus className="h-5 w-5" /> Create a New Home
+            <HousePlus className="h-5 w-5" /> Create a New Home 
           </DialogTitle>
           <DialogDescription>
             Enter a name for your new home. You can add rooms to it later.
