@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Room } from "@/types";
-import { Eye, ListTree, Sparkles, Download, Trash2, Loader2 } from "lucide-react"; 
+import { Eye, ListTree, Sparkles, Download, Trash2 } from "lucide-react"; 
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ObjectAnalysisCardProps {
   room: Room | null;
-  onClearResults: () => Promise<void>; // This already returns a Promise
+  onClearResults: () => Promise<void>; 
   homeName?: string;
 }
 
@@ -103,8 +103,10 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
       <CardContent>
         {room.isAnalyzing ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="font-semibold text-lg text-foreground">AI is analyzing the room...</p>
+            <div className="spinner">
+              <div className="spinner1"></div>
+            </div>
+            <p className="font-semibold text-lg text-foreground mt-4">AI is analyzing the room...</p>
             <p className="text-sm text-muted-foreground">This may take a few moments. Results will appear here.</p>
           </div>
         ) : room.objectNames && room.objectNames.length > 0 ? (
