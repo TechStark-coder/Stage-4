@@ -25,7 +25,8 @@ export function AppHeader() {
     }
   };
 
-  const userName = user?.displayName || user?.email?.split('@')[0] || "User";
+  // Prioritize displayName, then email prefix, then "User"
+  const userName = user?.displayName || (user?.email ? user.email.split('@')[0] : "User");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">

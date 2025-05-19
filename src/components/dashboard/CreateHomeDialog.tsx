@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // Added import
+import { Label } from "@/components/ui/label"; // Ensure Label is imported
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     resolver: zodResolver(createHomeSchema),
     defaultValues: {
       name: "",
-      coverImage: undefined, // Changed to undefined for clearer optional handling
+      coverImage: undefined, 
     },
   });
 
@@ -136,7 +136,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
                     <Input 
                       type="file" 
                       accept="image/jpeg,image/png,image/webp" 
-                      onChange={(e) => field.onChange(e.target.files)} // Use field.onChange
+                      onChange={(e) => field.onChange(e.target.files)} 
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>
@@ -148,7 +148,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
               <div className="mt-2 space-y-2">
                 <Label>Image Preview:</Label>
                 <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                  <Image src={imagePreview} alt="Cover image preview" layout="fill" objectFit="cover" />
+                  <Image src={imagePreview} alt="Cover image preview" layout="fill" objectFit="cover" data-ai-hint="home preview"/>
                 </div>
               </div>
             )}
@@ -170,4 +170,3 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     </Dialog>
   );
 }
-
