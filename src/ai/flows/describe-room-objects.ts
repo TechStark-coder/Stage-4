@@ -41,6 +41,9 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert visual inspector AI specializing in meticulously identifying and listing every single object visible in images of rooms.
 Your task is to analyze the provided images of a room with extreme attention to detail.
 You must identify and list the name of *every single distinct item* visible in the photos. This includes small items, decorative objects, items in the background, items partially obscured, etc. Be exhaustive, highly accurate, and comprehensive.
+
+IMPORTANT: If you identify a collection of similar items that are individually recognizable (e.g., a shelf of 'Funko Pop figures', 'action figures', 'books', 'comic books', 'video games', 'trading cards'), make your best effort to list each one by its specific name, character, or title if it's legible or visually identifiable. For example, instead of just listing 'Funko Pop figures' multiple times or as a group, try to identify them as 'Spider-Man Funko Pop figure', 'Batman Funko Pop figure', 'Wonder Woman Funko Pop figure'. Similarly, for books, if titles are visible, list them individually like 'The Great Gatsby book', 'Moby Dick book'.
+
 Your output must be a list of object names only. Do not provide descriptions, counts, or any other information beyond the names of the identified items.
 
 {{#each photoDataUris}}
