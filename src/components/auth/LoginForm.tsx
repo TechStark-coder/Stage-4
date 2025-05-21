@@ -42,17 +42,32 @@ export function LoginForm() {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      router.push("/dashboard"); // This will trigger routeChangeStart/Complete for loader
+      // No hideLoader() here, let AppRouterEvents on new page handle it
+      router.push("/dashboard"); 
     } catch (error: any) {
       console.error("Login error:", error);
-      toast({
-        title: "Login Failed",
-        description: error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      hideLoader();
+      // Firebase error codes for invalid credentials
+      const invalidCredentialCodes = [
+        "auth/invalid-credential",
+        "auth/user-not-found", 
+        "auth/wrong-password" 
+      ];
+      if (invalidCredentialCodes.includes(error.code)) {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: error.message || "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
+      hideLoader(); // Hide loader only if login fails and we don't navigate
     }
+    // Removed finally block that called hideLoader to let AppRouterEvents handle it on success
   }
 
   return (

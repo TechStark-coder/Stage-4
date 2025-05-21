@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLoader } from "@/contexts/LoaderContext";
 
@@ -9,25 +9,36 @@ export function AppRouterEvents() {
   const { showLoader, hideLoader } = useLoader();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Show loader on route change start
-    // Next.js App Router doesn't have a direct 'routeChangeStart' like pages router.
-    // We use pathname and searchParams changes to approximate this.
-    // This might show loader briefly even if page is cached.
-    showLoader(); 
-    
-    // Hide loader on route change complete
-    // The actual hiding will happen once the new page content has triggered its own hideLoader or completed loading.
-    // This effect will re-run, and if it's a quick transition, hideLoader might be called quickly.
-    // For longer loads, components themselves should manage hideLoader.
-    const timeoutId = setTimeout(hideLoader, 300); // Small delay to allow page content to load
+    // Show loader when the path/params change, indicating a new page render is starting
+    showLoader();
 
+    // Clear any existing timeout from a previous render/navigation
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+    }
+
+    // Set a new timeout to hide the loader after a short delay
+    // This allows content to start rendering before the loader disappears.
+    timeoutIdRef.current = setTimeout(() => {
+      hideLoader();
+    }, 500); // Adjusted delay to 500ms, can be tweaked
+
+    // Cleanup function: will be called when the component unmounts
+    // or before the effect runs again due to dependency changes.
     return () => {
-      clearTimeout(timeoutId);
-      hideLoader(); // Ensure loader is hidden if component unmounts before timeout
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
+      // It's generally safer to also hide the loader on unmount,
+      // in case the timeout didn't get to run (e.g., very fast navigation away)
+      // However, ensure this doesn't cause issues if new page's loader shows immediately.
+      // For now, let's ensure the timeout is the primary mechanism for hiding.
+      // If loaders get stuck, this hideLoader() call on unmount might be necessary.
     };
-  }, [pathname, searchParams, showLoader, hideLoader]);
+  }, [pathname, searchParams, showLoader, hideLoader]); // Effect dependencies
 
   return null; // This component doesn't render anything itself
 }

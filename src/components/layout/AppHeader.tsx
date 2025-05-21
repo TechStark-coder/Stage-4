@@ -15,22 +15,20 @@ export function AppHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuthContext();
-  const { showLoader, hideLoader } = useLoader();
+  const { showLoader, hideLoader } = useLoader(); // hideLoader might not be needed here anymore
 
   const handleLogout = async () => {
-    showLoader();
+    showLoader(); // Show loader before starting async operation and navigation
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      // router.push will trigger AppRouterEvents on the new page, which will handle hiding the loader.
       router.push("/login"); 
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message, variant: "destructive" });
-    } finally {
-      // hideLoader will be called by AppRouterEvents on successful navigation
-      // but call it here too for cases where navigation might not happen (e.g. error before push)
-      // Forcing hideLoader to ensure it's always called if the navigation doesn't happen fast enough
-      setTimeout(hideLoader, 0);
+      hideLoader(); // Hide loader only if logout fails and we don't navigate
     }
+    // Removed finally block that called hideLoader immediately
   };
 
   const userName = user?.displayName || (user?.email ? user.email.split('@')[0] : "User");
