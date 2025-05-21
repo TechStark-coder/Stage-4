@@ -1,29 +1,29 @@
 
 "use client";
 
+import * as _React from 'react'; // Keep React for useState
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Room } from "@/types";
-import { Eye, ListTree, Sparkles, Download, Trash2 } from "lucide-react"; 
+import { Eye, ListTree, Sparkles, Download, Trash2, Loader2 } from "lucide-react"; 
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button"; // Kept for "Clear Results"
+import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
-import { useLoader } from "@/contexts/LoaderContext"; // General loader for clear results
 import { useToast } from "@/hooks/use-toast";
 
 interface ObjectAnalysisCardProps {
   room: Room | null;
   onClearResults: () => Promise<void>; 
   homeName?: string;
-  // showSpinner prop removed as AI spinner is now global
 }
 
 export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAnalysisCardProps) {
-  const { showLoader: showGlobalLoader, hideLoader: hideGlobalLoader } = useLoader(); 
   const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = _React.useState(false);
+  const [isClearing, setIsClearing] = _React.useState(false);
 
-  const handleDownloadPdf = () => {
-    if (!room || !room.objectNames || !room.name) return;
-    showGlobalLoader(); // Show general loader for PDF generation
+  const handleDownloadPdf = async () => {
+    if (isDownloading || !room || !room.objectNames || !room.name) return;
+    setIsDownloading(true);
     try {
       const doc = new jsPDF();
       doc.setFontSize(18);
@@ -54,19 +54,21 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
         console.error("Failed to generate PDF:", error);
         toast({title: "PDF Generation Failed", description: "Could not generate the PDF.", variant: "destructive"})
     } finally {
-        hideGlobalLoader(); // Hide general loader
+        setIsDownloading(false);
     }
   };
 
   const handleClear = async () => {
-    showGlobalLoader(); // Show general loader for clearing results
+    if (isClearing) return;
+    setIsClearing(true);
     try {
       await onClearResults();
+      // Success toast is likely handled by the onClearResults callback or the page itself
     } catch (error) {
-      console.error("Error in handleClear (ObjectAnalysisCard):", error);
-      // Toast for error is likely handled in onClearResults or page level
+      console.error("Failed to clear results via ObjectAnalysisCard:", error);
+      toast({ title: "Error Clearing Results", description: "An unexpected error occurred while clearing results.", variant: "destructive" });
     } finally {
-      hideGlobalLoader(); // Hide general loader
+      setIsClearing(false);
     }
   };
 
@@ -85,10 +87,6 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     );
   }
   
-  // The AI analysis spinner is now handled globally by AiAnalysisLoaderContext
-  // This card will just show a textual indication if analysis is in progress from DB
-  // or focus on showing results.
-
   return (
     <Card className="shadow-lg mt-6">
       <CardHeader>
@@ -101,7 +99,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
             Last analyzed on {format(room.lastAnalyzedAt.toDate(), "PPP 'at' p")}
           </CardDescription>
         )}
-        {room.isAnalyzing && ( // Textual fallback if user reloads during analysis
+        {room.isAnalyzing && ( 
           <CardDescription className="flex items-center gap-1 text-xs pt-1 text-accent-foreground">
             <Sparkles className="h-3 w-3 animate-pulse" />
             Analysis is currently in progress...
@@ -118,31 +116,41 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
               ))}
             </ul>
           </div>
-        ) : !room.isAnalyzing ? ( // Show "No objects" only if not actively analyzing (as per DB)
+        ) : !room.isAnalyzing ? ( 
           <div className="text-center py-8 text-muted-foreground">
             <ListTree className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="font-medium">No objects described yet.</p>
             <p className="text-sm">Upload photos and click "Analyze Images" to see results here.</p>
           </div>
-        ) : null /* Don't show "No objects" if isAnalyzing is true from DB, global spinner handles this visually */ }
+        ) : null }
       </CardContent>
       {(room?.objectNames && room.objectNames.length > 0 && !room.isAnalyzing) && (
         <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-4">
           <a 
             onClick={handleDownloadPdf} 
-            className="codepen-button" 
+            className={`codepen-button ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ width: 'fit-content', textDecoration: 'none' }}
-            role="button" // For accessibility
-            tabIndex={0} // For keyboard accessibility
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDownloadPdf();}} // For keyboard accessibility
+            role="button"
+            tabIndex={isDownloading ? -1 : 0}
+            onKeyDown={(e) => { if (!isDownloading && (e.key === 'Enter' || e.key === ' ')) handleDownloadPdf();}}
+            aria-disabled={isDownloading}
           >
-            <span className="flex items-center"> {/* Ensure span content is also flex for alignment */}
-              <Download className="mr-2 h-4 w-4" /> {/* Icon inside span */}
-              Download PDF
+            <span className="flex items-center justify-center"> 
+              {isDownloading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              {isDownloading ? "Downloading..." : "Download PDF"}
             </span>
           </a>
-          <Button variant="destructive-outline" onClick={handleClear}>
-            <Trash2 className="mr-2 h-4 w-4" /> Clear Results
+          <Button variant="destructive-outline" onClick={handleClear} disabled={isClearing}>
+            {isClearing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="mr-2 h-4 w-4" />
+            )}
+            {isClearing ? "Clearing..." : "Clear Results"}
           </Button>
         </CardFooter>
       )}
