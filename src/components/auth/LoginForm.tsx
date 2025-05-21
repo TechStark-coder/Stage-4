@@ -67,7 +67,6 @@ export function LoginForm() {
       }
       hideLoader(); // Hide loader only if login fails and we don't navigate
     }
-    // Removed finally block that called hideLoader to let AppRouterEvents handle it on success
   }
 
   return (
