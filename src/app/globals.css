@@ -9,67 +9,70 @@ body {
 
 @layer base {
   :root {
-    /* Dark Gradient Theme */
+    /* Dark Gradient Theme - Black & Dark Gray */
     --background-start-rgb: 0, 0, 0; /* Black */
     --background-end-rgb: 67, 67, 67; /* #434343 */
 
-    --background: 0 0% 7%; /* Approx avg of the gradient for fallback, or a dark base */
+    --background: 0 0% 3%; /* Approx avg of the gradient for fallback, or a dark base */
     --foreground: 0 0% 98%; /* Light text for readability on dark backgrounds */
 
-    --card: 0 0% 12%; /* Dark gray for cards, matches .input background from custom form */
+    --card: 0 0% 7%; /* Dark gray for cards, slightly lighter than bg */
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 10%; /* Similar to card */
+    --popover: 0 0% 5%; /* Similar to card but even darker */
     --popover-foreground: 0 0% 98%;
 
-    --primary: 260 90% 65%; /* A vibrant purple, can be adjusted */
+    /* Primary: Calm Blue - Adjusted for darker theme */
+    --primary: 205 78% 55%; /* Calm Blue #64B5F6 */
     --primary-foreground: 0 0% 98%; /* Light text for primary buttons */
     
-    /* HSL versions for button animation */
-    --primary-hsl-values: 260, 90%, 65%;
-    --muted-hsl-values: 220, 10%, 50%;
+    /* Accent: Soft Orange - Adjusted for darker theme */
+    --accent: 30 100% 75%;  /* Soft Orange #FFCC80 */
+    --accent-foreground: 0 0% 10%; /* Dark text for contrast on orange accent */
+
+    /* HSL versions for button animations */
+    --primary-hsl-values: 205, 78%, 55%;
+    --muted-hsl-values: 215, 10%, 40%;
+    --accent-hsl-values: 30, 100%, 75%; /* For Codepen button */
 
 
-    --secondary: 220 15% 25%; /* Muted blue/gray */
+    --secondary: 215 15% 20%; /* Muted blue/gray, darker */
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 10% 50%; /* Darker, less saturated blue/gray */
-    --muted-foreground: 0 0% 60%; /* Lighter gray for muted text */
+    --muted: 215 10%, 40%; /* Darker, less saturated blue/gray */
+    --muted-foreground: 0 0% 70%; /* Lighter gray for muted text */
 
-    --accent: 45 100% 55%; /* A soft yellow/gold for accents */
-    --accent-foreground: 0 0% 10%; /* Dark text for contrast on yellow accent */
-
-    --destructive: 0 70% 50%; /* A clearer red for destructive actions */
+    --destructive: 0 60% 50%; /* A clearer red for destructive actions */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%; /* Border color for dark theme */
-    --input: 0 0% 16%;  /* Dark input background, e.g. #292929 */
+    --border: 0 0% 15%; /* Border color for dark theme */
+    --input: 0 0% 10%;  /* Dark input background */
     --input-foreground: 0 0% 98%; /* Text color for inputs */
-    --ring: 260 90% 70%; /* Brighter primary color for focus rings */
+    --ring: 205 78% 60%; /* Brighter primary color for focus rings */
 
     --radius: 0.5rem;
 
     /* Sidebar specific variables - can be themed darker if needed */
-    --sidebar-background: 0 0% 10%;
+    --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 260 90% 65%;
+    --sidebar-primary: 205 78% 55%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 260 90% 70%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 205 78% 60%;
 
      /* Custom Button (MuhammadHasann) Variables */
-    --mh-button-black-700: hsl(var(--card)); /* ~12% black */
+    --mh-button-black-700: hsl(var(--card)); 
     --mh-button-border-radius: 9999px;
     --mh-button-transition: 0.3s ease-in-out;
-    --mh-button-active-shadow-color: hsl(var(--primary) / 0.75);
-    --mh-button-gradient-start: hsla(266, 45%, 74%, 1);
-    --mh-button-gradient-mid: hsla(266, 36%, 60%, 1);
+    --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
+    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.7); /* Adjusted alpha for subtlety */
+    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.5);   /* Adjusted alpha for subtlety */
     --mh-button-dots-color: hsl(var(--primary-foreground));
     --mh-button-sparkle-color: hsl(var(--primary-foreground));
     --mh-button-text-color: hsl(var(--primary-foreground));
-    --mh-button-text-hover-opacity: 0.7; /* Opacity for text fade effect */
+    --mh-button-text-hover-opacity: 0.7; 
      /* Disabled state for MuhammadHasann button */
     --mh-button-disabled-opacity: 0.5;
     --mh-button-disabled-bg: hsl(var(--muted));
@@ -88,7 +91,10 @@ body {
   }
   body {
     @apply text-foreground;
-    background: linear-gradient(to right, rgb(var(--background-end-rgb)), rgb(var(--background-start-rgb)));
+    /* background: linear-gradient(to right, rgb(var(--background-end-rgb)), rgb(var(--background-start-rgb))); Fallback removed as new gradient is applied */
+    background: #000000;  /* fallback for old browsers */
+    background: -webkit-linear-gradient(to right, #434343, #000000);  /* Chrome 10-25, Safari 5.1-6 */
+    background: linear-gradient(to right, #434343, #000000); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -138,7 +144,7 @@ body {
   top: 0;
   width: 100%;
   height: 100%;
-  background: hsl(var(--primary));
+  background: hsl(var(--primary)); /* Themed */
 }
 
 .banter-loader__box:nth-child(3n) {
@@ -307,26 +313,23 @@ body {
   align-items: center;
 }
 
-/* From Uiverse.io by mrhyddenn - Adapted for global overlay */
-.ai-spinner { /* Renamed from .spinner to .ai-spinner to avoid conflict */
+.ai-spinner { 
   width: 3em;
   height: 3em;
-  /* cursor: not-allowed; Removed, not needed for passive loader */
   border-radius: 50%;
-  border: 2px solid #444; /* Keep or theme with var(--border) */
-  box-shadow: -10px -10px 10px hsl(var(--primary) / 0.7), 
-              0px -10px 10px 0px hsl(var(--accent) / 0.7),  /* Example theming */
-              10px -10px 10px hsl(var(--destructive) / 0.5), /* Example theming */
-              10px 0 10px #ff0b0b, /* Keep some original colors if desired */
-              10px 10px 10px 0px#ff5500, 
-              0 10px 10px 0px #ff9500, 
-              -10px 10px 10px 0px #ffb700;
+  border: 2px solid hsl(var(--border)); /* Themed border */
+  box-shadow: -10px -10px 10px hsla(var(--primary-hsl-values), 0.7), 
+              0px -10px 10px 0px hsla(var(--accent-hsl-values), 0.7),  
+              10px -10px 10px hsla(var(--destructive), 0.5), 
+              10px 0 10px hsla(0, 70%, 50%, 0.8), /* A red variant */
+              10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.6), 
+              0 10px 10px 0px hsla(var(--accent-hsl-values), 0.5), 
+              -10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.4);
   animation: rot55 0.7s linear infinite;
-  /* position: relative; Ensure it's correctly positioned by overlay */
 }
 
-.ai-spinner-inner { /* Renamed from .spinnerin */
-  border: 2px solid #444; /* Keep or theme with var(--border) */
+.ai-spinner-inner { 
+  border: 2px solid hsl(var(--border)); /* Themed border */
   width: 1.5em;
   height: 1.5em;
   border-radius: 50%;
@@ -342,12 +345,11 @@ body {
   }
 }
 
-/* From Uiverse.io by SelfMadeSystem - Codepen Button (Download PDF) */
+/* Codepen Button (Download PDF) */
 .codepen-button {
   display: block;
   cursor: pointer;
-  color: hsl(var(--primary-foreground)); /* Themed */
-  /* margin: 0 auto; Removed to allow flex alignment in CardFooter */
+  color: hsl(var(--primary-foreground));
   position: relative;
   text-decoration: none;
   font-weight: 600;
@@ -364,7 +366,7 @@ body {
   left: 0;
   width: 400%;
   height: 100%;
-  background: linear-gradient(115deg,hsl(var(--primary)), hsl(var(--accent)), #a767e5, #12bcfe, hsl(var(--primary) / 0.8)); /* Themed colors */
+  background: linear-gradient(115deg, hsl(var(--primary-hsl-values)), hsl(var(--accent-hsl-values)), hsla(var(--primary-hsl-values),0.8), #12bcfe, hsla(var(--primary-hsl-values), 0.6));
   background-size: 25% 100%;
   animation: an-at-keyframe-css-at-rule-that-translates-via-the-transform-property-the-background-by-negative-25-percent-of-its-width-so-that-it-gives-a-nice-border-animation_-We-use-the-translate-property-to-have-a-nice-transition-so-it_s-not-a-jerk-of-a-start-or-stop .75s linear infinite;
   animation-play-state: paused;
@@ -386,47 +388,47 @@ body {
 
 .codepen-button span {
   position: relative;
-  display: flex; /* Use flex to align icon and text */
-  align-items: center; /* Vertically align icon and text */
-  justify-content: center; /* Horizontally center content */
-  padding: 0.8rem 1.3rem; /* Adjusted padding slightly */
-  font-size: 0.9rem; /* Adjusted font size to better fit with other buttons */
-  background: hsl(var(--card)); /* Use card background from theme */
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 0.8rem 1.3rem; 
+  font-size: 0.9rem; 
+  background: hsl(var(--card)); 
   border-radius: 3px;
   height: 100%;
 }
 
 /* Welcome Message Shine Effect */
 .welcome-message-shine {
-  background: linear-gradient(to right, hsl(var(--foreground)) 20%, hsl(var(--primary)) 40%, hsl(var(--primary)/0.7) 50% , hsl(var(--foreground)) 60%, hsl(var(--foreground)) 100%);
+  background: linear-gradient(to right, hsl(var(--foreground)) 20%, hsl(var(--primary)) 40%, hsla(var(--primary-hsl-values),0.7) 50% , hsl(var(--foreground)) 60%, hsl(var(--foreground)) 100%);
   background-size: 250% auto;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: welcome-shine 5s linear infinite; /* Slower animation */
+  animation: welcome-shine 5s linear infinite; 
   -webkit-text-size-adjust: none;
   white-space: nowrap;
 }
 
 @keyframes welcome-shine {
   0% {
-    background-position: -150% center; /* Start further left */
+    background-position: -150% center; 
   }
   100% {
-    background-position: 150% center; /* End further right */
+    background-position: 150% center; 
   }
 }
 
 
 /* MuhammadHasann Animated Button CSS (for Analyze Images) */
-.analyze-button-animated { /* Renamed from .button to avoid conflicts */
-  --mh-button-black-700: hsl(var(--card)); /* Themed */
+.analyze-button-animated {
+  --mh-button-black-700: hsl(var(--card));
   --mh-button-border-radius: 9999px;
   --mh-button-transition: 0.3s ease-in-out;
   --mh-button-offset: 2px;
-  --mh-button-active-shadow-color: hsl(var(--primary) / 0.75);
-  --mh-button-gradient-start: hsla(266, 45%, 74%, 1);
-  --mh-button-gradient-mid: hsla(266, 36%, 60%, 1);
+  --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
+  --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.7);
+  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.5);
   --mh-button-dots-color: hsl(var(--primary-foreground));
   --mh-button-sparkle-color: hsl(var(--primary-foreground));
   --mh-button-text-color: hsl(var(--primary-foreground));
@@ -435,21 +437,20 @@ body {
   --mh-button-disabled-bg: hsl(var(--muted));
   --mh-button-disabled-shadow: none;
 
-
   cursor: pointer;
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center content */
+  justify-content: center;
   gap: 0.5rem;
   transform-origin: center;
-  padding: 0.8rem 1.5rem; /* Adjusted padding */
+  padding: 0.8rem 1.5rem;
   background-color: transparent;
   border: none;
   border-radius: var(--mh-button-border-radius);
-  transform: scale(calc(1 + (var(--active, 0) * 0.05))); /* Reduced hover scale */
+  transform: scale(calc(1 + (var(--active, 0) * 0.05))); 
   transition: transform var(--mh-button-transition);
-  min-width: 150px; /* Ensure some minimum width */
+  min-width: 150px;
 }
 
 .analyze-button-animated::before {
@@ -460,11 +461,11 @@ body {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: var(--mh-button-black-700);
+  background-color: hsl(var(--primary)); /* Themed to primary */
   border-radius: var(--mh-button-border-radius);
   box-shadow: inset 0 0.5px hsl(var(--border)), inset 0 -1px 2px 0 hsl(0, 0%, 0%),
-    0px 2px 5px -2px hsla(0 0% 0% / calc(1 - var(--active, 0))), /* Adjusted shadow */
-    0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); /* Adjusted shadow size */
+    0px 2px 5px -2px hsla(0 0% 0% / calc(1 - var(--active, 0))), 
+    0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); 
   transition: all var(--mh-button-transition);
   z-index: 0;
 }
@@ -477,14 +478,14 @@ body {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: hsla(var(--primary-hsl-values), 0.75); /* Themed */
+  background-color: hsla(var(--primary-hsl-values), 0.75); 
   background-image: radial-gradient(
       at 51% 89%,
-      hsla(var(--primary-hsl-values), 1) 0px, /* Themed */
+      var(--mh-button-gradient-start) 0px,
       transparent 50%
     ),
-    radial-gradient(at 100% 100%, hsla(var(--primary-hsl-values), 0.8) 0px, transparent 50%), /* Themed */
-    radial-gradient(at 22% 91%, hsla(var(--primary-hsl-values), 0.8) 0px, transparent 50%); /* Themed */
+    radial-gradient(at 100% 100%, var(--mh-button-gradient-mid) 0px, transparent 50%),
+    radial-gradient(at 22% 91%, var(--mh-button-gradient-mid) 0px, transparent 50%);
   background-position: top;
   opacity: var(--active, 0);
   border-radius: var(--mh-button-border-radius);
@@ -496,7 +497,7 @@ body {
   --active: 1;
 }
 .analyze-button-animated:active {
-  transform: scale(0.98); /* Slightly more pronounced active scale */
+  transform: scale(0.98); 
 }
 
 .analyze-button-animated .dots_border {
@@ -510,45 +511,45 @@ body {
   height: var(--size_border);
   background-color: transparent;
   border-radius: var(--mh-button-border-radius);
-  z-index: -10; /* Ensure it's behind the main button content */
+  z-index: -10; 
 }
 
 .analyze-button-animated .dots_border::before {
   content: "";
   position: absolute;
-  top: 30%; /* Adjust if needed */
+  top: 30%; 
   left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg); /* Combined transform */
-  transform-origin: center; /* Changed from left to center for better rotation */
+  transform: translate(-50%, -50%) rotate(0deg); 
+  transform-origin: center; 
   width: 100%;
   height: 2rem;
-  background-color: var(--mh-button-dots-color); /* Themed */
-  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%); /* Themed */
-  animation: rotateDots 2s linear infinite; /* Renamed animation */
+  background-color: var(--mh-button-dots-color); 
+  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%); 
+  animation: mh-rotateDots 2s linear infinite; /* Renamed animation */
 }
 
-@keyframes rotateDots { /* Renamed animation */
+@keyframes mh-rotateDots { /* Renamed animation */
   to {
-    transform: translate(-50%, -50%) rotate(360deg); /* Ensure continuous rotation */
+    transform: translate(-50%, -50%) rotate(360deg); 
   }
 }
 
 .analyze-button-animated .sparkle {
   position: relative;
   z-index: 10;
-  width: 1.5rem; /* Adjusted size */
-  height: 1.5rem; /* Ensure consistent size */
+  width: 1.5rem; 
+  height: 1.5rem; 
 }
 
 .analyze-button-animated .sparkle .path {
-  fill: var(--mh-button-sparkle-color); /* Themed */
-  stroke: var(--mh-button-sparkle-color); /* Themed */
+  fill: var(--mh-button-sparkle-color); 
+  stroke: var(--mh-button-sparkle-color); 
   transform-origin: center;
-  color: var(--mh-button-sparkle-color); /* Ensure this is set if currentColor is used in SVG */
+  color: var(--mh-button-sparkle-color);
 }
 
 .analyze-button-animated:is(:hover, :focus) .sparkle .path {
-  animation: pathSparkle 1.5s linear 0.5s infinite; /* Renamed animation */
+  animation: mh-pathSparkle 1.5s linear 0.5s infinite; /* Renamed animation */
 }
 
 .analyze-button-animated .sparkle .path:nth-child(1) {
@@ -561,7 +562,7 @@ body {
   --scale_path_3: 1.2;
 }
 
-@keyframes pathSparkle { /* Renamed animation */
+@keyframes mh-pathSparkle { /* Renamed animation */
   0%,
   34%,
   71%,
@@ -584,61 +585,62 @@ body {
   z-index: 10;
   background-image: linear-gradient(
     90deg,
-    var(--mh-button-text-color) 0%, /* Themed */
-    hsla(0 0% 100% / var(--active, 0)) 120% /* Original effect, check contrast */
+    var(--mh-button-text-color) 0%, 
+    hsla(0 0% 100% / var(--active, 0)) 120% 
   );
   background-clip: text;
   font-size: 1rem;
   color: transparent;
-  font-weight: 600; /* Added for consistency */
+  font-weight: 600;
 }
 
 /* Disabled state for analyze-button-animated */
 .analyze-button-animated:disabled {
   cursor: not-allowed;
-  opacity: var(--mh-button-disabled-opacity);
-  background-color: var(--mh-button-disabled-bg); /* Show a background when disabled */
+  /* opacity: var(--mh-button-disabled-opacity); */
+  background-color: var(--mh-button-disabled-bg); 
 }
 
 .analyze-button-animated:disabled::before,
 .analyze-button-animated:disabled::after,
 .analyze-button-animated:disabled .dots_border::before {
-  display: none; /* Hide animated elements when disabled */
+  display: none; 
 }
 
 .analyze-button-animated:disabled .sparkle {
-  opacity: 0.5; /* Dim sparkles when disabled */
+  opacity: 0.3; /* Dim sparkles more when disabled */
 }
 .analyze-button-animated:disabled .text_button {
-  background-image: none; /* Remove gradient text effect */
-  color: hsl(var(--muted-foreground)); /* Show plain text when disabled */
+  background-image: none; 
+  color: hsl(var(--muted-foreground)); 
+  opacity: 0.7;
 }
 
 
 /* Botao Download Button CSS (for RoomCard PDF download) */
-.botao-download { /* Renamed from .botao */
+.botao-download { 
   width: 125px;
   height: 45px;
   border-radius: 20px;
   border: none;
-  box-shadow: 1px 1px hsl(var(--primary) / 0.37); /* Themed */
+  box-shadow: 1px 1px hsla(var(--primary-hsl-values), 0.37); 
   padding: 5px 10px;
-  background: linear-gradient(160deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.9) 5%, hsl(var(--primary)) 11%, hsl(var(--accent)) 57%, hsl(var(--accent)/0.8) 71%); /* Themed */
-  color: hsl(var(--primary-foreground)); /* Themed */
-  font-weight: 500; /* Adjusted from 505 */
-  font-size: 15px; /* Adjusted from 16px */
+  background: linear-gradient(160deg, hsl(var(--primary-hsl-values)) 0%, hsla(var(--primary-hsl-values),0.9) 5%, hsl(var(--primary-hsl-values)) 11%, hsl(var(--accent-hsl-values)) 57%, hsla(var(--accent-hsl-values),0.8) 71%); 
+  color: hsl(var(--primary-foreground)); 
+  font-weight: 500; 
+  font-size: 15px; 
   line-height: 1;
   cursor: pointer;
-  filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.568)); /* Themed */
+  filter: drop-shadow(0 0 10px hsla(var(--accent-hsl-values), 0.568)); 
   transition: .5s linear;
-  display: flex; /* Added for icon and text centering */
-  align-items: center; /* Added */
-  justify-content: center; /* Added */
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
 }
 
 .botao-download .mysvg {
   display: none;
-  width: 24px; /* Ensure SVG has size */
+  width: 24px; 
   height: 24px;
 }
 
@@ -669,8 +671,8 @@ body {
   width: 100%;
   height: 100%;
   border: 3.5px solid transparent;
-  border-top: 3.5px solid hsl(var(--primary-foreground)); /* Themed */
-  border-right: 3.5px solid hsl(var(--primary-foreground)); /* Themed */
+  border-top: 3.5px solid hsl(var(--primary-foreground)); 
+  border-right: 3.5px solid hsl(var(--primary-foreground)); 
   border-radius: 50%;
   animation: animateDownloadC 2s linear infinite; /* Renamed animation */
 }
@@ -685,23 +687,21 @@ body {
 }
 
 /* Flipping Auth Form CSS */
-.auth-container { /* Renamed from .container to avoid conflicts */
+.auth-container { 
   display: flex;
   justify-content: center;
   align-items: center;
-  perspective: 1000px; /* Added for 3D effect */
-  min-height: 450px; /* Ensure enough height for the form */
-  width: 100%; /* Take up width of its parent in AuthLayout */
+  perspective: 1000px; 
+  min-height: 450px; 
+  width: 100%; 
 }
 
-.auth-form { /* Renamed from .form */
-  display: flex; /* Not really needed as front/back are absolute */
-  /* justify-content: center; */
-  /* align-items: center; */
-  position: relative; /* Added */
-  width: 350px; /* Give a fixed width or max-width */
-  height: auto; /* Adjust based on content, or set fixed height */
-  min-height: 480px; /* Ensure it can contain the forms */
+.auth-form { 
+  display: flex; 
+  position: relative; 
+  width: 350px; 
+  height: auto; 
+  min-height: 480px; 
   transform-style: preserve-3d;
   transition: transform 1s ease;
 }
@@ -712,46 +712,46 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 1rem; /* Adjusted gap */
+  gap: 1rem; 
   position: absolute;
-  width: 100%; /* Take full width of .auth-form */
-  height: 100%; /* Take full height of .auth-form */
+  width: 100%; 
+  height: 100%; 
   backface-visibility: hidden;
-  padding: 40px 30px; /* Adjusted padding */
+  padding: 40px 30px; 
   border-radius: 15px;
-  background-color: hsl(var(--card) / 0.9); /* Themed with slight transparency */
-  box-shadow: inset 1px 1px 5px hsl(var(--card-foreground) / 0.1),
-              inset -1px -1px 3px hsl(var(--border) / 0.5),
-              0 4px 15px hsl(var(--background) / 0.3); /* Themed shadow */
+  background-color: hsla(var(--card), 0.9); 
+  box-shadow: inset 1px 1px 5px hsla(var(--card-foreground), 0.1),
+              inset -1px -1px 3px hsla(var(--border), 0.5),
+              0 4px 15px hsla(var(--background), 0.3); 
 }
 
 .auth-form .form_back {
   transform: rotateY(-180deg);
 }
 
-.auth-form_details { /* Renamed from .form_details */
-  font-size: 1.75rem; /* Adjusted size */
+.auth-form_details { 
+  font-size: 1.75rem; 
   font-weight: 600;
-  padding-bottom: 0.5rem; /* Adjusted padding */
-  color: hsl(var(--card-foreground)); /* Themed */
+  padding-bottom: 0.5rem; 
+  color: hsl(var(--card-foreground)); 
   text-align: center;
 }
 
-.auth-input { /* Renamed from .input */
-  width: 100%; /* Full width within form padding */
-  min-height: 40px; /* Adjusted height */
-  color: hsl(var(--input-foreground)); /* Themed */
+.auth-input { 
+  width: 100%; 
+  min-height: 40px; 
+  color: hsl(var(--input-foreground)); 
   outline: none;
   transition: 0.35s;
-  padding: 0px 10px; /* Adjusted padding */
-  background-color: hsl(var(--input)); /* Themed */
+  padding: 0px 10px; 
+  background-color: hsl(var(--input)); 
   border-radius: 6px;
-  border: 1px solid hsl(var(--border)); /* Themed */
-  box-shadow: inset 0 1px 3px hsl(var(--background) / 0.5); /* Softer inset shadow */
+  border: 1px solid hsl(var(--border)); 
+  box-shadow: inset 0 1px 3px hsla(var(--background), 0.5); 
 }
 
 .auth-input::placeholder {
-  color: hsl(var(--muted-foreground)); /* Themed */
+  color: hsl(var(--muted-foreground)); 
 }
 
 .auth-input:focus::placeholder {
@@ -760,56 +760,55 @@ body {
 }
 
 .auth-input:focus {
-  transform: scale(1.02); /* Slightly less scale */
-  border-color: hsl(var(--ring)); /* Use ring color for focus border */
-  box-shadow: inset 0 1px 3px hsl(var(--background) / 0.5), 0 0 0 2px hsl(var(--ring) / 0.5); /* Focus ring */
+  transform: scale(1.02); 
+  border-color: hsl(var(--ring)); 
+  box-shadow: inset 0 1px 3px hsla(var(--background), 0.5), 0 0 0 2px hsla(var(--ring), 0.5); 
 }
 
-.auth-btn { /* Renamed from .btn */
-  padding: 10px 25px; /* Adjusted padding */
-  width: 100%; /* Make button full width */
+.auth-btn { 
+  padding: 10px 25px; 
+  width: 100%; 
   cursor: pointer;
-  background-color: hsl(var(--primary)); /* Themed */
+  background-color: hsl(var(--primary)); 
   border-radius: 6px;
-  border: 1px solid hsl(var(--primary)); /* Themed */
-  /* Removed complex box-shadow for simpler themed button */
-  color: hsl(var(--primary-foreground)); /* Themed */
-  font-size: 1rem; /* Adjusted size */
-  font-weight: 600; /* Adjusted weight */
-  transition: 0.2s ease-out; /* Adjusted transition */
+  border: 1px solid hsl(var(--primary)); 
+  color: hsl(var(--primary-foreground)); 
+  font-size: 1rem; 
+  font-weight: 600; 
+  transition: 0.2s ease-out; 
 }
 
 .auth-btn:hover {
-  background-color: hsl(var(--primary) / 0.9); /* Themed hover */
-  transform: translateY(-1px); /* Slight lift on hover */
+  background-color: hsla(var(--primary-hsl-values), 0.9); 
+  transform: translateY(-1px); 
 }
 
-.auth-btn:focus-visible { /* For keyboard focus */
+.auth-btn:focus-visible { 
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
 
 .auth-btn:active {
-  transform: translateY(0px); /* Press down effect */
+  transform: translateY(0px); 
 }
 
-.auth-form .auth-switch { /* Renamed from .switch */
-  font-size: 0.875rem; /* Adjusted size */
-  color: hsl(var(--muted-foreground)); /* Themed */
+.auth-form .auth-switch { 
+  font-size: 0.875rem; 
+  color: hsl(var(--muted-foreground)); 
   text-align: center;
 }
 
-.auth-form .auth-switch .auth-signup_tog { /* Renamed from .signup_tog */
-  font-weight: 600; /* Adjusted weight */
+.auth-form .auth-switch .auth-signup_tog { 
+  font-weight: 600; 
   cursor: pointer;
-  text-decoration: none; /* Removed underline, rely on color */
-  color: hsl(var(--primary)); /* Themed */
+  text-decoration: none; 
+  color: hsl(var(--primary)); 
 }
 .auth-form .auth-switch .auth-signup_tog:hover {
   text-decoration: underline;
 }
 
-.auth-container #signup_toggle { /* Ensure it targets within .auth-container */
+.auth-container #signup_toggle { 
   display: none;
 }
 
@@ -817,11 +816,11 @@ body {
   transform: rotateY(-180deg);
 }
 
-/* Responsive adjustments for auth form if needed */
+/* Responsive adjustments for auth form */
 @media (max-width: 400px) {
   .auth-form {
     width: 90%;
-    min-height: auto; /* Allow height to adjust more freely */
+    min-height: auto; 
   }
   .auth-form .form_front,
   .auth-form .form_back {
@@ -835,15 +834,15 @@ body {
 /* Custom 3D Card Effect for Room Cards */
 .custom-3d-card-wrapper {
   position: relative;
-  width: 190px; /* Fixed width from example */
-  height: 254px; /* Fixed height from example */
+  width: 280px; /* Increased width */
+  height: 374px; /* Increased height proportionally */
   transition: 200ms;
-  margin: 0.5rem; /* Add some margin so cards don't overlap badly */
+  margin: 0.5rem; 
 }
 
 .custom-3d-card-wrapper:active {
-  width: 180px;
-  height: 245px;
+  width: 270px; /* Adjusted active state */
+  height: 365px; /* Adjusted active state */
 }
 
 .custom-3d-card-interactive-area { 
@@ -856,21 +855,29 @@ body {
   align-items: stretch; 
   border-radius: 20px;
   transition: 700ms;
-  background: linear-gradient(43deg, rgb(65, 88, 208) 0%, rgb(200, 80, 192) 46%, rgb(255, 204, 112) 100%);
+  /* New yellow/black gradient */
+  background: linear-gradient(43deg, #FFD700 0%, #333333 46%, #000000 100%);
   overflow: hidden; 
 }
 
-.custom-3d-card-wrapper:hover .custom-3d-card-interactive-area::before { /* Corrected selector */
+.custom-3d-card-wrapper:hover .custom-3d-card-interactive-area {
+  /* Glow effect */
+  box-shadow: 0 0 25px 10px rgba(255, 215, 0, 0.4); /* Gold-ish glow */
+  filter: brightness(1.15); /* Keep brightness increase */
+}
+
+.custom-3d-card-wrapper:hover .custom-3d-card-interactive-area::before { 
   transition: 200ms;
   content: '';
-  opacity: 80%;
+  opacity: 0.6; /* Adjusted opacity for new gradient */
 }
 
 .custom-3d-card-interactive-area::before {
   content: '';
-  background: linear-gradient(43deg, rgb(65, 88, 208) 0%, rgb(200, 80, 192) 46%, rgb(255, 204, 112) 100%);
+  /* New yellow/black gradient for blur */
+  background: linear-gradient(43deg, #FFD700 0%, #333333 46%, #000000 100%);
   filter: blur(2rem);
-  opacity: 30%;
+  opacity: 0.4; /* Adjusted opacity */
   width: 100%;
   height: 100%;
   position: absolute;
@@ -899,17 +906,19 @@ body {
 }
 
 .custom-3d-tracker {
-  /* position: relative; - let grid place it */
-  z-index: 2; 
+  /* Grid items, should not block pointer events for content underneath the interactive area */
+  /* Ensure they are transparent and only for hover detection */
+   z-index: 2; /* Kept for hover detection mechanism */
 }
 
 .custom-3d-tracker:hover {
   cursor: pointer;
 }
 
-.custom-3d-tracker:hover ~ .custom-3d-card-interactive-area { /* Corrected target */
-  transition: 300ms;
-  filter: brightness(1.1);
+/* These rules apply transforms to .custom-3d-card-interactive-area */
+.custom-3d-tracker:hover ~ .custom-3d-card-interactive-area { 
+  transition: 125ms ease-in-out !important; /* Ensure this transition takes precedence if there are conflicts */
+  /* filter: brightness(1.1); Filter moved to main hover */
 }
 
 .tr-1 { grid-area: tr-1; }
@@ -938,31 +947,31 @@ body {
 .tr-24 { grid-area: tr-24; }
 .tr-25 { grid-area: tr-25; }
 
-.tr-1:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-2:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-3:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
-.tr-4:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
-.tr-5:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
-.tr-6:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-7:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-8:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
-.tr-9:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
-.tr-10:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
-.tr-11:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-12:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-13:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-.tr-14:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
-.tr-15:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
-.tr-16:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-17:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-18:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
-.tr-19:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
-.tr-20:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
-.tr-21:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-22:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-23:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
-.tr-24:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
-.tr-25:hover ~ .custom-3d-card-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
+.tr-1:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-2:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-3:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
+.tr-4:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
+.tr-5:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
+.tr-6:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-7:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-8:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
+.tr-9:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
+.tr-10:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
+.tr-11:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-12:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-13:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+.tr-14:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
+.tr-15:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
+.tr-16:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-17:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-18:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
+.tr-19:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
+.tr-20:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
+.tr-21:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-22:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-23:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
+.tr-24:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
+.tr-25:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
 
 .noselect {
   -webkit-touch-callout: none;
