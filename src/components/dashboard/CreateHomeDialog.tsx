@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -59,31 +59,33 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: "",
-      ownerDisplayName:  "", 
+      ownerDisplayName:  "",
       coverImage: undefined,
     },
   });
 
   useEffect(() => {
-    if (open && user) {
+    if (user && open) { // Only set if user is available and dialog opens
       form.setValue("ownerDisplayName", user.displayName || "");
     }
   }, [open, user, form]);
 
-  const coverImageWatch = form.watch("coverImage");
-
-  useEffect(() => {
-    if (coverImageWatch && coverImageWatch.length > 0) {
-      const file = coverImageWatch[0];
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      form.setValue("coverImage", files); // react-hook-form expects FileList
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
+      form.setValue("coverImage", undefined);
       setImagePreview(null);
     }
-  }, [coverImageWatch]);
+  };
+
 
   async function onSubmit(data: HomeFormData) {
     if (!user) {
@@ -92,27 +94,43 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     }
     showLoader();
     try {
-      if (data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
+      // Update user's display name in Firebase Auth if provided and different
+      if (auth.currentUser && data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
         try {
-          await updateProfile(auth.currentUser!, { displayName: data.ownerDisplayName }); // Ensure auth.currentUser is not null
-          toast({ title: "Profile Updated", description: "Your display name has been updated." });
+          await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
+          // No toast here for profile update, to keep focus on home creation
+          // Or, if desired: toast({ title: "Profile Updated", description: "Your display name has been updated." });
         } catch (profileError: any) {
           console.error("Failed to update profile name:", profileError);
-          toast({ title: "Profile Update Failed", description: "Could not update your display name. Home creation will proceed.", variant: "default" });
+          // Optionally toast a non-critical error for profile update failure
         }
       }
 
       const homeDataToSubmit: CreateHomeData = { name: data.name };
       const newHomeId = await addHome(user.uid, homeDataToSubmit);
 
+      // Handle cover image saving to localStorage
       if (data.coverImage && data.coverImage.length > 0) {
         const imageFile = data.coverImage[0];
         try {
           const base64Image = await fileToBase64(imageFile);
           localStorage.setItem(`homeCover_${newHomeId}`, base64Image);
-        } catch (error) {
-          console.error("Failed to convert image or save to local storage:", error);
-          toast({ title: "Image Warning", description: "Home created, but cover image could not be saved locally.", variant: "default" });
+        } catch (e: any) {
+          console.error("Failed to convert image or save to local storage:", e);
+          if (e.name === 'QuotaExceededError') {
+            toast({
+              title: "Image Too Large",
+              description: "Cover image is too large to save in browser storage. Home created without it.",
+              variant: "default",
+              duration: 7000,
+            });
+          } else {
+            toast({
+              title: "Image Warning",
+              description: "Home created, but cover image could not be saved locally.",
+              variant: "default",
+            });
+          }
         }
       }
 
@@ -135,7 +153,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       if (!isOpen) {
         form.reset({ name: "", ownerDisplayName: user?.displayName || "", coverImage: undefined });
         setImagePreview(null);
-      } else if (user) { 
+      } else if (user) {
         form.setValue("ownerDisplayName", user.displayName || "");
       }
     }}>
@@ -184,14 +202,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={({ field }) => (
+              render={({ field }) => ( // field is not directly used for value, but for onChange etc.
                 <FormItem>
                   <FormLabel>Cover Image (Optional, stored in browser)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => field.onChange(e.target.files)}
+                      onChange={handleFileChange} // Use custom handler
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>
