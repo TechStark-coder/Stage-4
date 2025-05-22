@@ -9,61 +9,57 @@ body {
 
 @layer base {
   :root {
-    /* New Blue Gradient Theme */
-    --background-start-rgb: 0, 131, 176; /* #0083B0 */
-    --background-end-rgb: 0, 180, 219;   /* #00B4DB */
-
-    /* For components, let's try a light theme against the blue gradient */
-    --background: 200 100% 97%; /* A very light blueish white as a general component background base */
-    --foreground: 210 20% 25%;  /* Dark blue/gray text for general readability */
+    /* Light Gray Theme */
+    --background: 220 20% 96%; /* Light Gray: #F0F2F5 */
+    --foreground: 220 10% 20%; /* Dark Gray for text */
 
     --card: 0 0% 100%;           /* White cards */
-    --card-foreground: 210 20% 15%; /* Darker text for cards */
+    --card-foreground: 220 10% 20%; /* Dark Gray text for cards */
 
     --popover: 0 0% 100%;        /* White popovers */
-    --popover-foreground: 210 20% 15%;
+    --popover-foreground: 220 10% 20%;
 
-    /* Primary: Vibrant Orange */
-    --primary: 25 95% 53%;  /* Vibrant Orange #FF8C00 */
-    --primary-foreground: 0 0% 100%; /* White text on orange buttons */
+    /* Primary: A calm, professional Blue */
+    --primary: 210 80% 55%;  /* Sky Blue */
+    --primary-foreground: 0 0% 100%; /* White text on primary buttons */
     
-    /* Accent: A slightly lighter shade of the primary or a distinct color */
-    --accent: 30 100% 65%; /* Lighter Orange/Yellow */
-    --accent-foreground: 210 20% 10%; /* Dark text for contrast on accent */
+    /* Accent: A complementary subtle color */
+    --accent: 210 30% 90%; /* Light bluish gray */
+    --accent-foreground: 220 10% 20%; /* Dark text for contrast on accent */
 
     /* HSL versions for button animations (if needed for other custom buttons) */
-    --primary-hsl-values: 25, 95%, 53%; /* For primary color */
-    --muted-hsl-values: 210, 15%, 75%; /* For muted color */
-    --accent-hsl-values: 30, 100%, 65%; /* For accent color */
+    --primary-hsl-values: 210, 80%, 55%; 
+    --muted-hsl-values: 220, 15%, 75%; 
+    --accent-hsl-values: 210, 30%, 90%; 
 
-    --secondary: 210 10% 90%;   /* Light gray */
-    --secondary-foreground: 210 20% 25%; /* Dark text on light gray */
+    --secondary: 220 10% 85%;   /* Medium Gray */
+    --secondary-foreground: 220 10% 25%; 
 
-    --muted: 210 15% 85%;       /* Slightly darker light gray */
-    --muted-foreground: 210 15% 45%; /* Medium gray for muted text */
+    --muted: 220 15% 90%;       /* Lighter Gray */
+    --muted-foreground: 220 10% 45%; 
 
     --destructive: 0 70% 50%;    /* A clear red for destructive actions */
-    --destructive-foreground: 0 0% 100%; /* White text on red */
+    --destructive-foreground: 0 0% 100%; 
 
-    --border: 210 15% 80%;      /* Light gray border */
+    --border: 220 15% 85%;      /* Gray border */
     --input: 0 0% 100%;         /* White input background */
-    --input-foreground: 210 20% 15%; /* Dark text for inputs */
-    --ring: 25 90% 58%;         /* Orange for focus rings */
+    --input-foreground: 220 10% 15%; 
+    --ring: 210 70% 60%;         /* Blue for focus rings */
 
     --radius: 0.5rem;
 
-    /* Sidebar specific variables - adjust if sidebar is used */
-    --sidebar-background: 210 20% 15%; /* Dark blue/gray sidebar */
+    /* Sidebar specific variables */
+    --sidebar-background: 220 10% 15%; /* Dark gray sidebar */
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 25 95% 53%;
+    --sidebar-primary: 210 80% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 25%;
+    --sidebar-accent: 220 10% 25%;
     --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 210 20% 30%;
-    --sidebar-ring: 25 90% 58%;
+    --sidebar-border: 220 10% 30%;
+    --sidebar-ring: 210 70% 60%;
 
      /* Custom Button (MuhammadHasann) Variables */
-    --mh-button-black-700: hsl(var(--card)); /* Themed to card background */
+    --mh-button-black-700: hsl(var(--card)); 
     --mh-button-border-radius: 9999px;
     --mh-button-transition: 0.3s ease-in-out;
     --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
@@ -80,41 +76,50 @@ body {
   }
 
   .dark {
-    /* If you want a separate dark mode, define variables here. 
-       For now, the single theme above will be used.
-       The blue gradient itself might not be considered "dark" by ShadCN's .dark class,
-       so ensure component styles are robust.
-    */
-    --background: 210 20% 10%; /* Dark blue/gray background for dark mode */
-    --foreground: 0 0% 98%;
+    --background: 220 10% 4%; /* Very Dark Gray/Almost Black */
+    --foreground: 220 5% 90%; /* Light Gray/Off-white text */
 
-    --card: 210 20% 15%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 8% 10%;           /* Darker Gray cards */
+    --card-foreground: 220 5% 90%; /* Light Gray text for cards */
 
-    --popover: 210 20% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 8% 8%;        /* Dark Popovers */
+    --popover-foreground: 220 5% 90%;
 
-    --primary: 25 90% 60%; 
-    --primary-foreground: 0 0% 10%;
+    --primary: 175 70% 45%;  /* Teal/Cyan */
+    --primary-foreground: 175 60% 10%; /* Dark text on primary buttons */
+    
+    --accent: 260 50% 60%; /* Subtle Purple */
+    --accent-foreground: 0 0% 98%; 
 
-    --secondary: 210 15% 25%;
-    --secondary-foreground: 0 0% 98%;
+    --primary-hsl-values: 175, 70%, 45%; 
+    --muted-hsl-values: 220, 8%, 30%; 
+    --accent-hsl-values: 260, 50%, 60%;
 
-    --muted: 210 10% 30%;
-    --muted-foreground: 0 0% 65%;
+    --secondary: 220, 8%, 18%;   /* Dark Gray */
+    --secondary-foreground: 220, 5%, 80%; 
 
-    --accent: 30 95% 70%;
-    --accent-foreground: 0 0% 10%;
+    --muted: 220, 8%, 25%;       /* Slightly Lighter Dark Gray */
+    --muted-foreground: 220, 5%, 60%; 
 
-    --destructive: 0 65% 55%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 65% 55%;    
+    --destructive-foreground: 0 0% 98%; 
 
-    --border: 210 15% 30%;
-    --input: 210 15% 20%;
-    --input-foreground: 0 0% 98%;
-    --ring: 25 85% 65%;
+    --border: 220 8% 20%;      
+    --input: 220 8% 15%;         
+    --input-foreground: 220 5% 90%; 
+    --ring: 175 60% 50%;         
 
-    /* Custom Button (MuhammadHasann) Variables for dark mode */
+    /* Sidebar specific variables - dark mode */
+    --sidebar-background: 220 10% 12%; 
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 175 70% 45%;
+    --sidebar-primary-foreground: 175 60% 10%;
+    --sidebar-accent: 220 10% 20%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 220 10% 25%;
+    --sidebar-ring: 175 60% 50%;
+
+     /* Custom Button (MuhammadHasann) Variables for dark mode */
     --mh-button-black-700: hsl(var(--card)); 
     --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.6);
     --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6); 
@@ -130,10 +135,7 @@ body {
     @apply border-border;
   }
   body {
-    @apply text-foreground;
-    background: #00B4DB;  /* fallback for old browsers */
-    background: -webkit-linear-gradient(to right, #0083B0, #00B4DB);  /* Chrome 10-25, Safari 5.1-6 */
-    background: linear-gradient(to right, #0083B0, #00B4DB); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    @apply bg-background text-foreground;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -150,7 +152,8 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6); 
+  background-color: hsla(var(--background), 0.6); /* Use background with opacity */
+  backdrop-filter: blur(2px);
   z-index: 9998; 
   display: flex;
   justify-content: center;
@@ -345,30 +348,33 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.7); 
+  background-color: hsla(var(--background), 0.7); /* Use background with opacity */
+  backdrop-filter: blur(3px);
   z-index: 10000; 
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* From Uiverse.io by mrhyddenn - Adapted for theming */
 .ai-spinner { 
   width: 3em;
   height: 3em;
   border-radius: 50%;
-  border: 2px solid hsl(var(--border)); 
-  box-shadow: -10px -10px 10px hsla(var(--primary-hsl-values), 0.7), 
-              0px -10px 10px 0px hsla(var(--accent-hsl-values), 0.7),  
-              10px -10px 10px hsla(var(--destructive), 0.5), 
-              10px 0 10px hsla(0, 70%, 50%, 0.8), 
-              10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.6), 
-              0 10px 10px 0px hsla(var(--accent-hsl-values), 0.5), 
-              -10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.4);
+  border: 2px solid hsl(var(--border)); /* Themed border */
+  /* Using theme colors for the glow segments */
+  box-shadow: -10px -10px 10px hsla(var(--primary-hsl-values), 0.7), /* Primary color */
+              0px -10px 10px 0px hsla(var(--accent-hsl-values), 0.7),  /* Accent color */
+              10px -10px 10px hsla(var(--destructive), 0.5), /* Destructive color */
+              10px 0 10px hsla(0, 70%, 50%, 0.8), /* Keep a distinct red for one segment */
+              10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.6), /* Accent color */
+              0 10px 10px 0px hsla(var(--accent-hsl-values), 0.5), /* Accent color */
+              -10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.4); /* Accent color */
   animation: rot55 0.7s linear infinite;
 }
 
 .ai-spinner-inner { 
-  border: 2px solid hsl(var(--border)); 
+  border: 2px solid hsl(var(--border));  /* Themed border */
   width: 1.5em;
   height: 1.5em;
   border-radius: 50%;
@@ -437,45 +443,34 @@ body {
   height: 100%;
 }
 
-/* Welcome Message Shine Effect */
-.welcome-message-shine {
-  background: linear-gradient(to right, hsl(var(--foreground)) 40%, hsl(var(--primary)) 50%, hsl(var(--foreground)) 60%);
-  background-size: 250% auto;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: welcome-shine 5s linear infinite alternate; 
-  -webkit-text-size-adjust: none;
-  white-space: nowrap; /* Keep it on one line for better effect */
-  display: inline-block; /* Needed for some text-clip scenarios */
-}
-
-@keyframes welcome-shine {
-  0% {
-    background-position: -125% center; 
-  }
-  100% {
-    background-position: 125% center; 
-  }
-}
-
 
 /* MuhammadHasann Animated Button CSS (for Analyze Images) */
+/* analyze-button-animated is the class name used in PhotoUploader.tsx */
 .analyze-button-animated {
-  --mh-button-black-700: hsl(var(--card)); /* Themed */
-  --mh-button-border-radius: 9999px;
+  /* Use theme variables for colors */
+  --mh-button-black-700: hsl(var(--card)); 
+  --mh-button-border-radius: 9999px; /* Keep this for the pill shape */
   --mh-button-transition: 0.3s ease-in-out;
-  --mh-button-offset: 2px;
-  --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
-  --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.7);
-  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.5);
-  --mh-button-dots-color: hsl(var(--primary-foreground)); /* Themed */
-  --mh-button-sparkle-color: hsl(var(--primary-foreground)); /* Themed */
-  --mh-button-text-color: hsl(var(--primary-foreground)); /* Themed */
-  --mh-button-text-hover-opacity: 0.7;
+  --mh-button-offset: 2px; /* Original had this, can be used for subtle effects if desired */
+  
+  /* Active state theming */
+  --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75); /* Glow with primary color */
+  --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.7); /* Gradient with primary color */
+  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.5);   /* Gradient with primary color */
+
+  /* Dots and Sparkle theming */
+  --mh-button-dots-color: hsl(var(--primary-foreground)); /* Contrast with primary bg */
+  --mh-button-sparkle-color: hsl(var(--primary-foreground)); /* Contrast with primary bg */
+
+  /* Text theming */
+  --mh-button-text-color: hsl(var(--primary-foreground));
+  --mh-button-text-hover-opacity: 0.7; /* Original has this for text, seems fine */
+
+  /* Disabled state theming */
   --mh-button-disabled-opacity: 0.5;
-  --mh-button-disabled-bg: hsl(var(--muted)); /* Themed */
+  --mh-button-disabled-bg: hsl(var(--muted)); /* Use theme's muted color */
   --mh-button-disabled-shadow: none;
+
 
   cursor: pointer;
   position: relative;
@@ -484,16 +479,16 @@ body {
   justify-content: center;
   gap: 0.5rem;
   transform-origin: center;
-  padding: 0.8rem 1.5rem;
-  background-color: transparent;
+  padding: 0.8rem 1.5rem; /* Adjust padding as needed */
+  background-color: transparent; /* Base is transparent, ::before provides main bg */
   border: none;
   border-radius: var(--mh-button-border-radius);
-  transform: scale(calc(1 + (var(--active, 0) * 0.05))); 
+  transform: scale(calc(1 + (var(--active, 0) * 0.05))); /* Subtle scale on hover/focus */
   transition: transform var(--mh-button-transition);
-  min-width: 150px;
+  min-width: 150px; /* Ensure it has some minimum width */
 }
 
-.analyze-button-animated::before {
+.analyze-button-animated::before { /* Main background and shadow layer */
   content: "";
   position: absolute;
   top: 50%;
@@ -501,16 +496,17 @@ body {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: hsl(var(--primary)); /* Themed */
+  background-color: hsl(var(--primary)); /* Use primary color for button background */
   border-radius: var(--mh-button-border-radius);
-  box-shadow: inset 0 0.5px hsl(var(--border)), inset 0 -1px 2px 0 hsl(0, 0%, 0%),
-    0px 2px 5px -2px hsla(0 0% 0% / calc(1 - var(--active, 0))), 
-    0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); 
+  box-shadow: inset 0 0.5px hsl(var(--border)), /* Subtle inner border */
+              inset 0 -1px 2px 0 hsl(0, 0%, 0%), /* Inner bottom shadow for depth */
+              0px 2px 5px -2px hsla(0 0% 0% / calc(1 - var(--active, 0))), /* Base shadow */
+              0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); /* Active glow shadow */
   transition: all var(--mh-button-transition);
   z-index: 0;
 }
 
-.analyze-button-animated::after {
+.analyze-button-animated::after { /* Gradient overlay on active */
   content: "";
   position: absolute;
   top: 50%;
@@ -518,7 +514,7 @@ body {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: hsla(var(--primary-hsl-values), 0.75); 
+  background-color: hsla(var(--primary-hsl-values), 0.75); /* Fallback or base for gradient */
   background-image: radial-gradient(
       at 51% 89%,
       var(--mh-button-gradient-start) 0px,
@@ -530,18 +526,18 @@ body {
   opacity: var(--active, 0);
   border-radius: var(--mh-button-border-radius);
   transition: opacity var(--mh-button-transition);
-  z-index: 2;
+  z-index: 2; /* Above ::before but below text/icon */
 }
 
 .analyze-button-animated:is(:hover, :focus-visible) {
-  --active: 1;
+  --active: 1; /* Activates hover/focus styles */
 }
 .analyze-button-animated:active {
-  transform: scale(0.98); 
+  transform: scale(0.98); /* Slightly press down on active click */
 }
 
 .analyze-button-animated .dots_border {
-  --size_border: calc(100% + 2px);
+  --size_border: calc(100% + 2px); /* As per original */
   overflow: hidden;
   position: absolute;
   top: 50%;
@@ -551,45 +547,45 @@ body {
   height: var(--size_border);
   background-color: transparent;
   border-radius: var(--mh-button-border-radius);
-  z-index: -10; 
+  z-index: -10; /* Behind everything */
 }
 
 .analyze-button-animated .dots_border::before {
   content: "";
   position: absolute;
-  top: 30%; 
+  top: 30%; /* As per original */
   left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg); 
-  transform-origin: center; 
+  transform: translate(-50%, -50%) rotate(0deg); /* Ensure rotate is part of transform */
+  transform-origin: center; /* Rotate around center */
   width: 100%;
-  height: 2rem;
-  background-color: var(--mh-button-dots-color); 
-  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%); 
-  animation: mh-rotateDots 2s linear infinite; 
+  height: 2rem; /* As per original */
+  background-color: var(--mh-button-dots-color); /* Themed dots color */
+  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%); /* As per original */
+  animation: mh-rotateDots 2s linear infinite; /* Renamed animation to avoid conflict */
 }
 
-@keyframes mh-rotateDots { 
+@keyframes mh-rotateDots { /* Renamed animation */
   to {
-    transform: translate(-50%, -50%) rotate(360deg); 
+    transform: translate(-50%, -50%) rotate(360deg); /* Ensure translate is also present */
   }
 }
 
 .analyze-button-animated .sparkle {
   position: relative;
-  z-index: 10;
-  width: 1.5rem; 
-  height: 1.5rem; 
+  z-index: 10; /* Above background layers */
+  width: 1.5rem; /* Adjusted from 1.75rem to better fit with text/icon */
+  height: 1.5rem; /* Keep aspect ratio */
 }
 
 .analyze-button-animated .sparkle .path {
-  fill: var(--mh-button-sparkle-color); 
-  stroke: var(--mh-button-sparkle-color); 
+  fill: var(--mh-button-sparkle-color); /* Themed sparkle color */
+  stroke: var(--mh-button-sparkle-color); /* Themed sparkle color */
   transform-origin: center;
-  color: var(--mh-button-sparkle-color);
+  color: var(--mh-button-sparkle-color); /* For currentColor usage if path doesn't have fill/stroke */
 }
 
 .analyze-button-animated:is(:hover, :focus) .sparkle .path {
-  animation: mh-pathSparkle 1.5s linear 0.5s infinite; 
+  animation: mh-pathSparkle 1.5s linear 0.5s infinite; /* Renamed animation */
 }
 
 .analyze-button-animated .sparkle .path:nth-child(1) {
@@ -602,7 +598,7 @@ body {
   --scale_path_3: 1.2;
 }
 
-@keyframes mh-pathSparkle { 
+@keyframes mh-pathSparkle { /* Renamed animation */
   0%,
   34%,
   71%,
@@ -622,16 +618,16 @@ body {
 
 .analyze-button-animated .text_button {
   position: relative;
-  z-index: 10;
+  z-index: 10; /* Above background layers */
   background-image: linear-gradient(
     90deg,
-    var(--mh-button-text-color) 0%, 
-    hsla(0 0% 100% / var(--active, 0)) 120% 
+    var(--mh-button-text-color) 0%, /* Use themed text color */
+    hsla(0 0% 100% / var(--active, 0)) 120% /* Original effect, might need tweaking based on text color */
   );
   background-clip: text;
   font-size: 1rem;
   color: transparent;
-  font-weight: 600;
+  font-weight: 600; /* Match ShadCN button weight */
 }
 
 /* Disabled state for analyze-button-animated */
@@ -648,105 +644,18 @@ body {
 
 .analyze-button-animated:disabled::after,
 .analyze-button-animated:disabled .dots_border::before {
-  display: none; 
+  display: none; /* Hide active/hover effects */
 }
 
 .analyze-button-animated:disabled .sparkle {
-  opacity: 0.3; 
+  opacity: 0.3; /* Dim the sparkle icon */
 }
 .analyze-button-animated:disabled .text_button {
-  background-image: none; 
-  color: hsl(var(--muted-foreground)); 
+  background-image: none; /* Remove gradient text effect */
+  color: hsl(var(--muted-foreground)); /* Use muted text color */
   opacity: 0.7;
 }
 
-
-/* Botao Download Button CSS (for RoomCard PDF download) - Renamed to .download-button-card */
-.download-button-card { 
-  width: 40px; /* Adjusted for icon only initial state */
-  height: 40px;/* Adjusted for icon only initial state */
-  border-radius: 50%; /* Circular */
-  border: none;
-  /* box-shadow: 1px 1px hsla(var(--primary-hsl-values), 0.37);  */
-  padding: 0; /* Remove padding for icon-only */
-  background: hsl(var(--card)); /* Use card background for less intrusion */
-  color: hsl(var(--primary)); /* Icon color based on primary */
-  cursor: pointer;
-  /* filter: drop-shadow(0 0 5px hsla(var(--primary-hsl-values), 0.3));  */
-  transition: .3s linear;
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  position: relative; /* For tooltip positioning */
-}
-
-.download-button-card .svgIcon { /* Updated class name for SVG */
-  display: inline-block; /* Ensure SVG is visible */
-  width: 1.2em; /* Adjust icon size as needed */
-  height: 1.2em;
-  fill: hsl(var(--primary)); /* Use primary color for icon fill */
-}
-
-.download-button-card .icon2 { /* Keeping this structure as per original HTML */
-  display: none; /* Initially hidden as per original example */
-}
-
-.download-button-card .tooltip {
-  position: absolute;
-  /* Adjust tooltip positioning if needed; default was right: -105px */
-  top: 50%;
-  left: calc(100% + 10px); /* Position to the right of the button */
-  transform: translateY(-50%);
-  opacity: 0;
-  visibility: hidden; /* Hide completely when not hovered */
-  background-color: hsl(var(--popover));
-  color: hsl(var(--popover-foreground));
-  padding: 5px 10px;
-  border-radius: 5px;
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-  pointer-events: none;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  z-index: 100; /* Ensure tooltip is on top */
-}
-
-.download-button-card .tooltip::before {
-  position: absolute;
-  content: "";
-  width: 8px; /* Smaller arrow */
-  height: 8px;
-  background-color: hsl(var(--popover));
-  transform: translateY(-50%) rotate(45deg);
-  top: 50%;
-  left: -4px; /* Position arrow correctly */
-}
-
-.download-button-card:hover .tooltip {
-  opacity: 1;
-  visibility: visible; /* Make visible on hover */
-}
-
-.download-button-card:hover {
-  background-color: hsl(var(--primary)); /* Primary color on hover */
-  /* filter: drop-shadow(0 0 8px hsla(var(--primary-hsl-values), 0.5)); */
-}
-
-.download-button-card:hover .svgIcon {
-  fill: hsl(var(--primary-foreground)); /* Icon color changes to contrast with primary bg */
-  animation: slide-in-top 0.6s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-}
-
-/* Re-add keyframes if they were removed by mistake previously for this button */
-@keyframes slide-in-top { 
-  0% {
-    transform: translateY(-5px); /* Adjusted distance */
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0px);
-    opacity: 1;
-  }
-}
 
 /* Flipping Auth Form CSS */
 /* Using auth- prefix to avoid conflicts */
@@ -892,161 +801,6 @@ body {
   .auth-form_details {
     font-size: 1.5rem;
   }
-}
-
-/* Custom 3D Card Effect for Room Cards - Prefixed with custom-3d- */
-.custom-3d-card-wrapper {
-  position: relative;
-  width: 280px; /* Increased width */
-  height: 374px; /* Proportionally increased height */
-  transition: 200ms;
-  margin: 0.5rem; /* Add some margin for spacing */
-}
-
-.custom-3d-card-wrapper:active {
-  width: 270px; /* Adjust active state size */
-  height: 365px;
-}
-
-.custom-3d-card-interactive-area { /* This is the main content area that gets transformed */
-  position: absolute;
-  inset: 0;
-  z-index: 0; /* Behind trackers for hover, but content inside can have higher z-index */
-  display: flex;
-  flex-direction: column; /* To layout content inside */
-  justify-content: space-between; /* To push footer to bottom */
-  align-items: stretch; /* Ensure children can take full width */
-  border-radius: 20px;
-  transition: 700ms;
-  /* Updated gradient to Blue + Black */
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
-  overflow: hidden; /* Important to contain absolutely positioned children like ::before */
-}
-
-/* Hover glow effect */
-.custom-3d-card-wrapper:hover .custom-3d-card-interactive-area {
-  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4); /* Blue glow */
-  filter: brightness(1.15); /* Slightly brighten on hover */
-}
-
-.custom-3d-card-wrapper:hover .custom-3d-card-interactive-area::before { 
-  transition: 200ms;
-  content: ''; /* Content must be defined for ::before to show */
-  opacity: 0.6; /* Increase opacity of blur on hover */
-}
-
-.custom-3d-card-canvas {
-  perspective: 800px;
-  inset: 0;
-  z-index: 1; /* Canvas is above the wrapper's base, but content area is child of canvas */
-  position: absolute;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
-  gap: 0px 0px;
-  grid-template-areas: "tr-1 tr-2 tr-3 tr-4 tr-5"
-    "tr-6 tr-7 tr-8 tr-9 tr-10"
-    "tr-11 tr-12 tr-13 tr-14 tr-15"
-    "tr-16 tr-17 tr-18 tr-19 tr-20"
-    "tr-21 tr-22 tr-23 tr-24 tr-25";
-}
-
-.custom-3d-card-interactive-area::before {
-  content: '';
-  /* Updated gradient for blur */
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
-  filter: blur(2rem);
-  opacity: 0.4; /* Initial opacity */
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top:0; 
-  left:0;
-  z-index: -1; /* Behind the interactive area's content */
-  transition: 200ms;
-  border-radius: inherit; /* Inherit border-radius from parent */
-}
-
-.custom-3d-tracker {
-  /* Grid items for hover. These SHOULD NOT block pointer events
-     if the content below them needs to be clickable.
-     However, for this specific CSS effect, they *are* the hover targets.
-     The issue of button clickability needs careful handling.
-  */
-   /* z-index removed from here, let them be in the grid flow.
-      The .custom-3d-card-interactive-area which is a sibling, will be transformed.
-      If buttons are *inside* .custom-3d-card-interactive-area, their clickability depends on
-      whether the trackers fully obscure .custom-3d-card-interactive-area visually/interactively.
-   */
-}
-
-.custom-3d-tracker:hover {
-  cursor: pointer;
-}
-
-/* These apply the transform to the .custom-3d-card-interactive-area when a tracker is hovered */
-.custom-3d-tracker:hover ~ .custom-3d-card-interactive-area { 
-  transition: 125ms ease-in-out !important; /* Force transition */
-}
-
-.tr-1 { grid-area: tr-1; }
-.tr-2 { grid-area: tr-2; }
-.tr-3 { grid-area: tr-3; }
-.tr-4 { grid-area: tr-4; }
-.tr-5 { grid-area: tr-5; }
-.tr-6 { grid-area: tr-6; }
-.tr-7 { grid-area: tr-7; }
-.tr-8 { grid-area: tr-8; }
-.tr-9 { grid-area: tr-9; }
-.tr-10 { grid-area: tr-10; }
-.tr-11 { grid-area: tr-11; }
-.tr-12 { grid-area: tr-12; }
-.tr-13 { grid-area: tr-13; }
-.tr-14 { grid-area: tr-14; }
-.tr-15 { grid-area: tr-15; }
-.tr-16 { grid-area: tr-16; }
-.tr-17 { grid-area: tr-17; }
-.tr-18 { grid-area: tr-18; }
-.tr-19 { grid-area: tr-19; }
-.tr-20 { grid-area: tr-20; }
-.tr-21 { grid-area: tr-21; }
-.tr-22 { grid-area: tr-22; }
-.tr-23 { grid-area: tr-23; }
-.tr-24 { grid-area: tr-24; }
-.tr-25 { grid-area: tr-25; }
-
-.tr-1:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-2:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-3:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
-.tr-4:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
-.tr-5:hover ~ .custom-3d-card-interactive-area { transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
-.tr-6:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-7:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-8:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
-.tr-9:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
-.tr-10:hover ~ .custom-3d-card-interactive-area { transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
-.tr-11:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-12:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-13:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-.tr-14:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
-.tr-15:hover ~ .custom-3d-card-interactive-area { transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
-.tr-16:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-17:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-18:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
-.tr-19:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
-.tr-20:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
-.tr-21:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-22:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-23:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
-.tr-24:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
-.tr-25:hover ~ .custom-3d-card-interactive-area { transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
-
-.noselect {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
 /* Download button for RoomCard - .download-button-card */
