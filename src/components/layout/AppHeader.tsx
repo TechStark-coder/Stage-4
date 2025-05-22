@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useLoader } from "@/contexts/LoaderContext";
+import { useLoader } from "@/contexts/LoaderContext"; // Import useLoader
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,19 +27,19 @@ export function AppHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuthContext();
-  const { showLoader, hideLoader } = useLoader();
+  const { showLoader, hideLoader } = useLoader(); // Get loader functions
 
   const handleLogout = async () => {
-    showLoader();
+    showLoader(); // Show loader immediately
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
       router.push("/login");
+      // No hideLoader() here; AppRouterEvents on the login page will handle it
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message, variant: "destructive" });
       hideLoader(); // Hide loader only if logout fails
     }
-    // Loader will be hidden by AppRouterEvents on successful navigation
   };
 
   const userName = user?.displayName || (user?.email ? user.email.split('@')[0] : "User");
@@ -49,7 +49,7 @@ export function AppHeader() {
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
         <Link href="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-primary">
           <Image
-            src="/logo-arc-stay.png"
+            src="/logo-arc-stay.png" 
             alt="ARC Stay Logo"
             width={32}
             height={32}
