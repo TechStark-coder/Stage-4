@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2, Edit } from "lucide-react"; // Changed Pencil to Edit for consistency
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2, Edit } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import {
@@ -20,14 +20,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteHomeAndCoverImage } from "@/lib/firestore"; // Assuming this function also handles localStorage
+import { deleteHome } from "@/lib/firestore"; // Changed import
 import { useToast } from "@/hooks/use-toast";
-import { EditHomeDialog } from "./EditHomeDialog"; 
+import { EditHomeDialog } from "./EditHomeDialog";
 import { useLoader } from "@/contexts/LoaderContext";
 
 interface HomeCardProps {
   home: Home;
-  onHomeAction: () => void; 
+  onHomeAction: () => void;
 }
 
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
@@ -45,13 +45,13 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
       setCoverImageSrc(null);
     }
     setIsLoadingImage(false);
-  // The onHomeAction dependency is important here to re-trigger image loading if an edit changes the image.
-  }, [home.id, onHomeAction]); 
+  }, [home.id, onHomeAction]);
 
   const handleDelete = async () => {
     showLoader();
     try {
-      await deleteHomeAndCoverImage(home.id); // Updated function name
+      await deleteHome(home.id); // Use imported deleteHome
+      localStorage.removeItem(`homeCover_${home.id}`); // Remove from localStorage
       toast({
         title: "Home Deleted",
         description: `Home "${home.name}" and all its data have been deleted.`,
@@ -141,5 +141,3 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
     </Card>
   );
 }
-
-    
