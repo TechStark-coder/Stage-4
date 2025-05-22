@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+// import Image from "next/image"; // No longer using next/image for the logo here
 import { Button } from "@/components/ui/button";
 import { auth } from "@/config/firebase";
 import { signOut } from "@/lib/auth";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useLoader } from "@/contexts/LoaderContext"; // Import useLoader
+import { useLoader } from "@/contexts/LoaderContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,19 +23,45 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const ArcStayLogo = () => (
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-8 w-8 text-primary"
+  >
+    <path
+      d="M50 15L15 85H30L50 45L70 85H85L50 15Z"
+      stroke="currentColor"
+      strokeWidth="10"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M38 60H62"
+      stroke="currentColor"
+      strokeWidth="10"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+
 export function AppHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuthContext();
-  const { showLoader, hideLoader } = useLoader(); // Get loader functions
+  const { showLoader, hideLoader } = useLoader();
 
   const handleLogout = async () => {
-    showLoader(); // Show loader immediately
+    showLoader();
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
       router.push("/login");
-      // No hideLoader() here; AppRouterEvents on the login page will handle it
+      // AppRouterEvents on /login page will handle hiding the loader
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message, variant: "destructive" });
       hideLoader(); // Hide loader only if logout fails
@@ -48,13 +74,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
         <Link href="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-primary">
-          <Image
-            src="/logo-arc-stay.png" 
-            alt="ARC Stay Logo"
-            width={32}
-            height={32}
-            className="h-8 w-8"
-          />
+          <ArcStayLogo />
           <span>ARC Stay</span>
         </Link>
         <div className="flex-grow text-center">
