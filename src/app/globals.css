@@ -8,79 +8,76 @@ body {
 
 @layer base {
   :root {
-    /* New Theme based on gradient */
-    --background: 197 63% 16%; /* Base for cards if not transparent; from #0f3443 */
+    /* Dark Gradient Theme */
+    --background-start-rgb: 0, 0, 0; /* Black */
+    --background-end-rgb: 67, 67, 67; /* #434343 */
+
+    --background: 0 0% 7%; /* Approx avg of the gradient for fallback, or a dark base */
     --foreground: 0 0% 98%; /* Light text for readability on dark backgrounds */
 
-    --card: 197 50% 20%; /* Slightly lighter, less saturated dark blue for cards */
+    --card: 0 0% 12%; /* Dark gray for cards, matches .input background from custom form */
     --card-foreground: 0 0% 98%;
 
-    --popover: 197 50% 22%; /* Similar to card */
+    --popover: 0 0% 10%; /* Similar to card */
     --popover-foreground: 0 0% 98%;
 
-    --primary: 153 78% 50%; /* Green from gradient #34e89e, adjusted */
-    --primary-foreground: 0 0% 10%; /* Dark text for contrast on green primary */
+    --primary: 260 90% 65%; /* A vibrant purple, can be adjusted */
+    --primary-foreground: 0 0% 98%; /* Light text for primary buttons */
+    
+    /* HSL versions for button animation */
+    --primary-hsl-values: 260, 90%, 65%;
+    --muted-hsl-values: 220, 10%, 50%;
 
-    --secondary: 197 30% 35%; /* Muted blue/gray */
+
+    --secondary: 220 15% 25%; /* Muted blue/gray */
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 197 20% 25%; /* Darker, less saturated blue/gray */
-    --muted-foreground: 0 0% 65%; /* Lighter gray for muted text */
+    --muted: 220 10% 50%; /* Darker, less saturated blue/gray */
+    --muted-foreground: 0 0% 60%; /* Lighter gray for muted text */
 
-    --accent: 50 100% 60%; /* Bright yellow/gold for accents */
+    --accent: 45 100% 55%; /* A soft yellow/gold for accents */
     --accent-foreground: 0 0% 10%; /* Dark text for contrast on yellow accent */
 
-    --destructive: 0 70% 55%; /* A clearer red for destructive actions */
+    --destructive: 0 70% 50%; /* A clearer red for destructive actions */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 197 40% 30%; /* Border color */
-    --input: 197 40% 25%;  /* Input background */
-    --ring: 153 78% 50%; /* Primary color for focus rings */
+    --border: 0 0% 20%; /* Border color for dark theme */
+    --input: 0 0% 16%;  /* Dark input background, e.g. #292929 */
+    --input-foreground: 0 0% 98%; /* Text color for inputs */
+    --ring: 260 90% 70%; /* Brighter primary color for focus rings */
 
     --radius: 0.5rem;
 
-    /* Sidebar specific variables, can be adjusted if sidebar is heavily used */
-    /* For now, making them consistent with the dark theme */
-    --sidebar-background: 197 60% 12%; /* Darker variant of main background */
+    /* Sidebar specific variables - can be themed darker if needed */
+    --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 153 78% 50%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 197 50% 25%;
+    --sidebar-primary: 260 90% 65%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 197 50% 28%;
-    --sidebar-ring: 153 78% 50%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 260 90% 70%;
+
+     /* Custom Button (MuhammadHasann) Variables */
+    --mh-button-black-700: hsl(var(--card)); /* ~12% black */
+    --mh-button-border-radius: 9999px;
+    --mh-button-transition: 0.3s ease-in-out;
+    --mh-button-active-shadow-color: hsl(var(--primary) / 0.75);
+    --mh-button-gradient-start: hsla(266, 45%, 74%, 1);
+    --mh-button-gradient-mid: hsla(266, 36%, 60%, 1);
+    --mh-button-dots-color: hsl(var(--primary-foreground));
+    --mh-button-sparkle-color: hsl(var(--primary-foreground));
+    --mh-button-text-color: hsl(var(--primary-foreground));
+    --mh-button-text-hover-opacity: 0.7; /* Opacity for text fade effect */
+     /* Disabled state for MuhammadHasann button */
+    --mh-button-disabled-opacity: 0.5;
+    --mh-button-disabled-bg: hsl(var(--muted));
+    --mh-button-disabled-shadow: none;
+
   }
 
   .dark {
-    /* Keeping dark mode variables, they are now the default effectively */
-    --background: 197 63% 16%;
-    --foreground: 0 0% 98%;
-    --card: 197 50% 20%;
-    --card-foreground: 0 0% 98%;
-    --popover: 197 50% 22%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 153 78% 50%;
-    --primary-foreground: 0 0% 10%;
-    --secondary: 197 30% 35%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 197 20% 25%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 50 100% 60%;
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 197 40% 30%;
-    --input: 197 40% 25%;
-    --ring: 153 78% 50%;
-    
-    --sidebar-background: 197 60% 12%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 153 78% 50%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 197 50% 25%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 197 50% 28%;
-    --sidebar-ring: 153 78% 50%;
+    /* All variables are already defined for a dark theme in :root */
   }
 }
 
@@ -90,9 +87,10 @@ body {
   }
   body {
     @apply text-foreground;
-    background: #0f3443; /* Fallback */
-    background: -webkit-linear-gradient(to right, #0f3443, #34e89e);
-    background: linear-gradient(to right, #0f3443, #34e89e);
+    /* background: #000000; Fallback */
+    /* background: -webkit-linear-gradient(to right, #434343, #000000); Chrome 10-25, Safari 5.1-6 */
+    /* background: linear-gradient(to right, #434343, #000000); W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    background: linear-gradient(to right, rgb(var(--background-end-rgb)), rgb(var(--background-start-rgb)));
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -142,7 +140,7 @@ body {
   top: 0;
   width: 100%;
   height: 100%;
-  background: hsl(var(--primary)); /* Updated to use theme primary color */
+  background: hsl(var(--primary));
 }
 
 .banter-loader__box:nth-child(3n) {
@@ -163,456 +161,141 @@ body {
 }
 
 @keyframes moveBox-1 {
-  9.0909090909% {
-    transform: translate(-26px, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(0px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(0px, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(26px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(26px, 26px);
-  }
-
-  54.5454545455% {
-    transform: translate(26px, 26px);
-  }
-
-  63.6363636364% {
-    transform: translate(26px, 26px);
-  }
-
-  72.7272727273% {
-    transform: translate(26px, 0px);
-  }
-
-  81.8181818182% {
-    transform: translate(0px, 0px);
-  }
-
-  90.9090909091% {
-    transform: translate(-26px, 0px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(-26px, 0); }
+  18.1818181818% { transform: translate(0px, 0); }
+  27.2727272727% { transform: translate(0px, 0); }
+  36.3636363636% { transform: translate(26px, 0); }
+  45.4545454545% { transform: translate(26px, 26px); }
+  54.5454545455% { transform: translate(26px, 26px); }
+  63.6363636364% { transform: translate(26px, 26px); }
+  72.7272727273% { transform: translate(26px, 0px); }
+  81.8181818182% { transform: translate(0px, 0px); }
+  90.9090909091% { transform: translate(-26px, 0px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(1) {
-  animation: moveBox-1 4s infinite;
-}
+.banter-loader__box:nth-child(1) { animation: moveBox-1 4s infinite; }
 
 @keyframes moveBox-2 {
-  9.0909090909% {
-    transform: translate(0, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(0px, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(26px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(26px, 26px);
-  }
-
-  54.5454545455% {
-    transform: translate(26px, 26px);
-  }
-
-  63.6363636364% {
-    transform: translate(26px, 26px);
-  }
-
-  72.7272727273% {
-    transform: translate(26px, 26px);
-  }
-
-  81.8181818182% {
-    transform: translate(0px, 26px);
-  }
-
-  90.9090909091% {
-    transform: translate(0px, 26px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(0, 0); }
+  18.1818181818% { transform: translate(26px, 0); }
+  27.2727272727% { transform: translate(0px, 0); }
+  36.3636363636% { transform: translate(26px, 0); }
+  45.4545454545% { transform: translate(26px, 26px); }
+  54.5454545455% { transform: translate(26px, 26px); }
+  63.6363636364% { transform: translate(26px, 26px); }
+  72.7272727273% { transform: translate(26px, 26px); }
+  81.8181818182% { transform: translate(0px, 26px); }
+  90.9090909091% { transform: translate(0px, 26px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(2) {
-  animation: moveBox-2 4s infinite;
-}
+.banter-loader__box:nth-child(2) { animation: moveBox-2 4s infinite; }
 
 @keyframes moveBox-3 {
-  9.0909090909% {
-    transform: translate(-26px, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(-26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(0px, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(-26px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(-26px, 0);
-  }
-
-  54.5454545455% {
-    transform: translate(-26px, 0);
-  }
-
-  63.6363636364% {
-    transform: translate(-26px, 0);
-  }
-
-  72.7272727273% {
-    transform: translate(-26px, 0);
-  }
-
-  81.8181818182% {
-    transform: translate(-26px, -26px);
-  }
-
-  90.9090909091% {
-    transform: translate(0px, -26px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(-26px, 0); }
+  18.1818181818% { transform: translate(-26px, 0); }
+  27.2727272727% { transform: translate(0px, 0); }
+  36.3636363636% { transform: translate(-26px, 0); }
+  45.4545454545% { transform: translate(-26px, 0); }
+  54.5454545455% { transform: translate(-26px, 0); }
+  63.6363636364% { transform: translate(-26px, 0); }
+  72.7272727273% { transform: translate(-26px, 0); }
+  81.8181818182% { transform: translate(-26px, -26px); }
+  90.9090909091% { transform: translate(0px, -26px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(3) {
-  animation: moveBox-3 4s infinite;
-}
+.banter-loader__box:nth-child(3) { animation: moveBox-3 4s infinite; }
 
 @keyframes moveBox-4 {
-  9.0909090909% {
-    transform: translate(-26px, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(-26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(-26px, -26px);
-  }
-
-  36.3636363636% {
-    transform: translate(0px, -26px);
-  }
-
-  45.4545454545% {
-    transform: translate(0px, 0px);
-  }
-
-  54.5454545455% {
-    transform: translate(0px, -26px);
-  }
-
-  63.6363636364% {
-    transform: translate(0px, -26px);
-  }
-
-  72.7272727273% {
-    transform: translate(0px, -26px);
-  }
-
-  81.8181818182% {
-    transform: translate(-26px, -26px);
-  }
-
-  90.9090909091% {
-    transform: translate(-26px, 0px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(-26px, 0); }
+  18.1818181818% { transform: translate(-26px, 0); }
+  27.2727272727% { transform: translate(-26px, -26px); }
+  36.3636363636% { transform: translate(0px, -26px); }
+  45.4545454545% { transform: translate(0px, 0px); }
+  54.5454545455% { transform: translate(0px, -26px); }
+  63.6363636364% { transform: translate(0px, -26px); }
+  72.7272727273% { transform: translate(0px, -26px); }
+  81.8181818182% { transform: translate(-26px, -26px); }
+  90.9090909091% { transform: translate(-26px, 0px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(4) {
-  animation: moveBox-4 4s infinite;
-}
+.banter-loader__box:nth-child(4) { animation: moveBox-4 4s infinite; }
 
 @keyframes moveBox-5 {
-  9.0909090909% {
-    transform: translate(0, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(0, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(0, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(26px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(26px, 0);
-  }
-
-  54.5454545455% {
-    transform: translate(26px, 0);
-  }
-
-  63.6363636364% {
-    transform: translate(26px, 0);
-  }
-
-  72.7272727273% {
-    transform: translate(26px, 0);
-  }
-
-  81.8181818182% {
-    transform: translate(26px, -26px);
-  }
-
-  90.9090909091% {
-    transform: translate(0px, -26px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(0, 0); }
+  18.1818181818% { transform: translate(0, 0); }
+  27.2727272727% { transform: translate(0, 0); }
+  36.3636363636% { transform: translate(26px, 0); }
+  45.4545454545% { transform: translate(26px, 0); }
+  54.5454545455% { transform: translate(26px, 0); }
+  63.6363636364% { transform: translate(26px, 0); }
+  72.7272727273% { transform: translate(26px, 0); }
+  81.8181818182% { transform: translate(26px, -26px); }
+  90.9090909091% { transform: translate(0px, -26px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(5) {
-  animation: moveBox-5 4s infinite;
-}
+.banter-loader__box:nth-child(5) { animation: moveBox-5 4s infinite; }
 
 @keyframes moveBox-6 {
-  9.0909090909% {
-    transform: translate(0, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(-26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(-26px, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(0px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(0px, 0);
-  }
-
-  54.5454545455% {
-    transform: translate(0px, 0);
-  }
-
-  63.6363636364% {
-    transform: translate(0px, 0);
-  }
-
-  72.7272727273% {
-    transform: translate(0px, 26px);
-  }
-
-  81.8181818182% {
-    transform: translate(-26px, 26px);
-  }
-
-  90.9090909091% {
-    transform: translate(-26px, 0px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(0, 0); }
+  18.1818181818% { transform: translate(-26px, 0); }
+  27.2727272727% { transform: translate(-26px, 0); }
+  36.3636363636% { transform: translate(0px, 0); }
+  45.4545454545% { transform: translate(0px, 0); }
+  54.5454545455% { transform: translate(0px, 0); }
+  63.6363636364% { transform: translate(0px, 0); }
+  72.7272727273% { transform: translate(0px, 26px); }
+  81.8181818182% { transform: translate(-26px, 26px); }
+  90.9090909091% { transform: translate(-26px, 0px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(6) {
-  animation: moveBox-6 4s infinite;
-}
+.banter-loader__box:nth-child(6) { animation: moveBox-6 4s infinite; }
 
 @keyframes moveBox-7 {
-  9.0909090909% {
-    transform: translate(26px, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(26px, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(0px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(0px, -26px);
-  }
-
-  54.5454545455% {
-    transform: translate(26px, -26px);
-  }
-
-  63.6363636364% {
-    transform: translate(0px, -26px);
-  }
-
-  72.7272727273% {
-    transform: translate(0px, -26px);
-  }
-
-  81.8181818182% {
-    transform: translate(0px, 0px);
-  }
-
-  90.9090909091% {
-    transform: translate(26px, 0px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(26px, 0); }
+  18.1818181818% { transform: translate(26px, 0); }
+  27.2727272727% { transform: translate(26px, 0); }
+  36.3636363636% { transform: translate(0px, 0); }
+  45.4545454545% { transform: translate(0px, -26px); }
+  54.5454545455% { transform: translate(26px, -26px); }
+  63.6363636364% { transform: translate(0px, -26px); }
+  72.7272727273% { transform: translate(0px, -26px); }
+  81.8181818182% { transform: translate(0px, 0px); }
+  90.9090909091% { transform: translate(26px, 0px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(7) {
-  animation: moveBox-7 4s infinite;
-}
+.banter-loader__box:nth-child(7) { animation: moveBox-7 4s infinite; }
 
 @keyframes moveBox-8 {
-  9.0909090909% {
-    transform: translate(0, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(-26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(-26px, -26px);
-  }
-
-  36.3636363636% {
-    transform: translate(0px, -26px);
-  }
-
-  45.4545454545% {
-    transform: translate(0px, -26px);
-  }
-
-  54.5454545455% {
-    transform: translate(0px, -26px);
-  }
-
-  63.6363636364% {
-    transform: translate(0px, -26px);
-  }
-
-  72.7272727273% {
-    transform: translate(0px, -26px);
-  }
-
-  81.8181818182% {
-    transform: translate(26px, -26px);
-  }
-
-  90.9090909091% {
-    transform: translate(26px, 0px);
-  }
-
-  100% {
-    transform: translate(0px, 0px);
-  }
+  9.0909090909% { transform: translate(0, 0); }
+  18.1818181818% { transform: translate(-26px, 0); }
+  27.2727272727% { transform: translate(-26px, -26px); }
+  36.3636363636% { transform: translate(0px, -26px); }
+  45.4545454545% { transform: translate(0px, -26px); }
+  54.5454545455% { transform: translate(0px, -26px); }
+  63.6363636364% { transform: translate(0px, -26px); }
+  72.7272727273% { transform: translate(0px, -26px); }
+  81.8181818182% { transform: translate(26px, -26px); }
+  90.9090909091% { transform: translate(26px, 0px); }
+  100% { transform: translate(0px, 0px); }
 }
-
-.banter-loader__box:nth-child(8) {
-  animation: moveBox-8 4s infinite;
-}
+.banter-loader__box:nth-child(8) { animation: moveBox-8 4s infinite; }
 
 @keyframes moveBox-9 {
-  9.0909090909% {
-    transform: translate(-26px, 0);
-  }
-
-  18.1818181818% {
-    transform: translate(-26px, 0);
-  }
-
-  27.2727272727% {
-    transform: translate(0px, 0);
-  }
-
-  36.3636363636% {
-    transform: translate(-26px, 0);
-  }
-
-  45.4545454545% {
-    transform: translate(0px, 0);
-  }
-
-  54.5454545455% {
-    transform: translate(0px, 0);
-  }
-
-  63.6363636364% {
-    transform: translate(-26px, 0);
-  }
-
-  72.7272727273% {
-    transform: translate(-26px, 0);
-  }
-
-  81.8181818182% {
-    transform: translate(-52px, 0);
-  }
-
-  90.9090909091% {
-    transform: translate(-26px, 0);
-  }
-
-  100% {
-    transform: translate(0px, 0);
-  }
+  9.0909090909% { transform: translate(-26px, 0); }
+  18.1818181818% { transform: translate(-26px, 0); }
+  27.2727272727% { transform: translate(0px, 0); }
+  36.3636363636% { transform: translate(-26px, 0); }
+  45.4545454545% { transform: translate(0px, 0); }
+  54.5454545455% { transform: translate(0px, 0); }
+  63.6363636364% { transform: translate(-26px, 0); }
+  72.7272727273% { transform: translate(-26px, 0); }
+  81.8181818182% { transform: translate(-52px, 0); }
+  90.9090909091% { transform: translate(-26px, 0); }
+  100% { transform: translate(0px, 0); }
 }
+.banter-loader__box:nth-child(9) { animation: moveBox-9 4s infinite; }
 
-.banter-loader__box:nth-child(9) {
-  animation: moveBox-9 4s infinite;
-}
-
-/* AI Analysis Loader Styles */
+/* AI Analysis Loader ("mrhyddenn" spinner) Styles */
 .ai-analysis-loader-overlay {
   position: fixed;
   top: 0;
@@ -626,38 +309,47 @@ body {
   align-items: center;
 }
 
-.ai-spinner { /* Renamed from .spinner to .ai-spinner */
-  position: relative; /* Will be centered by overlay */
-  background-image: linear-gradient(rgb(186, 66, 255) 35%,rgb(0, 225, 255));
-  width: 100px;
-  height: 100px;
-  animation: spinning82341 1.7s linear infinite;
-  text-align: center;
-  border-radius: 50px;
-  filter: blur(1px);
-  box-shadow: 0px -5px 20px 0px rgb(186, 66, 255), 0px 5px 20px 0px rgb(0, 225, 255);
+/* From Uiverse.io by mrhyddenn - Adapted for global overlay */
+.ai-spinner { /* Renamed from .spinner to .ai-spinner to avoid conflict */
+  width: 3em;
+  height: 3em;
+  /* cursor: not-allowed; Removed, not needed for passive loader */
+  border-radius: 50%;
+  border: 2px solid #444; /* Keep or theme with var(--border) */
+  box-shadow: -10px -10px 10px hsl(var(--primary) / 0.7), 
+              0px -10px 10px 0px hsl(var(--accent) / 0.7),  /* Example theming */
+              10px -10px 10px hsl(var(--destructive) / 0.5), /* Example theming */
+              10px 0 10px #ff0b0b, /* Keep some original colors if desired */
+              10px 10px 10px 0px#ff5500, 
+              0 10px 10px 0px #ff9500, 
+              -10px 10px 10px 0px #ffb700;
+  animation: rot55 0.7s linear infinite;
+  /* position: relative; Ensure it's correctly positioned by overlay */
 }
 
-.ai-spinner-inner { /* Renamed from .spinner1 to .ai-spinner-inner */
-  background-color: rgb(36, 36, 36);
-  width: 100px;
-  height: 100px;
-  border-radius: 50px;
-  filter: blur(10px);
+.ai-spinner-inner { /* Renamed from .spinnerin */
+  border: 2px solid #444; /* Keep or theme with var(--border) */
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-@keyframes spinning82341 {
+@keyframes rot55 {
   to {
     transform: rotate(360deg);
   }
 }
 
-/* From Uiverse.io by SelfMadeSystem - Codepen Button */
+/* From Uiverse.io by SelfMadeSystem - Codepen Button (Download PDF) */
 .codepen-button {
   display: block;
   cursor: pointer;
-  color: white;
-  /* margin: 0 auto; */ /* Removed to allow flex alignment in CardFooter */
+  color: hsl(var(--primary-foreground)); /* Themed */
+  /* margin: 0 auto; Removed to allow flex alignment in CardFooter */
   position: relative;
   text-decoration: none;
   font-weight: 600;
@@ -674,7 +366,7 @@ body {
   left: 0;
   width: 400%;
   height: 100%;
-  background: linear-gradient(115deg,#4fcf70,#fad648,#a767e5,#12bcfe,#44ce7b);
+  background: linear-gradient(115deg,hsl(var(--primary)), hsl(var(--accent)), #a767e5, #12bcfe, hsl(var(--primary) / 0.8)); /* Themed colors */
   background-size: 25% 100%;
   animation: an-at-keyframe-css-at-rule-that-translates-via-the-transform-property-the-background-by-negative-25-percent-of-its-width-so-that-it-gives-a-nice-border-animation_-We-use-the-translate-property-to-have-a-nice-transition-so-it_s-not-a-jerk-of-a-start-or-stop .75s linear infinite;
   animation-play-state: paused;
@@ -708,22 +400,436 @@ body {
 
 /* Welcome Message Shine Effect */
 .welcome-message-shine {
-  /* color: #fff; */ /* Base color of text, will be overridden by -webkit-text-fill-color */
-  background: linear-gradient(to right, hsl(var(--foreground)) 20%, hsl(var(--primary)) 40%, hsl(var(--foreground)) 60%, hsl(var(--foreground)) 100%);
-  background-size: 200% auto; /* Ensure gradient is large enough for animation */
-  background-position: 0;
+  background: linear-gradient(to right, hsl(var(--foreground)) 20%, hsl(var(--primary)) 40%, hsl(var(--primary)/0.7) 50% , hsl(var(--foreground)) 60%, hsl(var(--foreground)) 100%);
+  background-size: 250% auto;
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: welcome-shine 4s linear infinite; /* Slower animation for welcome message */
+  animation: welcome-shine 5s linear infinite; /* Slower animation */
   -webkit-text-size-adjust: none;
-  white-space: nowrap; /* Keep welcome message on one line if desired */
+  white-space: nowrap;
 }
 
 @keyframes welcome-shine {
   0% {
-    background-position: 200% center; /* Start from one end */
+    background-position: -150% center; /* Start further left */
   }
   100% {
-    background-position: -200% center; /* Move to the other end */
+    background-position: 150% center; /* End further right */
+  }
+}
+
+
+/* MuhammadHasann Animated Button CSS (for Analyze Images) */
+.analyze-button-animated { /* Renamed from .button to avoid conflicts */
+  --mh-button-black-700: hsl(var(--card)); /* Themed */
+  --mh-button-border-radius: 9999px;
+  --mh-button-transition: 0.3s ease-in-out;
+  --mh-button-offset: 2px;
+  --mh-button-active-shadow-color: hsl(var(--primary) / 0.75);
+  --mh-button-gradient-start: hsla(266, 45%, 74%, 1);
+  --mh-button-gradient-mid: hsla(266, 36%, 60%, 1);
+  --mh-button-dots-color: hsl(var(--primary-foreground));
+  --mh-button-sparkle-color: hsl(var(--primary-foreground));
+  --mh-button-text-color: hsl(var(--primary-foreground));
+  --mh-button-text-hover-opacity: 0.7;
+  --mh-button-disabled-opacity: 0.5;
+  --mh-button-disabled-bg: hsl(var(--muted));
+  --mh-button-disabled-shadow: none;
+
+
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center content */
+  gap: 0.5rem;
+  transform-origin: center;
+  padding: 0.8rem 1.5rem; /* Adjusted padding */
+  background-color: transparent;
+  border: none;
+  border-radius: var(--mh-button-border-radius);
+  transform: scale(calc(1 + (var(--active, 0) * 0.05))); /* Reduced hover scale */
+  transition: transform var(--mh-button-transition);
+  min-width: 150px; /* Ensure some minimum width */
+}
+
+.analyze-button-animated::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background-color: var(--mh-button-black-700);
+  border-radius: var(--mh-button-border-radius);
+  box-shadow: inset 0 0.5px hsl(var(--border)), inset 0 -1px 2px 0 hsl(0, 0%, 0%),
+    0px 2px 5px -2px hsla(0 0% 0% / calc(1 - var(--active, 0))), /* Adjusted shadow */
+    0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); /* Adjusted shadow size */
+  transition: all var(--mh-button-transition);
+  z-index: 0;
+}
+
+.analyze-button-animated::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background-color: hsla(var(--primary-hsl-values), 0.75); /* Themed */
+  background-image: radial-gradient(
+      at 51% 89%,
+      hsla(var(--primary-hsl-values), 1) 0px, /* Themed */
+      transparent 50%
+    ),
+    radial-gradient(at 100% 100%, hsla(var(--primary-hsl-values), 0.8) 0px, transparent 50%), /* Themed */
+    radial-gradient(at 22% 91%, hsla(var(--primary-hsl-values), 0.8) 0px, transparent 50%); /* Themed */
+  background-position: top;
+  opacity: var(--active, 0);
+  border-radius: var(--mh-button-border-radius);
+  transition: opacity var(--mh-button-transition);
+  z-index: 2;
+}
+
+.analyze-button-animated:is(:hover, :focus-visible) {
+  --active: 1;
+}
+.analyze-button-animated:active {
+  transform: scale(0.98); /* Slightly more pronounced active scale */
+}
+
+.analyze-button-animated .dots_border {
+  --size_border: calc(100% + 2px);
+  overflow: hidden;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--size_border);
+  height: var(--size_border);
+  background-color: transparent;
+  border-radius: var(--mh-button-border-radius);
+  z-index: -10; /* Ensure it's behind the main button content */
+}
+
+.analyze-button-animated .dots_border::before {
+  content: "";
+  position: absolute;
+  top: 30%; /* Adjust if needed */
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg); /* Combined transform */
+  transform-origin: center; /* Changed from left to center for better rotation */
+  width: 100%;
+  height: 2rem;
+  background-color: var(--mh-button-dots-color); /* Themed */
+  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%); /* Themed */
+  animation: rotateDots 2s linear infinite; /* Renamed animation */
+}
+
+@keyframes rotateDots { /* Renamed animation */
+  to {
+    transform: translate(-50%, -50%) rotate(360deg); /* Ensure continuous rotation */
+  }
+}
+
+.analyze-button-animated .sparkle {
+  position: relative;
+  z-index: 10;
+  width: 1.5rem; /* Adjusted size */
+  height: 1.5rem; /* Ensure consistent size */
+}
+
+.analyze-button-animated .sparkle .path {
+  fill: var(--mh-button-sparkle-color); /* Themed */
+  stroke: var(--mh-button-sparkle-color); /* Themed */
+  transform-origin: center;
+  color: var(--mh-button-sparkle-color); /* Ensure this is set if currentColor is used in SVG */
+}
+
+.analyze-button-animated:is(:hover, :focus) .sparkle .path {
+  animation: pathSparkle 1.5s linear 0.5s infinite; /* Renamed animation */
+}
+
+.analyze-button-animated .sparkle .path:nth-child(1) {
+  --scale_path_1: 1.2;
+}
+.analyze-button-animated .sparkle .path:nth-child(2) {
+  --scale_path_2: 1.2;
+}
+.analyze-button-animated .sparkle .path:nth-child(3) {
+  --scale_path_3: 1.2;
+}
+
+@keyframes pathSparkle { /* Renamed animation */
+  0%,
+  34%,
+  71%,
+  100% {
+    transform: scale(1);
+  }
+  17% {
+    transform: scale(var(--scale_path_1, 1));
+  }
+  49% {
+    transform: scale(var(--scale_path_2, 1));
+  }
+  83% {
+    transform: scale(var(--scale_path_3, 1));
+  }
+}
+
+.analyze-button-animated .text_button {
+  position: relative;
+  z-index: 10;
+  background-image: linear-gradient(
+    90deg,
+    var(--mh-button-text-color) 0%, /* Themed */
+    hsla(0 0% 100% / var(--active, 0)) 120% /* Original effect, check contrast */
+  );
+  background-clip: text;
+  font-size: 1rem;
+  color: transparent;
+  font-weight: 600; /* Added for consistency */
+}
+
+/* Disabled state for analyze-button-animated */
+.analyze-button-animated:disabled {
+  cursor: not-allowed;
+  opacity: var(--mh-button-disabled-opacity);
+  background-color: var(--mh-button-disabled-bg); /* Show a background when disabled */
+}
+
+.analyze-button-animated:disabled::before,
+.analyze-button-animated:disabled::after,
+.analyze-button-animated:disabled .dots_border::before {
+  display: none; /* Hide animated elements when disabled */
+}
+
+.analyze-button-animated:disabled .sparkle {
+  opacity: 0.5; /* Dim sparkles when disabled */
+}
+.analyze-button-animated:disabled .text_button {
+  background-image: none; /* Remove gradient text effect */
+  color: hsl(var(--muted-foreground)); /* Show plain text when disabled */
+}
+
+
+/* Botao Download Button CSS (for RoomCard PDF download) */
+.botao-download { /* Renamed from .botao */
+  width: 125px;
+  height: 45px;
+  border-radius: 20px;
+  border: none;
+  box-shadow: 1px 1px hsl(var(--primary) / 0.37); /* Themed */
+  padding: 5px 10px;
+  background: linear-gradient(160deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.9) 5%, hsl(var(--primary)) 11%, hsl(var(--accent)) 57%, hsl(var(--accent)/0.8) 71%); /* Themed */
+  color: hsl(var(--primary-foreground)); /* Themed */
+  font-weight: 500; /* Adjusted from 505 */
+  font-size: 15px; /* Adjusted from 16px */
+  line-height: 1;
+  cursor: pointer;
+  filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.568)); /* Themed */
+  transition: .5s linear;
+  display: flex; /* Added for icon and text centering */
+  align-items: center; /* Added */
+  justify-content: center; /* Added */
+}
+
+.botao-download .mysvg {
+  display: none;
+  width: 24px; /* Ensure SVG has size */
+  height: 24px;
+}
+
+.botao-download .mysvg path {
+  stroke: hsl(var(--primary-foreground)); /* Themed SVG stroke */
+}
+
+.botao-download:hover {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  transition: .5s linear;
+}
+
+.botao-download:hover .texto {
+  display: none;
+}
+
+.botao-download:hover .mysvg {
+  display: inline;
+}
+
+.botao-download:hover::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 100%;
+  height: 100%;
+  border: 3.5px solid transparent;
+  border-top: 3.5px solid hsl(var(--primary-foreground)); /* Themed */
+  border-right: 3.5px solid hsl(var(--primary-foreground)); /* Themed */
+  border-radius: 50%;
+  animation: animateDownloadC 2s linear infinite; /* Renamed animation */
+}
+
+@keyframes animateDownloadC { /* Renamed animation */
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Flipping Auth Form CSS */
+.auth-container { /* Renamed from .container to avoid conflicts */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px; /* Added for 3D effect */
+  min-height: 450px; /* Ensure enough height for the form */
+  width: 100%; /* Take up width of its parent in AuthLayout */
+}
+
+.auth-form { /* Renamed from .form */
+  display: flex; /* Not really needed as front/back are absolute */
+  /* justify-content: center; */
+  /* align-items: center; */
+  position: relative; /* Added */
+  width: 350px; /* Give a fixed width or max-width */
+  height: auto; /* Adjust based on content, or set fixed height */
+  min-height: 480px; /* Ensure it can contain the forms */
+  transform-style: preserve-3d;
+  transition: transform 1s ease;
+}
+
+.auth-form .form_front,
+.auth-form .form_back {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem; /* Adjusted gap */
+  position: absolute;
+  width: 100%; /* Take full width of .auth-form */
+  height: 100%; /* Take full height of .auth-form */
+  backface-visibility: hidden;
+  padding: 40px 30px; /* Adjusted padding */
+  border-radius: 15px;
+  background-color: hsl(var(--card) / 0.9); /* Themed with slight transparency */
+  box-shadow: inset 1px 1px 5px hsl(var(--card-foreground) / 0.1),
+              inset -1px -1px 3px hsl(var(--border) / 0.5),
+              0 4px 15px hsl(var(--background) / 0.3); /* Themed shadow */
+}
+
+.auth-form .form_back {
+  transform: rotateY(-180deg);
+}
+
+.auth-form_details { /* Renamed from .form_details */
+  font-size: 1.75rem; /* Adjusted size */
+  font-weight: 600;
+  padding-bottom: 0.5rem; /* Adjusted padding */
+  color: hsl(var(--card-foreground)); /* Themed */
+  text-align: center;
+}
+
+.auth-input { /* Renamed from .input */
+  width: 100%; /* Full width within form padding */
+  min-height: 40px; /* Adjusted height */
+  color: hsl(var(--input-foreground)); /* Themed */
+  outline: none;
+  transition: 0.35s;
+  padding: 0px 10px; /* Adjusted padding */
+  background-color: hsl(var(--input)); /* Themed */
+  border-radius: 6px;
+  border: 1px solid hsl(var(--border)); /* Themed */
+  box-shadow: inset 0 1px 3px hsl(var(--background) / 0.5); /* Softer inset shadow */
+}
+
+.auth-input::placeholder {
+  color: hsl(var(--muted-foreground)); /* Themed */
+}
+
+.auth-input:focus::placeholder {
+  transition: 0.3s;
+  opacity: 0;
+}
+
+.auth-input:focus {
+  transform: scale(1.02); /* Slightly less scale */
+  border-color: hsl(var(--ring)); /* Use ring color for focus border */
+  box-shadow: inset 0 1px 3px hsl(var(--background) / 0.5), 0 0 0 2px hsl(var(--ring) / 0.5); /* Focus ring */
+}
+
+.auth-btn { /* Renamed from .btn */
+  padding: 10px 25px; /* Adjusted padding */
+  width: 100%; /* Make button full width */
+  cursor: pointer;
+  background-color: hsl(var(--primary)); /* Themed */
+  border-radius: 6px;
+  border: 1px solid hsl(var(--primary)); /* Themed */
+  /* Removed complex box-shadow for simpler themed button */
+  color: hsl(var(--primary-foreground)); /* Themed */
+  font-size: 1rem; /* Adjusted size */
+  font-weight: 600; /* Adjusted weight */
+  transition: 0.2s ease-out; /* Adjusted transition */
+}
+
+.auth-btn:hover {
+  background-color: hsl(var(--primary) / 0.9); /* Themed hover */
+  transform: translateY(-1px); /* Slight lift on hover */
+}
+
+.auth-btn:focus-visible { /* For keyboard focus */
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.auth-btn:active {
+  transform: translateY(0px); /* Press down effect */
+}
+
+.auth-form .auth-switch { /* Renamed from .switch */
+  font-size: 0.875rem; /* Adjusted size */
+  color: hsl(var(--muted-foreground)); /* Themed */
+  text-align: center;
+}
+
+.auth-form .auth-switch .auth-signup_tog { /* Renamed from .signup_tog */
+  font-weight: 600; /* Adjusted weight */
+  cursor: pointer;
+  text-decoration: none; /* Removed underline, rely on color */
+  color: hsl(var(--primary)); /* Themed */
+}
+.auth-form .auth-switch .auth-signup_tog:hover {
+  text-decoration: underline;
+}
+
+.auth-container #signup_toggle { /* Ensure it targets within .auth-container */
+  display: none;
+}
+
+.auth-container #signup_toggle:checked + .auth-form {
+  transform: rotateY(-180deg);
+}
+
+/* Responsive adjustments for auth form if needed */
+@media (max-width: 400px) {
+  .auth-form {
+    width: 90%;
+    min-height: auto; /* Allow height to adjust more freely */
+  }
+  .auth-form .form_front,
+  .auth-form .form_back {
+    padding: 30px 20px;
+  }
+  .auth-form_details {
+    font-size: 1.5rem;
   }
 }
