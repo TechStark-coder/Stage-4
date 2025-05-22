@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2, Edit } from "lucide-react"; // Changed Pencil to Edit for consistency
 import { format } from "date-fns";
 import Image from "next/image";
 import {
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteHome } from "@/lib/firestore";
+import { deleteHomeAndCoverImage } from "@/lib/firestore"; // Assuming this function also handles localStorage
 import { useToast } from "@/hooks/use-toast";
 import { EditHomeDialog } from "./EditHomeDialog"; 
 import { useLoader } from "@/contexts/LoaderContext";
@@ -45,19 +45,20 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
       setCoverImageSrc(null);
     }
     setIsLoadingImage(false);
+  // The onHomeAction dependency is important here to re-trigger image loading if an edit changes the image.
   }, [home.id, onHomeAction]); 
 
   const handleDelete = async () => {
     showLoader();
     try {
-      await deleteHome(home.id);
-      localStorage.removeItem(`homeCover_${home.id}`);
+      await deleteHomeAndCoverImage(home.id); // Updated function name
       toast({
         title: "Home Deleted",
-        description: `Home "${home.name}" and all its rooms have been deleted.`,
+        description: `Home "${home.name}" and all its data have been deleted.`,
       });
       onHomeAction();
     } catch (error) {
+      console.error("Error deleting home:", error);
       toast({
         title: "Error Deleting Home",
         description: "Could not delete the home. Please try again.",
@@ -69,7 +70,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   };
 
   return (
-    <Card className="flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] dark:hover:shadow-primary/40">
+    <Card className="flex flex-col transition-all duration-300 ease-out hover:scale-105 hover:z-20 hover:shadow-2xl hover:shadow-primary/30 dark:hover:shadow-primary/50">
       <CardHeader className="pb-2">
         {isLoadingImage ? (
            <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-t-lg animate-pulse">
@@ -102,10 +103,10 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
       </CardHeader>
       <CardContent className="flex-grow pt-2">
         <p className="text-sm text-muted-foreground">
-          Manage rooms and analyze objects within this home. Cover image is stored in your browser.
+          Manage rooms and analyze objects within this home. Cover image stored in browser.
         </p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center gap-2">
+      <CardFooter className="flex justify-between items-center gap-2 pt-4">
         <div className="flex gap-2">
            <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
            <AlertDialog>
@@ -140,3 +141,5 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
     </Card>
   );
 }
+
+    
