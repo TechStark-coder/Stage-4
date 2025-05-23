@@ -52,16 +52,16 @@ export function AppHeader() {
         <Link href="/dashboard" className="flex items-center gap-2 mr-auto">
           <Image
             src={logoUrl}
-            alt="HomieStan" 
-            width={150} 
-            height={38} 
-            className="object-contain"
-            unoptimized // Add if optimization causes issues with Firebase Storage URLs, usually not needed if domain is in next.config.js
+            alt="HomieStan"
+            width={150}
+            height={38} // Approximate height based on 4:1 aspect ratio of 980x245
+            className="object-contain" // Ensures aspect ratio is maintained
+            unoptimized // if using external URLs not in next.config.js images.domains
           />
         </Link>
         <div className="flex-grow text-center">
           {user && (
-            <span className="text-sm font-medium text-foreground sm:text-base">
+            <span className="text-sm font-medium text-foreground sm:text-base welcome-text-shine">
               Welcome, {userName}!
             </span>
           )}

@@ -18,128 +18,130 @@ main {
 
 @layer base {
   :root {
-    /* Indigo/Purple Dark Theme */
-    --background: 251 58% 15%; /* Deep Indigo - Represents the darker end of the gradient */
-    --foreground: 250 30% 90%; /* Light Lavender/Gray for text */
-    --background-hsl-values: 251, 58%, 15%; /* For loader overlay */
+    /* Indigo/Purple Dark Theme based on linear-gradient(to right, #1D2671, #C33764) */
+    --background: 236 55% 15%; /* Deep Indigo - Represents the darker end of the gradient */
+    --background-hsl-values: 236, 55%, 15%;
+    --foreground: 240 30% 90%; /* Light Lavender/Gray for text */
+    --foreground-hsl-values: 240, 30%, 90%;
 
-    --card: 250 50% 22%;           /* Darker Purple/Indigo for cards */
-    --card-foreground: 250 30% 90%; /* Light text for cards */
-    --card-hsl-values: 250, 50%, 22%;
+    --card: 238 45% 22%;           /* Darker Purple/Indigo for cards */
+    --card-foreground: 240 30% 90%; /* Light text for cards */
+    --card-hsl-values: 238, 45%, 22%;
 
-    --popover: 250 50% 18%;        /* Even darker for popovers */
-    --popover-foreground: 250 30% 90%;
+    --popover: 240 40% 18%;        /* Even darker for popovers */
+    --popover-foreground: 240 30% 90%;
 
     /* Primary: A vibrant Pink/Magenta from the gradient's lighter end */
     --primary: 326 56% 50%;  /* Approx #C33764 */
     --primary-foreground: 0 0% 100%; /* White text for primary buttons */
-    --primary-hsl-values: 326, 56%, 50%; 
-    
+    --primary-hsl-values: 326, 56%, 50%;
+    --primary-foreground-hsl-values: 0, 0%, 100%;
+
+
     /* Accent: A lighter, softer purple or a contrasting bright color */
     --accent: 270 60% 70%; /* Lighter Lavender */
     --accent-foreground: 270 60% 15%; /* Dark purple text for contrast on accent */
     --accent-hsl-values: 270, 60%, 70%;
 
-    --secondary: 250 40% 35%;   /* Muted Indigo/Purple */
-    --secondary-foreground: 250 25% 85%; 
+    --secondary: 240 35% 35%;   /* Muted Indigo/Purple */
+    --secondary-foreground: 240 25% 85%;
 
-    --muted: 250 30% 28%;       /* Darker Muted Indigo/Purple */
-    --muted-foreground: 250 20% 65%; 
-    --muted-hsl-values: 250, 30%, 28%;
+    --muted: 240 25% 28%;       /* Darker Muted Indigo/Purple */
+    --muted-foreground: 240 20% 65%;
+    --muted-hsl-values: 240, 25%, 28%;
 
     --destructive: 0 70% 55%;    /* A clear red for destructive actions */
-    --destructive-foreground: 0 0% 100%; 
+    --destructive-foreground: 0 0% 100%;
     --destructive-hsl-values: 0, 70%, 55%;
 
-    --border: 250 40% 40%;      /* Muted purple border */
-    --input: 250 50% 25%;         /* Dark purple input background */
-    --input-foreground: 250 30% 90%; 
+    --border: 240 30% 40%;      /* Muted purple border */
+    --input: 238 40% 25%;         /* Dark purple input background */
+    --input-foreground: 240 30% 90%;
     --ring: 326 60% 60%;         /* Pink/Magenta for focus rings, matching primary */
 
     --radius: 0.5rem;
 
     /* Sidebar specific variables - Dark Mode (using the main dark theme colors) */
-    --sidebar-background: 251 58% 10%; /* Even darker Indigo */
-    --sidebar-foreground: 0 0% 95%;    
-    --sidebar-primary: 326 56% 50%;    
-    --sidebar-primary-foreground: 0 0% 100%; 
-    --sidebar-accent: 250 50% 22%;     
-    --sidebar-accent-foreground: 0 0% 90%; 
-    --sidebar-border: 250 40% 30%;     
+    --sidebar-background: 236 55% 10%; /* Even darker Indigo */
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 326 56% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 238 45% 22%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 240 30% 30%;
     --sidebar-ring: 326 70% 60%;
 
-     /* Custom Button (MuhammadHasann) Variables for This Dark Theme */
-    --mh-button-black-700: hsl(var(--primary)); 
+    /* MuhammadHasann Animated Button Custom Properties adapted to theme */
+    --mh-button-black-700: hsl(var(--primary)); /* Use theme primary */
     --mh-button-border-radius: 9999px;
     --mh-button-transition: 0.3s ease-in-out;
     --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.6);
-    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6); 
-    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.4);   
+    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6);
+    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.4);
     --mh-button-dots-color: hsl(var(--primary-foreground));
     --mh-button-sparkle-color: hsl(var(--primary-foreground));
     --mh-button-text-color: hsl(var(--primary-foreground));
-    --mh-button-text-hover-opacity: 0.95; 
+    --mh-button-text-hover-opacity: 0.95;
     --mh-button-disabled-opacity: 0.5;
     --mh-button-disabled-bg: hsl(var(--muted));
     --mh-button-disabled-shadow: none;
-    --primary-foreground-hsl-values: 0, 0%, 100%; /* Assuming primary-foreground is white */
-    --foreground-hsl-values: 250, 30%, 90%; /* Added for download button */
   }
 
   .dark { /* The dark class might not be strictly necessary if :root is already the dark theme */
-    --background: 251 58% 15%; 
-    --foreground: 250 30% 90%; 
-    --background-hsl-values: 251, 58%, 15%;
+    --background: 236 55% 15%;
+    --background-hsl-values: 236, 55%, 15%;
+    --foreground: 240 30% 90%;
+    --foreground-hsl-values: 240, 30%, 90%;
 
-    --card: 250 50% 22%;           
-    --card-foreground: 250 30% 90%; 
-    --card-hsl-values: 250, 50%, 22%;
+    --card: 238 45% 22%;
+    --card-foreground: 240 30% 90%;
+    --card-hsl-values: 238, 45%, 22%;
 
-    --popover: 250 50% 18%;        
-    --popover-foreground: 250 30% 90%;
+    --popover: 240 40% 18%;
+    --popover-foreground: 240 30% 90%;
 
-    --primary: 326 56% 50%;  
-    --primary-foreground: 0 0% 100%; 
+    --primary: 326 56% 50%;
+    --primary-foreground: 0 0% 100%;
     --primary-hsl-values: 326, 56%, 50%;
-    
-    --accent: 270 60% 70%; 
-    --accent-foreground: 270 60% 15%; 
+    --primary-foreground-hsl-values: 0, 0%, 100%;
+
+    --accent: 270 60% 70%;
+    --accent-foreground: 270 60% 15%;
     --accent-hsl-values: 270, 60%, 70%;
 
-    --secondary: 250 40% 35%;   
-    --secondary-foreground: 250 25% 85%; 
+    --secondary: 240 35% 35%;
+    --secondary-foreground: 240 25% 85%;
 
-    --muted: 250 30% 28%;       
-    --muted-foreground: 250 20% 65%; 
-    --muted-hsl-values: 250, 30%, 28%;
+    --muted: 240 25% 28%;
+    --muted-foreground: 240 20% 65%;
+    --muted-hsl-values: 240, 25%, 28%;
 
-    --destructive: 0 65% 55%;    
-    --destructive-foreground: 0 0% 100%; 
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
     --destructive-hsl-values: 0, 65%, 55%;
 
-    --border: 250 40% 40%;      
-    --input: 250 50% 25%;         
-    --input-foreground: 250 30% 90%; 
+    --border: 240 30% 40%;
+    --input: 238 40% 25%;
+    --input-foreground: 240 30% 90%;
     --ring: 326 60% 60%;
 
-    --sidebar-background: 251 58% 10%; 
-    --sidebar-foreground: 0 0% 90%;    
-    --sidebar-primary: 326 56% 50%;    
-    --sidebar-primary-foreground: 0 0% 100%; 
-    --sidebar-accent: 250 50% 22%;     
-    --sidebar-accent-foreground: 0 0% 85%; 
-    --sidebar-border: 250 40% 30%;     
+    --sidebar-background: 236 55% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 326 56% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 238 45% 22%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 240 30% 30%;
     --sidebar-ring: 326 70% 60%;
 
-    --mh-button-black-700: hsl(var(--primary)); 
+    /* MuhammadHasann Animated Button Custom Properties adapted to theme */
+    --mh-button-black-700: hsl(var(--primary));
     --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.6);
-    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6); 
-    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.4);   
+    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6);
+    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.4);
     --mh-button-dots-color: hsl(var(--primary-foreground));
     --mh-button-sparkle-color: hsl(var(--primary-foreground));
     --mh-button-text-color: hsl(var(--primary-foreground));
-     --primary-foreground-hsl-values: 0, 0%, 100%;
-     --foreground-hsl-values: 250, 30%, 90%;
   }
 }
 
@@ -161,23 +163,23 @@ main {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: hsla(var(--background-hsl-values), 0.6); 
+  background-color: hsla(var(--background-hsl-values), 0.6);
   backdrop-filter: blur(2px);
-  z-index: 9998; 
+  z-index: 9998;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .banter-loader {
-  position: fixed; 
+  position: fixed;
   left: 50%;
   top: 50%;
   width: 72px;
   height: 72px;
   margin-left: -36px;
   margin-top: -36px;
-  z-index: 9999; 
+  z-index: 9999;
 }
 
 .banter-loader__box {
@@ -195,7 +197,7 @@ main {
   top: 0;
   width: 100%;
   height: 100%;
-  background: hsl(var(--primary)); 
+  background: hsl(var(--primary));
 }
 
 .banter-loader__box:nth-child(3n) {
@@ -357,9 +359,9 @@ main {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: hsla(var(--background-hsl-values), 0.7); 
+  background-color: hsla(var(--background-hsl-values), 0.7);
   backdrop-filter: blur(3px);
-  z-index: 10000; 
+  z-index: 10000;
   display: flex;
   flex-direction: column; /* For centering text below spinner */
   justify-content: center;
@@ -374,19 +376,19 @@ main {
 }
 
 /* From Uiverse.io by mrhyddenn - Adapted for AI Loader */
-.ai-spinner { 
+.ai-spinner {
   width: 6em; /* Increased size */
   height: 6em; /* Increased size */
   cursor: not-allowed;
   border-radius: 50%;
   border: 3px solid hsl(var(--border)); /* Thicker border, uses theme border color */
-  box-shadow: -12px -12px 12px hsla(var(--primary-hsl-values), 0.7), 
-              0px -12px 12px 0px hsla(var(--accent-hsl-values), 0.7),  
-              12px -12px 12px hsla(var(--destructive-hsl-values), 0.5), 
-              12px 0 12px hsla(var(--destructive-hsl-values), 0.8), 
-              12px 12px 12px 0px hsla(var(--accent-hsl-values), 0.6), 
-              0 12px 12px 0px hsla(var(--accent-hsl-values), 0.5), 
-              -12px 12px 12px 0px hsla(var(--accent-hsl-values), 0.4); 
+  box-shadow: -12px -12px 12px hsla(var(--primary-hsl-values), 0.7),
+              0px -12px 12px 0px hsla(var(--accent-hsl-values), 0.7),
+              12px -12px 12px hsla(var(--destructive-hsl-values), 0.5),
+              12px 0 12px hsla(var(--destructive-hsl-values), 0.8),
+              12px 12px 12px 0px hsla(var(--accent-hsl-values), 0.6),
+              0 12px 12px 0px hsla(var(--accent-hsl-values), 0.5),
+              -12px 12px 12px 0px hsla(var(--accent-hsl-values), 0.4);
   animation: rot55 0.9s linear infinite; /* Slightly slower animation */
 }
 
@@ -429,11 +431,11 @@ main {
   left: 0;
   width: 400%;
   height: 100%;
-  background: linear-gradient(115deg, 
-    hsl(var(--primary)), 
-    hsl(var(--accent)), 
-    hsla(var(--primary-hsl-values),0.8), 
-    hsl(var(--primary)), 
+  background: linear-gradient(115deg,
+    hsl(var(--primary)),
+    hsl(var(--accent)),
+    hsla(var(--primary-hsl-values),0.8),
+    hsl(var(--primary)),
     hsla(var(--primary-hsl-values), 0.6));
   background-size: 25% 100%;
   animation: an-at-keyframe-css-at-rule-that-translates-via-the-transform-property-the-background-by-negative-25-percent-of-its-width-so-that-it-gives-a-nice-border-animation_-We-use-the-translate-property-to-have-a-nice-transition-so-it_s-not-a-jerk-of-a-start-or-stop .75s linear infinite;
@@ -456,37 +458,37 @@ main {
 
 .codepen-button span {
   position: relative;
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  padding: 0.8rem 1.3rem; 
-  font-size: 0.9rem; 
-  background: hsl(var(--card)); 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.3rem;
+  font-size: 0.9rem;
+  background: hsl(var(--card));
   border-radius: 3px;
   height: 100%;
-  color: hsl(var(--card-foreground)); 
+  color: hsl(var(--card-foreground));
 }
 
 /* MuhammadHasann Animated Button CSS (for Analyze Images) */
-.analyze-button-animated { 
-  --mh-button-black-700: hsl(var(--primary)); 
+.analyze-button-animated {
+  --mh-button-black-700: hsl(var(--primary));
   --mh-button-border-radius: 9999px;
   --mh-button-transition: 0.3s ease-in-out;
   --mh-button-offset: 2px;
-  
+
   --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
   --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.85);
-  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.65);   
+  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.65);
 
-  --mh-button-dots-color: hsl(var(--primary-foreground)); 
+  --mh-button-dots-color: hsl(var(--primary-foreground));
   --mh-button-sparkle-color: hsl(var(--primary-foreground));
 
   --mh-button-text-color: hsl(var(--primary-foreground));
   --mh-button-text-hover-opacity: 1;
 
   --mh-button-disabled-opacity: 0.6; /* Adjusted opacity */
-  --mh-button-disabled-bg: hsl(var(--muted)); 
-  --mh-button-disabled-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values, 0, 0%, 100%), 0.1),
+  --mh-button-disabled-bg: hsl(var(--muted));
+  --mh-button-disabled-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values), 0.1),
                               inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.15); /* Softer disabled shadow */
 
 
@@ -497,16 +499,16 @@ main {
   justify-content: center;
   gap: 0.5rem;
   transform-origin: center;
-  padding: 0.8rem 1.5rem; 
-  background-color: transparent; 
+  padding: 0.8rem 1.5rem;
+  background-color: transparent;
   border: none;
   border-radius: var(--mh-button-border-radius);
-  transform: scale(calc(1 + (var(--active, 0) * 0.05))); 
+  transform: scale(calc(1 + (var(--active, 0) * 0.05)));
   transition: transform var(--mh-button-transition);
-  min-width: 150px; 
+  min-width: 150px;
 }
 
-.analyze-button-animated::before { 
+.analyze-button-animated::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -516,15 +518,15 @@ main {
   height: 100%;
   background-color: var(--mh-button-black-700);
   border-radius: var(--mh-button-border-radius);
-  box-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values, 0, 0%, 100%), 0.2),
+  box-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values), 0.2),
               inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.3),
-              0px 2px 4px -1px hsla(var(--primary-hsl-values), calc(0.3 * (1 - var(--active, 0)))), 
-              0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); 
+              0px 2px 4px -1px hsla(var(--primary-hsl-values), calc(0.3 * (1 - var(--active, 0)))),
+              0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color);
   transition: all var(--mh-button-transition);
   z-index: 0;
 }
 
-.analyze-button-animated::after { 
+.analyze-button-animated::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -532,7 +534,7 @@ main {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: hsla(var(--primary-hsl-values), 0.75); 
+  background-color: hsla(var(--primary-hsl-values), 0.75);
   background-image: radial-gradient(
       at 51% 89%,
       var(--mh-button-gradient-start) 0px,
@@ -544,18 +546,18 @@ main {
   opacity: var(--active, 0);
   border-radius: var(--mh-button-border-radius);
   transition: opacity var(--mh-button-transition);
-  z-index: 2; 
+  z-index: 2;
 }
 
 .analyze-button-animated:is(:hover, :focus-visible) {
-  --active: 1; 
+  --active: 1;
 }
 .analyze-button-animated:active {
-  transform: scale(0.98); 
+  transform: scale(0.98);
 }
 
 .analyze-button-animated .dots_border {
-  --size_border: calc(100% + 2px); 
+  --size_border: calc(100% + 2px);
   overflow: hidden;
   position: absolute;
   top: 50%;
@@ -565,45 +567,45 @@ main {
   height: var(--size_border);
   background-color: transparent;
   border-radius: var(--mh-button-border-radius);
-  z-index: -10; 
+  z-index: -10;
 }
 
 .analyze-button-animated .dots_border::before {
   content: "";
   position: absolute;
-  top: 30%; 
+  top: 30%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg); 
-  transform-origin: center; 
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center;
   width: 100%;
-  height: 2rem; 
-  background-color: var(--mh-button-dots-color); 
-  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%); 
-  animation: mh-rotateDots 2s linear infinite; 
+  height: 2rem;
+  background-color: var(--mh-button-dots-color);
+  mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%);
+  animation: mh-rotateDots 2s linear infinite;
 }
 
-@keyframes mh-rotateDots { 
+@keyframes mh-rotateDots {
   to {
-    transform: translate(-50%, -50%) rotate(360deg); 
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
 .analyze-button-animated .sparkle {
   position: relative;
-  z-index: 10; 
-  width: 1.5rem; 
-  height: 1.5rem; 
+  z-index: 10;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .analyze-button-animated .sparkle .path {
-  fill: currentColor; 
-  stroke: currentColor; 
+  fill: currentColor;
+  stroke: currentColor;
   transform-origin: center;
-  color: var(--mh-button-sparkle-color); 
+  color: var(--mh-button-sparkle-color);
 }
 
 .analyze-button-animated:is(:hover, :focus) .sparkle .path {
-  animation: mh-pathSparkle 1.5s linear 0.5s infinite; 
+  animation: mh-pathSparkle 1.5s linear 0.5s infinite;
 }
 
 .analyze-button-animated .sparkle .path:nth-child(1) {
@@ -616,7 +618,7 @@ main {
   --scale_path_3: 1.2;
 }
 
-@keyframes mh-pathSparkle { 
+@keyframes mh-pathSparkle {
   0%,
   34%,
   71%,
@@ -636,40 +638,40 @@ main {
 
 .analyze-button-animated .text_button {
   position: relative;
-  z-index: 10; 
+  z-index: 10;
   background-image: linear-gradient(
     90deg,
-    var(--mh-button-text-color) 0%, 
-    hsla(var(--primary-foreground-hsl-values, 0, 0%, 100%), calc(var(--active, 0) * var(--mh-button-text-hover-opacity))) 120%
+    var(--mh-button-text-color) 0%,
+    hsla(var(--primary-foreground-hsl-values), calc(var(--active, 0) * var(--mh-button-text-hover-opacity))) 120%
   );
   background-clip: text;
-  font-size: 1rem; 
+  font-size: 1rem;
   color: transparent;
-  font-weight: 600; 
+  font-weight: 600;
 }
 
 /* Disabled state for analyze-button-animated */
 .analyze-button-animated:disabled {
   cursor: not-allowed;
-  opacity: var(--mh-button-disabled-opacity); 
+  opacity: var(--mh-button-disabled-opacity);
 }
 
 .analyze-button-animated:disabled::before {
-  background-color: var(--mh-button-disabled-bg); 
-  box-shadow: var(--mh-button-disabled-shadow); 
+  background-color: var(--mh-button-disabled-bg);
+  box-shadow: var(--mh-button-disabled-shadow);
 }
 
 .analyze-button-animated:disabled::after,
 .analyze-button-animated:disabled .dots_border::before {
-  display: none; 
+  display: none;
 }
 
 .analyze-button-animated:disabled .sparkle {
-  opacity: 0.3; 
+  opacity: 0.3;
 }
 .analyze-button-animated:disabled .text_button {
-  background-image: none; 
-  color: hsl(var(--muted-foreground)); 
+  background-image: none;
+  color: hsl(var(--muted-foreground));
 }
 
 
@@ -782,7 +784,7 @@ main {
 }
 .auth-button-yashasvi:hover {
   background-color: hsla(var(--primary-hsl-values), 0.8); /* Slightly darker primary on hover */
-  color: hsl(var(--primary-foreground)); 
+  color: hsl(var(--primary-foreground));
 }
 
 .auth-button-yashasvi.signup-link { /* Specific for "Sign Up" / "Sign In" link-like button */
@@ -808,8 +810,8 @@ main {
 
 /* Download button card (Vinodjangid07 Style) */
 .download-button-card {
-  width: 40px; 
-  height: 40px; 
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background-color: hsla(var(--card-hsl-values), 0.8); /* Adjusted for visibility on theme */
@@ -818,21 +820,21 @@ main {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative; 
+  position: relative;
   transition-duration: .3s;
   box-shadow: 0 1px 3px hsla(var(--foreground-hsl-values), 0.1);
 }
 
 .download-button-card .svgIcon {
-  fill: hsl(var(--primary)); 
-  height: 1.1em; 
+  fill: hsl(var(--primary));
+  height: 1.1em;
   width: 1.1em;
   transition: fill 0.3s, transform 0.3s;
 }
 
 .download-button-card .icon2 {
-  width: 14px; 
-  height: 4px; 
+  width: 14px;
+  height: 4px;
   border-bottom: 2px solid hsl(var(--primary));
   border-left: 2px solid hsl(var(--primary));
   border-right: 2px solid hsl(var(--primary));
@@ -842,19 +844,22 @@ main {
 .download-button-card .tooltip {
   position: absolute;
   top: 50%;
-  left: calc(100% + 12px); 
+  left: calc(100% + 12px);
   transform: translateY(-50%);
   opacity: 0;
-  visibility: hidden; 
+  visibility: hidden;
   background-color: hsl(var(--popover));
   color: hsl(var(--popover-foreground));
-  padding: 6px 12px; 
-  border-radius: var(--radius); 
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out; 
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
   pointer-events: none;
   letter-spacing: 0.5px;
   white-space: nowrap;
-  z-index: 50; 
+  z-index: 50;
   box-shadow: 0 2px 8px hsla(var(--foreground-hsl-values), 0.15);
 }
 
@@ -866,17 +871,17 @@ main {
   background-color: hsl(var(--popover));
   transform: translateY(-50%) rotate(45deg);
   top: 50%;
-  left: -4px; 
+  left: -4px;
 }
 
 .download-button-card:hover .tooltip {
   opacity: 1;
-  visibility: visible; 
+  visibility: visible;
 }
 
 .download-button-card:hover {
   background-color: hsl(var(--primary));
-  transform: scale(1.1); 
+  transform: scale(1.1);
 }
 
 .download-button-card:hover .icon2 {
@@ -886,21 +891,21 @@ main {
 }
 
 .download-button-card:hover .svgIcon {
-  fill: hsl(var(--primary-foreground)); 
+  fill: hsl(var(--primary-foreground));
   animation: slide-in-top 0.6s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
 }
 
 .download-button-card:disabled,
 .download-button-card[disabled] {
-  background-color: hsl(var(--muted)) !important; 
+  background-color: hsl(var(--muted)) !important;
   opacity: 0.6 !important;
   cursor: not-allowed !important;
-  transform: scale(1) !important; 
+  transform: scale(1) !important;
 }
 .download-button-card:disabled .svgIcon,
 .download-button-card[disabled] .svgIcon {
   fill: hsl(var(--muted-foreground)) !important;
-  animation: none !important; 
+  animation: none !important;
 }
 .download-button-card:disabled .icon2,
 .download-button-card[disabled] .icon2 {
@@ -914,7 +919,7 @@ main {
 
 @keyframes slide-in-top {
   0% {
-    transform: translateY(-6px); 
+    transform: translateY(-6px);
     opacity: 0;
   }
   100% {
@@ -959,22 +964,27 @@ main {
 
 /* Welcome Text Shine Effect */
 .welcome-text-shine {
-  /* Removed absolute positioning and explicit font/padding */
-  /* The gradient should use theme colors */
-  background: linear-gradient(to right, 
-              hsl(var(--foreground)) 20%, 
-              hsl(var(--primary-foreground)) 40%, 
-              hsl(var(--primary-foreground)) 60%, 
-              hsl(var(--foreground)) 80%);
-  background-size: 200% auto; /* Ensure gradient covers text and can animate */
-  color: hsl(var(--foreground)); /* Fallback color */
+  /* Ensure it's not inheriting problematic positioning */
+  position: relative; 
+  /* display: inline-block; /* Might help with background rendering */
+  font-weight: 600; /* From original example */
+  /* Adjusted gradient to be simpler and use theme variables more directly */
+  background: linear-gradient(
+    to right,
+    hsl(var(--foreground)) 20%,       /* Start with normal text color */
+    hsl(var(--primary-foreground)) 40%, /* Bright shine color (e.g., white) */
+    hsl(var(--primary-foreground)) 60%, /* Hold bright shine */
+    hsl(var(--foreground)) 80%        /* End with normal text color */
+  );
+  background-size: 200% auto; /* Needs to be larger than the text to allow for movement */
+  color: hsl(var(--foreground)); /* Fallback color, though transparent is desired */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine-welcome 3s linear infinite;
-  white-space: nowrap; /* Keep to prevent wrapping during animation */
+  animation: shine-welcome 3s linear infinite; /* Renamed animation to avoid conflicts */
+  white-space: nowrap; /* Prevent text from wrapping during animation */
 }
 
-@keyframes shine-welcome { /* Renamed from shine to avoid conflicts */
+@keyframes shine-welcome { /* Renamed animation */
   0% {
     background-position: 200% center; /* Start off-screen to the right */
   }
@@ -983,6 +993,3 @@ main {
   }
 }
 /* End of globals.css content */
-
-    
-
