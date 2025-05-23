@@ -7,6 +7,11 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 export const homeFormSchema = z.object({
   name: z.string().min(1, { message: "Home name is required" }).max(50, { message: "Home name must be 50 characters or less" }),
   ownerDisplayName: z.string().min(1, { message: "Your name is required" }).max(50, { message: "Name must be 50 characters or less" }).optional(),
+  description: z
+    .string()
+    .max(250, { message: "Description must be 250 characters or less" })
+    .optional()
+    .nullable(), // Allow null to clear it
   coverImage: z
     .custom<FileList>()
     .refine((files) => files === null || files === undefined || files.length === 0 || (files.length === 1 && files[0].size <= MAX_FILE_SIZE), {
@@ -20,4 +25,3 @@ export const homeFormSchema = z.object({
     .optional(),
 });
 export type HomeFormData = z.infer<typeof homeFormSchema>;
-

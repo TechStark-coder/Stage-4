@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -51,6 +52,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     defaultValues: {
       name: "",
       ownerDisplayName:  "",
+      description: "", // Add description default
       coverImage: undefined,
     },
   });
@@ -86,21 +88,37 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     try {
       if (auth.currentUser && data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
         await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
+         // Re-fetch user or update context if needed for immediate UI update of name
       }
 
-      const homeDataToSubmit: CreateHomeData = { name: data.name };
+      const homeDataToSubmit: CreateHomeData = { 
+        name: data.name,
+        description: data.description || "", // Include description
+      };
       const coverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
       
       await addHome(user.uid, homeDataToSubmit, coverImageFile);
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", coverImage: undefined });
+      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", description: "", coverImage: undefined });
       setImagePreview(null);
       onHomeCreated();
       setOpen(false);
     } catch (error: any) {
       console.error("Failed to create home:", error);
-      toast({ title: "Failed to Create Home", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+      const errorMessage = error.message || "An unexpected error occurred.";
+      if (error.name === 'QuotaExceededError' || (typeof error.message === 'string' && error.message.includes("quota"))) {
+        toast({ 
+          title: "Image Too Large", 
+          description: "Cover image is too large to save in browser storage. Home created without it.", 
+          variant: "destructive",
+          duration: 7000,
+        });
+         // Still proceed to create home without image or handle as per UX decision
+         // For Firebase Storage, this quota error is less likely for a single image unless it's truly massive
+      } else {
+        toast({ title: "Failed to Create Home", description: errorMessage, variant: "destructive" });
+      }
     } finally {
       hideLoader();
     }
@@ -110,7 +128,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (!isOpen) {
-        form.reset({ name: "", ownerDisplayName: user?.displayName || "", coverImage: undefined });
+        form.reset({ name: "", ownerDisplayName: user?.displayName || "", description: "", coverImage: undefined });
         setImagePreview(null);
       } else if (user) {
         form.setValue("ownerDisplayName", user.displayName || "");
@@ -127,7 +145,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <HousePlus className="h-5 w-5" /> Create a New Home
           </DialogTitle>
           <DialogDescription>
-            Enter details for your new home. The cover image will be uploaded to cloud storage.
+            Enter details for your new home. The cover image will be uploaded.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -140,6 +158,24 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
                   <FormLabel>Home Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., My Summer House" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add address or description for your house"
+                      className="resize-none"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,14 +197,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={({ field }) => (
+              render={({ field }) => ( // field is not directly used for value, but for errors etc.
                 <FormItem>
                   <FormLabel>Cover Image (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
+                      onChange={handleFileChange} // Directly use custom handler
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>
@@ -187,7 +223,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
-                form.reset({ name: "", ownerDisplayName: user?.displayName || "", coverImage: undefined });
+                form.reset({ name: "", ownerDisplayName: user?.displayName || "", description: "", coverImage: undefined });
                 setImagePreview(null);
               }}>
                 Cancel

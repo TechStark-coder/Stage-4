@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteHome } from "@/lib/firestore";
+import { deleteHome } from "@/lib/firestore"; 
 import { useToast } from "@/hooks/use-toast";
 import { EditHomeDialog } from "./EditHomeDialog";
 import { useLoader } from "@/contexts/LoaderContext";
@@ -41,7 +41,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
         title: "Home Deleted",
         description: `Home "${home.name}" and all its data have been deleted.`,
       });
-      onHomeAction();
+      onHomeAction(); 
     } catch (error: any) {
       console.error("Error deleting home:", error);
       toast({
@@ -55,10 +55,10 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   };
 
   return (
-    <Card className="flex flex-col transition-all duration-300 ease-out hover:shadow-xl hover:border-primary hover:scale-[1.03] rounded-lg overflow-hidden">
-      <CardHeader className="pb-2 p-4">
+    <Card className="flex flex-col transition-all duration-300 ease-out hover:shadow-2xl hover:shadow-primary/40 hover:scale-105 rounded-lg overflow-hidden bg-card">
+      <CardHeader className="p-0">
         {home.coverImageUrl ? (
-          <div className="relative w-full h-40 mb-4 rounded-md overflow-hidden border">
+          <div className="relative w-full h-52 mb-4 overflow-hidden"> {/* Increased height */}
             <Image
               src={home.coverImageUrl}
               alt={`${home.name} cover image`}
@@ -69,25 +69,33 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-md border">
-            <ImageOff className="h-16 w-16 text-muted-foreground/50" />
+          <div className="flex items-center justify-center w-full h-52 mb-4 bg-muted/50 rounded-t-lg"> {/* Increased height */}
+            <ImageOff className="h-20 w-20 text-muted-foreground/50" />
           </div>
         )}
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <HomeIcon className="h-6 w-6 text-primary" />
-          {home.name}
-        </CardTitle>
-        {home.createdAt && (
-          <CardDescription className="flex items-center gap-1 text-xs mt-1">
-            <CalendarDays className="h-3 w-3" />
-            Created on {format(home.createdAt.toDate(), "PPP")}
-          </CardDescription>
-        )}
+        <div className="p-4 pb-2">
+            <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                <HomeIcon className="h-6 w-6 text-primary" />
+                {home.name}
+            </CardTitle>
+            {home.createdAt && (
+            <CardDescription className="flex items-center gap-1 text-xs mt-1">
+                <CalendarDays className="h-3 w-3" />
+                Created on {format(home.createdAt.toDate(), "PPP")}
+            </CardDescription>
+            )}
+        </div>
       </CardHeader>
       <CardContent className="flex-grow pt-2 p-4">
-        <p className="text-sm text-muted-foreground">
-          Manage rooms and analyze objects within this home.
-        </p>
+        {home.description ? (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {home.description}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            No description provided.
+          </p>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-2 pt-4 p-4 border-t">
         <div className="flex gap-2">
@@ -124,5 +132,3 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
     </Card>
   );
 }
-
-    

@@ -14,22 +14,42 @@ import {
   Timestamp,
   writeBatch,
   setDoc,
+  deleteField, // Import deleteField
 } from "firebase/firestore";
 import { db, storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Home, Room, CreateHomeData, CreateRoomData, UpdateHomeData, UpdateRoomData } from "@/types";
 
-// Helper function to safely delete from Firebase Storage
-const safeDeleteStorageObject = async (filePath: string) => {
-  if (!filePath) return;
+// Helper function to safely delete from Firebase Storage, handling full URLs
+const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
+  if (!fileUrlOrPath) return;
+  let storageRefPath: string;
+
+  if (fileUrlOrPath.startsWith('gs://') || !fileUrlOrPath.includes('firebasestorage.googleapis.com')) {
+    // Assume it's already a gs:// path or a direct path
+    storageRefPath = fileUrlOrPath;
+  } else {
+    // It's an HTTPS URL, extract the path
+    try {
+      const url = new URL(fileUrlOrPath);
+      // Path is usually after /o/ and before ?alt=media
+      const pathWithBucket = url.pathname.substring(url.pathname.indexOf('/o/') + 3);
+      storageRefPath = decodeURIComponent(pathWithBucket.split('?')[0]);
+    } catch (error) {
+      console.error("Invalid URL, cannot extract path for deletion:", fileUrlOrPath, error);
+      return;
+    }
+  }
+
   try {
-    const storageRef = ref(storage, filePath);
+    const storageRef = ref(storage, storageRefPath);
     await deleteObject(storageRef);
-    console.log("Successfully deleted from Firebase Storage:", filePath);
+    console.log("Successfully deleted from Firebase Storage:", storageRefPath);
   } catch (error: any) {
-    // "object-not-found" is common if trying to delete something already gone, can be ignored.
     if (error.code !== 'storage/object-not-found') {
-      console.error("Error deleting object from Firebase Storage:", filePath, error);
+      console.error("Error deleting object from Firebase Storage:", storageRefPath, error);
+    } else {
+      console.log("Object not found in Firebase Storage (already deleted?):", storageRefPath);
     }
   }
 };
@@ -45,7 +65,7 @@ export async function addHome(
 
   let coverImageUrl: string | undefined = undefined;
   if (coverImageFile && userId) {
-    const imagePath = `homeCovers/${userId}/${newHomeRef.id}/${coverImageFile.name}`;
+    const imagePath = `homeCovers/${userId}/${newHomeRef.id}/${Date.now()}_${coverImageFile.name}`;
     const imageStorageRef = ref(storage, imagePath);
     await uploadBytes(imageStorageRef, coverImageFile);
     coverImageUrl = await getDownloadURL(imageStorageRef);
@@ -53,6 +73,7 @@ export async function addHome(
 
   await setDoc(newHomeRef, {
     name: data.name,
+    description: data.description || "", // Save description
     ownerId: userId,
     createdAt: serverTimestamp(),
     ...(coverImageUrl && { coverImageUrl }),
@@ -62,31 +83,31 @@ export async function addHome(
 
 export async function updateHome(
   homeId: string,
-  userId: string, // Needed for storage path if image changes
+  userId: string, 
   data: UpdateHomeData,
-  newCoverImageFile?: File | null,
-  removeCoverImageFlag?: boolean
+  newCoverImageFile?: File | null
 ): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
   const homeSnap = await getDoc(homeDocRef);
   if (!homeSnap.exists()) throw new Error("Home not found for update");
   const currentHomeData = homeSnap.data() as Home;
 
-  const updateData: Partial<Home> = {};
-  if (data.name) {
+  const updateData: any = {}; // Use any to allow deleteField
+  if (data.name !== undefined) {
     updateData.name = data.name;
   }
+  if (data.description !== undefined) {
+    updateData.description = data.description === null ? deleteField() : data.description;
+  } else if (data.description === null) { // Explicitly clear if null
+    updateData.description = deleteField();
+  }
 
-  if (removeCoverImageFlag && currentHomeData.coverImageUrl) {
-    await safeDeleteStorageObject(currentHomeData.coverImageUrl); // Assuming coverImageUrl is the full path or a parsable URL
-    updateData.coverImageUrl = undefined; // Or use deleteField() if you want to remove the field
-  } else if (newCoverImageFile && userId) {
-    // Delete old image if it exists
+
+  if (newCoverImageFile && userId) {
     if (currentHomeData.coverImageUrl) {
       await safeDeleteStorageObject(currentHomeData.coverImageUrl);
     }
-    // Upload new image
-    const imagePath = `homeCovers/${userId}/${homeId}/${newCoverImageFile.name}`;
+    const imagePath = `homeCovers/${userId}/${homeId}/${Date.now()}_${newCoverImageFile.name}`;
     const imageStorageRef = ref(storage, imagePath);
     await uploadBytes(imageStorageRef, newCoverImageFile);
     updateData.coverImageUrl = await getDownloadURL(imageStorageRef);
@@ -104,7 +125,7 @@ export async function removeHomeCoverImage(homeId: string): Promise<void> {
     const homeData = homeSnap.data() as Home;
     if (homeData.coverImageUrl) {
       await safeDeleteStorageObject(homeData.coverImageUrl);
-      await updateDoc(homeDocRef, { coverImageUrl: undefined }); // Or deleteField()
+      await updateDoc(homeDocRef, { coverImageUrl: deleteField() });
     }
   }
 }
@@ -132,6 +153,8 @@ export async function getHome(homeId: string): Promise<Home | null> {
 export async function deleteHome(homeId: string): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
   const homeSnap = await getDoc(homeDocRef);
+
+  // Delete associated images from Firebase Storage
   if (homeSnap.exists()) {
     const homeData = homeSnap.data() as Home;
     if (homeData.coverImageUrl) {
@@ -139,6 +162,7 @@ export async function deleteHome(homeId: string): Promise<void> {
     }
   }
 
+  // Delete rooms and their associated images
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
   const batch = writeBatch(db);
@@ -152,6 +176,8 @@ export async function deleteHome(homeId: string): Promise<void> {
     batch.delete(roomDoc.ref);
   }
   await batch.commit();
+
+  // Delete the home document itself
   await deleteDoc(homeDocRef);
 }
 
@@ -164,7 +190,7 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
     objectNames: null,
     isAnalyzing: false,
     lastAnalyzedAt: null,
-    analyzedPhotoUrls: [],
+    analyzedPhotoUrls: [], // Initialize as empty array
   });
   return docRef.id;
 }
@@ -223,7 +249,7 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string): Pro
     objectNames: null,
     isAnalyzing: false,
     lastAnalyzedAt: null,
-    analyzedPhotoUrls: [],
+    analyzedPhotoUrls: [], // Clear the array
   });
 }
 

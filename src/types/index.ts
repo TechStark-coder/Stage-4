@@ -10,15 +10,18 @@ export interface Home extends FirebaseDocument {
   ownerId: string;
   createdAt: Timestamp;
   coverImageUrl?: string; // URL from Firebase Storage
+  description?: string; // New optional description field
 }
 
 export interface CreateHomeData {
   name: string;
+  description?: string; // New optional description field
   // coverImageFile is handled in the component, not directly in this type for addHome
 }
 
 export interface UpdateHomeData {
   name?: string;
+  description?: string; // New optional description field
   // coverImageFile is handled in the component
 }
 
@@ -40,8 +43,3 @@ export interface CreateRoomData {
 export interface UpdateRoomData {
   name?: string;
 }
-
-// This type is no longer needed if PhotoUploader directly handles File uploads
-// export interface PhotoUploadData {
-//   photoDataUris: string[];
-// }
