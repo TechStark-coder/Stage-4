@@ -1,6 +1,5 @@
 
-// import { SignupForm } from "@/components/auth/SignupForm"; // Old form
-import { CombinedAuthForm } from "@/components/auth/CombinedAuthForm"; // New form
+import { NewCustomSignupForm } from "@/components/auth/NewCustomSignupForm"; // Use new form
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,6 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function SignupPage() {
-  // return <SignupForm />; // Old
-  return <CombinedAuthForm initialMode="signup" />; // New
+  return <NewCustomSignupForm />;
 }

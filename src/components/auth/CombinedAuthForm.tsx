@@ -1,6 +1,10 @@
 
 "use client";
 
+// This component is no longer actively used by the main login/signup pages
+// It is replaced by NewCustomLoginForm.tsx and NewCustomSignupForm.tsx
+// Keeping the file for reference or potential future use if the flipping design is revisited.
+
 import { useState, type ChangeEvent, useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,12 +44,19 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
 
   useEffect(() => {
     setIsSignup(initialMode === "signup");
-  }, [initialMode]);
+    // Reset forms when mode changes via prop, ensuring correct form state
+    if (initialMode === "signup") {
+      loginForm.reset();
+    } else {
+      signupForm.reset();
+    }
+  }, [initialMode, loginForm, signupForm]);
 
 
   const handleToggle = (event: ChangeEvent<HTMLInputElement>) => {
     const newIsSignup = event.target.checked;
     setIsSignup(newIsSignup);
+    // Reset the form that is being hidden
     if (newIsSignup) { 
       loginForm.reset();
     } else { 
@@ -117,9 +128,9 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-container"> {/* This class and its CSS should be removed from globals.css if not used */}
       <input type="checkbox" id="signup_toggle" checked={isSignup} onChange={handleToggle} />
-      <form className="auth-form"> {/* Removed onSubmit here, handled by individual buttons */}
+      <form className="auth-form"> {/* Styles for .auth-form, .form_front, .form_back should be removed from globals.css */}
         {/* Login Form Part */}
         <div className="form_front">
           <div className="auth-form_details">Login</div>
@@ -155,9 +166,9 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
           </div>
           <button 
             className="auth-btn" 
-            type="button" /* Changed to button, onSubmit handled by RHF */
+            type="button" 
             onClick={loginForm.handleSubmit(onSubmitLogin)} 
-            disabled={loginForm.formState.isSubmitting}
+            disabled={loginForm.formState.isSubmitting || loginForm.formState.isLoading}
           >
             {loginForm.formState.isSubmitting ? "Logging in..." : "Login"}
           </button>
@@ -234,9 +245,9 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
           </div>
           <button 
             className="auth-btn" 
-            type="button" /* Changed to button, onSubmit handled by RHF */
+            type="button"
             onClick={signupForm.handleSubmit(onSubmitSignup)} 
-            disabled={signupForm.formState.isSubmitting}
+            disabled={signupForm.formState.isSubmitting || signupForm.formState.isLoading}
           >
             {signupForm.formState.isSubmitting ? "Signing up..." : "Sign Up"}
           </button>

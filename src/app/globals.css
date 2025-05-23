@@ -5,124 +5,131 @@
 
 body {
   font-family: var(--font-geist-sans), sans-serif;
-  background-color: hsl(var(--background)); /* Changed from gradient to solid */
+  background: linear-gradient(to right, #1D2671, #C33764); /* Indigo to Pink/Purple Gradient */
+  color: hsl(var(--foreground));
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex-grow: 1;
 }
 
 @layer base {
   :root {
-    /* Light Theme: White pages, Blue accents */
-    --background: 0 0% 98%; /* Very light gray / Off-white */
-    --foreground: 220 10% 15%; /* Dark gray for text */
-    --background-hsl-values: 0, 0%, 98%;
+    /* Indigo/Purple Dark Theme */
+    --background: 251 58% 15%; /* Deep Indigo - Represents the darker end of the gradient */
+    --foreground: 250 30% 90%; /* Light Lavender/Gray for text */
+    --background-hsl-values: 251, 58%, 15%; /* For loader overlay */
 
-    --card: 0 0% 100%;           /* White cards */
-    --card-foreground: 220 10% 15%; /* Dark gray text for cards */
+    --card: 250 50% 22%;           /* Darker Purple/Indigo for cards */
+    --card-foreground: 250 30% 90%; /* Light text for cards */
+    --card-hsl-values: 250, 50%, 22%;
 
-    --popover: 0 0% 100%;        /* White popovers */
-    --popover-foreground: 220 10% 15%;
+    --popover: 250 50% 18%;        /* Even darker for popovers */
+    --popover-foreground: 250 30% 90%;
 
-    /* Primary: A calm, professional Blue */
-    --primary: 207 90% 54%;  /* Calm Blue e.g. #64B5F6 */
-    --primary-foreground: 210 40% 98%; /* Light text for blue buttons */
-    --primary-hsl-values: 207, 90%, 54%; 
+    /* Primary: A vibrant Pink/Magenta from the gradient's lighter end */
+    --primary: 326 56% 50%;  /* Approx #C33764 */
+    --primary-foreground: 0 0% 100%; /* White text for primary buttons */
+    --primary-hsl-values: 326, 56%, 50%; 
     
-    /* Accent: A lighter, softer blue */
-    --accent: 207 90% 88%; /* Lighter Blue e.g. #D9EFFF */
-    --accent-foreground: 207 90% 25%; /* Darker blue text for contrast on accent */
-    --accent-hsl-values: 207, 90%, 88%;
+    /* Accent: A lighter, softer purple or a contrasting bright color */
+    --accent: 270 60% 70%; /* Lighter Lavender */
+    --accent-foreground: 270 60% 15%; /* Dark purple text for contrast on accent */
+    --accent-hsl-values: 270, 60%, 70%;
 
-    --secondary: 220 15% 92%;   /* Light Gray */
-    --secondary-foreground: 220 10% 25%; 
+    --secondary: 250 40% 35%;   /* Muted Indigo/Purple */
+    --secondary-foreground: 250 25% 85%; 
 
-    --muted: 220 15% 88%;       /* Slightly darker light Gray */
-    --muted-foreground: 220 10% 45%; 
-    --muted-hsl-values: 220, 15%, 88%;
+    --muted: 250 30% 28%;       /* Darker Muted Indigo/Purple */
+    --muted-foreground: 250 20% 65%; 
+    --muted-hsl-values: 250, 30%, 28%;
 
     --destructive: 0 70% 55%;    /* A clear red for destructive actions */
     --destructive-foreground: 0 0% 100%; 
     --destructive-hsl-values: 0, 70%, 55%;
 
-    --border: 220 15% 85%;      /* Gray border */
-    --input: 0 0% 100%;         /* White input background */
-    --input-foreground: 220 10% 15%; 
-    --ring: 207 90% 60%;         /* Blue for focus rings, matching primary */
+    --border: 250 40% 40%;      /* Muted purple border */
+    --input: 250 50% 25%;         /* Dark purple input background */
+    --input-foreground: 250 30% 90%; 
+    --ring: 326 60% 60%;         /* Pink/Magenta for focus rings, matching primary */
 
     --radius: 0.5rem;
 
-    /* Sidebar specific variables - Light Mode */
-    --sidebar-background: 220 10% 15%; 
+    /* Sidebar specific variables - Dark Mode (using the main dark theme colors) */
+    --sidebar-background: 251 58% 10%; /* Even darker Indigo */
     --sidebar-foreground: 0 0% 95%;    
-    --sidebar-primary: 207 90% 54%;    
+    --sidebar-primary: 326 56% 50%;    
     --sidebar-primary-foreground: 0 0% 100%; 
-    --sidebar-accent: 220 10% 25%;     
+    --sidebar-accent: 250 50% 22%;     
     --sidebar-accent-foreground: 0 0% 90%; 
-    --sidebar-border: 220 10% 30%;     
-    --sidebar-ring: 207 70% 60%;
+    --sidebar-border: 250 40% 30%;     
+    --sidebar-ring: 326 70% 60%;
 
-     /* Custom Button (MuhammadHasann) Variables for Light Mode */
+     /* Custom Button (MuhammadHasann) Variables for This Dark Theme */
     --mh-button-black-700: hsl(var(--primary)); 
     --mh-button-border-radius: 9999px;
     --mh-button-transition: 0.3s ease-in-out;
-    --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
-    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.7); 
-    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.5);   
+    --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.6);
+    --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6); 
+    --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.4);   
     --mh-button-dots-color: hsl(var(--primary-foreground));
     --mh-button-sparkle-color: hsl(var(--primary-foreground));
     --mh-button-text-color: hsl(var(--primary-foreground));
     --mh-button-text-hover-opacity: 0.95; 
-     /* Disabled state for MuhammadHasann button */
     --mh-button-disabled-opacity: 0.5;
     --mh-button-disabled-bg: hsl(var(--muted));
     --mh-button-disabled-shadow: none;
+    --primary-foreground-hsl-values: 0, 0%, 100%; /* Assuming primary-foreground is white */
   }
 
-  .dark {
-    /* Dark Theme for Dark Blue-Gray base */
-    --background: 220 25% 12%; /* Dark desaturated blue */
-    --foreground: 220 20% 92%; /* Light gray for text */
-    --background-hsl-values: 220, 25%, 12%;
+  .dark { /* The dark class might not be strictly necessary if :root is already the dark theme */
+    --background: 251 58% 15%; 
+    --foreground: 250 30% 90%; 
+    --background-hsl-values: 251, 58%, 15%;
 
-    --card: 220 25% 18%;           /* Slightly lighter dark blue for cards */
-    --card-foreground: 220 20% 92%; 
+    --card: 250 50% 22%;           
+    --card-foreground: 250 30% 90%; 
+    --card-hsl-values: 250, 50%, 22%;
 
-    --popover: 220 25% 15%;        
-    --popover-foreground: 220 20% 92%;
+    --popover: 250 50% 18%;        
+    --popover-foreground: 250 30% 90%;
 
-    --primary: 207 80% 60%;  /* Brighter blue for dark mode */
-    --primary-foreground: 210 40% 98%; 
-    --primary-hsl-values: 207, 80%, 60%;
+    --primary: 326 56% 50%;  
+    --primary-foreground: 0 0% 100%; 
+    --primary-hsl-values: 326, 56%, 50%;
     
-    --accent: 207 70% 75%; /* Lighter blue for accents */
-    --accent-foreground: 207 90% 15%; 
-    --accent-hsl-values: 207, 70%, 75%;
+    --accent: 270 60% 70%; 
+    --accent-foreground: 270 60% 15%; 
+    --accent-hsl-values: 270, 60%, 70%;
 
-    --secondary: 220 20% 25%;   
-    --secondary-foreground: 220 15% 75%; 
+    --secondary: 250 40% 35%;   
+    --secondary-foreground: 250 25% 85%; 
 
-    --muted: 220 20% 30%;       
-    --muted-foreground: 220 15% 65%; 
-    --muted-hsl-values: 220, 20%, 30%;
+    --muted: 250 30% 28%;       
+    --muted-foreground: 250 20% 65%; 
+    --muted-hsl-values: 250, 30%, 28%;
 
     --destructive: 0 65% 55%;    
     --destructive-foreground: 0 0% 100%; 
     --destructive-hsl-values: 0, 65%, 55%;
 
-    --border: 220 20% 28%;      
-    --input: 220 20% 22%;         
-    --input-foreground: 220 15% 85%; 
-    --ring: 207 80% 65%;
+    --border: 250 40% 40%;      
+    --input: 250 50% 25%;         
+    --input-foreground: 250 30% 90%; 
+    --ring: 326 60% 60%;
 
-    /* Sidebar specific variables - Dark Mode */
-    --sidebar-background: 220 25% 10%; 
+    --sidebar-background: 251 58% 10%; 
     --sidebar-foreground: 0 0% 90%;    
-    --sidebar-primary: 207 80% 60%;    
+    --sidebar-primary: 326 56% 50%;    
     --sidebar-primary-foreground: 0 0% 100%; 
-    --sidebar-accent: 220 20% 20%;     
+    --sidebar-accent: 250 50% 22%;     
     --sidebar-accent-foreground: 0 0% 85%; 
-    --sidebar-border: 220 20% 25%;     
-    --sidebar-ring: 207 80% 65%;
+    --sidebar-border: 250 40% 30%;     
+    --sidebar-ring: 326 70% 60%;
 
-     /* Custom Button (MuhammadHasann) Variables for dark mode */
     --mh-button-black-700: hsl(var(--primary)); 
     --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.6);
     --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.6); 
@@ -130,6 +137,7 @@ body {
     --mh-button-dots-color: hsl(var(--primary-foreground));
     --mh-button-sparkle-color: hsl(var(--primary-foreground));
     --mh-button-text-color: hsl(var(--primary-foreground));
+     --primary-foreground-hsl-values: 0, 0%, 100%;
   }
 }
 
@@ -138,12 +146,7 @@ body {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+  /* body is handled above with gradient */
   main {
     flex-grow: 1;
   }
@@ -356,30 +359,38 @@ body {
   backdrop-filter: blur(3px);
   z-index: 10000; 
   display: flex;
+  flex-direction: column; /* For centering text below spinner */
   justify-content: center;
   align-items: center;
 }
 
-/* Renamed original .spinner to .ai-spinner to avoid conflict */
-.ai-spinner { 
-  width: 3em;
-  height: 3em;
-  border-radius: 50%;
-  border: 2px solid hsl(var(--border)); 
-  box-shadow: -10px -10px 10px hsla(var(--primary-hsl-values), 0.7), 
-              0px -10px 10px 0px hsla(var(--accent-hsl-values), 0.7),  
-              10px -10px 10px hsla(var(--destructive-hsl-values), 0.5), 
-              10px 0 10px hsla(var(--destructive-hsl-values), 0.8), 
-              10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.6), 
-              0 10px 10px 0px hsla(var(--accent-hsl-values), 0.5), 
-              -10px 10px 10px 0px hsla(var(--accent-hsl-values), 0.4); 
-  animation: rot55 0.7s linear infinite;
+.ai-spinner-container { /* Container for spinner and text */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem; /* Space between spinner and text */
 }
 
-.ai-spinner-inner { /* Renamed original .spinnerin to .ai-spinner-inner */
-  border: 2px solid hsl(var(--border));  
-  width: 1.5em;
-  height: 1.5em;
+
+.ai-spinner { 
+  width: 6em; /* Increased size */
+  height: 6em; /* Increased size */
+  border-radius: 50%;
+  border: 3px solid hsl(var(--border)); /* Thicker border */
+  box-shadow: -12px -12px 12px hsla(var(--primary-hsl-values), 0.7), 
+              0px -12px 12px 0px hsla(var(--accent-hsl-values), 0.7),  
+              12px -12px 12px hsla(var(--destructive-hsl-values), 0.5), 
+              12px 0 12px hsla(var(--destructive-hsl-values), 0.8), 
+              12px 12px 12px 0px hsla(var(--accent-hsl-values), 0.6), 
+              0 12px 12px 0px hsla(var(--accent-hsl-values), 0.5), 
+              -12px 12px 12px 0px hsla(var(--accent-hsl-values), 0.4); 
+  animation: rot55 0.9s linear infinite; /* Slightly slower animation */
+}
+
+.ai-spinner-inner {
+  border: 3px solid hsl(var(--border));  /* Thicker border */
+  width: 3em; /* Increased size */
+  height: 3em; /* Increased size */
   border-radius: 50%;
   position: absolute;
   top: 50%;
@@ -397,7 +408,6 @@ body {
 .codepen-button {
   display: block;
   cursor: pointer;
-  /* color: white; /* Let span control text color */
   position: relative;
   text-decoration: none;
   font-weight: 600;
@@ -405,6 +415,7 @@ body {
   overflow: hidden;
   padding: 3px;
   isolation: isolate;
+  width: fit-content; /* Ensure it doesn't stretch full width */
 }
 
 .codepen-button::before {
@@ -446,37 +457,34 @@ body {
   justify-content: center; 
   padding: 0.8rem 1.3rem; 
   font-size: 0.9rem; 
-  background: hsl(var(--card)); /* Themed background for the span */
+  background: hsl(var(--card)); 
   border-radius: 3px;
   height: 100%;
-  color: hsl(var(--card-foreground)); /* Themed text color for the span */
+  color: hsl(var(--card-foreground)); 
 }
-
 
 /* MuhammadHasann Animated Button CSS (for Analyze Images) */
 .analyze-button-animated { 
-  --mh-button-black-700: hsl(var(--primary)); /* Use theme primary for base */
+  --mh-button-black-700: hsl(var(--primary)); 
   --mh-button-border-radius: 9999px;
   --mh-button-transition: 0.3s ease-in-out;
   --mh-button-offset: 2px;
   
-  /* Use theme variables for active/gradient states, HSL needed for opacity */
   --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
   --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.85);
   --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.65);   
 
-  /* Dots and sparkle color from theme */
   --mh-button-dots-color: hsl(var(--primary-foreground)); 
   --mh-button-sparkle-color: hsl(var(--primary-foreground));
 
-  /* Text color from theme */
   --mh-button-text-color: hsl(var(--primary-foreground));
-  --mh-button-text-hover-opacity: 1; /* No change on hover for light theme */
+  --mh-button-text-hover-opacity: 1;
 
-  /* Disabled state from theme */
-  --mh-button-disabled-opacity: 0.5;
-  --mh-button-disabled-bg: hsl(var(--muted)); /* Use theme muted color */
-  --mh-button-disabled-shadow: none;
+  --mh-button-disabled-opacity: 0.6; /* Adjusted opacity */
+  --mh-button-disabled-bg: hsl(var(--muted)); 
+  --mh-button-disabled-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values, 0, 0%, 100%), 0.1),
+                              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.15); /* Softer disabled shadow */
+
 
   cursor: pointer;
   position: relative;
@@ -504,23 +512,13 @@ body {
   height: 100%;
   background-color: var(--mh-button-black-700);
   border-radius: var(--mh-button-border-radius);
-  box-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values, 0, 0%, 100%), 0.2),  /* Use a default if not themed */
-              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.3), /* Keep this shadow */
+  box-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values, 0, 0%, 100%), 0.2),
+              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.3),
               0px 2px 4px -1px hsla(var(--primary-hsl-values), calc(0.3 * (1 - var(--active, 0)))), 
               0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color); 
   transition: all var(--mh-button-transition);
   z-index: 0;
 }
-
-/* Helper HSL variable for primary-foreground, assuming it's light */
-/* If primary-foreground is dark, this needs adjustment or a different approach */
-:root { /* Add this if not already there */
-  --primary-foreground-hsl-values: var(--primary-foreground-hsl-values, 0, 0%, 100%); /* Default to white */
-}
-.dark {
-  --primary-foreground-hsl-values: var(--primary-foreground-hsl-values, 0, 0%, 100%); /* Default to white */
-}
-
 
 .analyze-button-animated::after { 
   content: "";
@@ -649,196 +647,170 @@ body {
 /* Disabled state for analyze-button-animated */
 .analyze-button-animated:disabled {
   cursor: not-allowed;
-  opacity: var(--mh-button-disabled-opacity) !important; 
+  opacity: var(--mh-button-disabled-opacity); 
 }
 
 .analyze-button-animated:disabled::before {
-  background-color: var(--mh-button-disabled-bg) !important; 
-  box-shadow: var(--mh-button-disabled-shadow) !important; 
+  background-color: var(--mh-button-disabled-bg); 
+  box-shadow: var(--mh-button-disabled-shadow); 
 }
 
 .analyze-button-animated:disabled::after,
 .analyze-button-animated:disabled .dots_border::before {
-  display: none !important; 
+  display: none; 
 }
 
 .analyze-button-animated:disabled .sparkle {
-  opacity: 0.3 !important; 
+  opacity: 0.3; 
 }
 .analyze-button-animated:disabled .text_button {
-  background-image: none !important; 
-  color: hsl(var(--muted-foreground)) !important; 
+  background-image: none; 
+  color: hsl(var(--muted-foreground)); 
 }
 
 
-/* Flipping Auth Form CSS */
-.auth-container { 
+/* Yashasvi9199 Auth Card CSS */
+.auth-card-yashasvi-wrapper { /* New wrapper for centering */
   display: flex;
   justify-content: center;
   align-items: center;
-  perspective: 1000px; 
-  min-height: 450px; 
   width: 100%;
+  min-height: calc(100vh - 150px); /* Adjust based on header/footer height */
+  padding: 20px;
 }
 
-.auth-form { 
-  display: flex; 
-  position: relative; 
-  width: 350px; 
-  min-height: 480px; 
-  transform-style: preserve-3d;
-  transition: transform 1s ease;
+.auth-card-yashasvi {
+  background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+  border-radius: 22px;
+  transition: all 0.3s;
+  width: 350px; /* Fixed width */
+  max-width: 100%;
 }
 
-.auth-form .form_front,
-.auth-form .form_back {
+.auth-card-yashasvi-inner {
+  border-radius: 0; /* Will be overridden by parent's border-radius effectively */
+  transition: all 0.2s;
+  background-color: #1a1a1a; /* Form background */
+  border-radius: 20px; /* Inner radius */
+  padding: 1px; /* For border gradient effect if parent has padding */
+}
+
+.auth-card-yashasvi-inner:hover { /* This hover was on card2, now on inner */
+  /* transform: scale(0.98); /* This might be too much if card also scales */
+  /* border-radius: 20px; */
+}
+
+.auth-card-yashasvi:hover {
+  box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.3);
+}
+
+.auth-form-yashasvi {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem; 
-  position: absolute;
-  width: 100%; 
-  height: 100%; 
-  backface-visibility: hidden;
-  padding: 40px 30px; 
-  border-radius: 15px;
-  background-color: hsla(var(--card-hsl-values, 0, 0%, 100%), 0.9); /* Use card with HSL for opacity */
-  box-shadow: inset 1px 1px 5px hsla(var(--card-foreground-hsl-values, 0, 0%, 0%), 0.1),
-              inset -1px -1px 3px hsla(var(--border-hsl-values, 0, 0%, 80%), 0.5),
-              0 4px 15px hsla(var(--background-hsl-values), 0.3); 
+  gap: 15px; /* Adjusted gap */
+  padding: 2em; /* Adjusted padding */
+  background-color: #171717; /* Form background, matches original */
+  border-radius: 20px; /* Matches inner card */
+  transition: 0.4s ease-in-out;
 }
 
-/* Add HSL versions of theme variables if not already present in :root */
-:root {
-  /* ... existing variables ... */
-  --card-hsl-values: var(--card-hsl-values, 0, 0%, 100%); /* Default to white */
-  --card-foreground-hsl-values: var(--card-foreground-hsl-values, 0, 0%, 0%); /* Default to black */
-  --border-hsl-values: var(--border-hsl-values, 0, 0%, 80%); /* Default to gray */
-  --primary-foreground-hsl-values: var(--primary-foreground-hsl-values, 0, 0%, 100%); /* For analyze button */
-}
-.dark {
-  /* ... existing dark variables ... */
-  --card-hsl-values: var(--card-hsl-values, 220, 25%, 18%); /* Dark card */
-  --card-foreground-hsl-values: var(--card-foreground-hsl-values, 220, 20%, 92%); /* Light text */
-  --border-hsl-values: var(--border-hsl-values, 220, 20%, 28%); /* Dark border */
-  --primary-foreground-hsl-values: var(--primary-foreground-hsl-values, 0, 0%, 100%);
-}
-
-
-.auth-form .form_back {
-  transform: rotateY(-180deg);
-}
-
-.auth-form_details { 
-  font-size: 1.75rem; 
+.auth-heading-yashasvi {
+  text-align: center;
+  margin: 1em 0; /* Adjusted margin */
+  color: rgb(255, 255, 255);
+  font-size: 1.5em; /* Adjusted size */
   font-weight: 600;
-  padding-bottom: 0.5rem; 
-  color: hsl(var(--card-foreground)); 
-  text-align: center;
 }
 
-.auth-input { 
-  width: 100%; 
-  min-height: 40px; 
-  color: hsl(var(--input-foreground)); 
+.auth-field-yashasvi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border-radius: 25px;
+  padding: 0.8em 1em; /* Adjusted padding */
+  border: none;
   outline: none;
-  transition: 0.35s;
-  padding: 0px 10px; 
-  background-color: hsl(var(--input)); 
-  border-radius: 6px;
-  border: 1px solid hsl(var(--border)); 
-  box-shadow: inset 0 1px 3px hsla(var(--background-hsl-values), 0.5); 
+  color: white;
+  background-color: #212121; /* Darker field background */
+  box-shadow: inset 2px 5px 10px rgb(5, 5, 5);
 }
 
-.auth-input::placeholder {
-  color: hsl(var(--muted-foreground)); 
+.auth-input-icon-yashasvi {
+  height: 1.3em;
+  width: 1.3em;
+  fill: white;
 }
 
-.auth-input:focus::placeholder {
-  transition: 0.3s;
-  opacity: 0;
+.auth-input-field-yashasvi {
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+  color: #d3d3d3;
+  font-size: 0.9rem; /* Adjusted size */
+}
+.auth-input-field-yashasvi::placeholder {
+  color: #777; /* Darker placeholder */
 }
 
-.auth-input:focus {
-  transform: scale(1.02); 
-  border-color: hsl(var(--ring)); 
-  box-shadow: inset 0 1px 3px hsla(var(--background-hsl-values), 0.5), 0 0 0 2px hsla(var(--ring), 0.5); 
+
+.auth-buttons-yashasvi {
+  display: flex;
+  justify-content: space-between; /* Space out buttons */
+  gap: 1em; /* Gap between buttons */
+  margin-top: 2em;
 }
 
-.auth-btn { 
-  padding: 10px 25px; 
-  width: 100%; 
+.auth-button-yashasvi { /* Generic button style */
+  padding: 0.7em 1em;
+  border-radius: 8px; /* Slightly larger radius */
+  border: none;
+  outline: none;
+  transition: 0.3s ease-in-out;
+  background-color: #2f2f2f; /* Slightly lighter button */
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  background-color: hsl(var(--primary)); 
-  border-radius: 6px;
-  border: 1px solid hsl(var(--primary)); 
-  color: hsl(var(--primary-foreground)); 
-  font-size: 1rem; 
-  font-weight: 600; 
-  transition: 0.2s ease-out; 
-}
-
-.auth-btn:hover {
-  background-color: hsla(var(--primary-hsl-values), 0.9); 
-  transform: translateY(-1px); 
-}
-
-.auth-btn:focus-visible { 
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
-}
-
-.auth-btn:active {
-  transform: translateY(0px); 
-}
-
-.auth-form .auth-switch { 
-  font-size: 0.875rem; 
-  color: hsl(var(--muted-foreground)); 
+  flex-grow: 1; /* Make buttons take available space */
   text-align: center;
 }
-
-.auth-form .auth-switch .auth-signup_tog { 
-  font-weight: 600; 
-  cursor: pointer;
-  text-decoration: none; 
-  color: hsl(var(--primary)); 
+.auth-button-yashasvi:hover {
+  background-color: #00C472; /* Brighter green from gradient on hover */
+  color: #171717; /* Dark text on hover */
 }
-.auth-form .auth-switch .auth-signup_tog:hover {
+
+.auth-button-yashasvi.signup-link { /* Specific for "Sign Up" / "Sign In" link-like button */
+  background-color: transparent;
+  color: #00C472; /* Green text */
+  padding: 0.7em 0.5em;
+  font-weight: normal;
+}
+.auth-button-yashasvi.signup-link:hover {
+  background-color: transparent;
+  color: #00ff75; /* Brighter green on hover */
   text-decoration: underline;
 }
 
-.auth-container #signup_toggle { 
-  display: none;
-}
-
-.auth-container #signup_toggle:checked + .form {
-  transform: rotateY(-180deg);
-}
-
-@media (max-width: 400px) {
-  .auth-form {
-    width: 90%;
-    min-height: auto; 
-  }
-  .auth-form .form_front,
-  .auth-form .form_back {
-    padding: 30px 20px;
-  }
-  .auth-form_details {
-    font-size: 1.5rem;
-  }
+/* Error message styling */
+.auth-error-message {
+  color: hsl(var(--destructive));
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  text-align: left;
+  width: 100%;
 }
 
 
-/* Download button for RoomCard - Vinodjangid07 Style */
+
+/* Download button card (Vinodjangid07 Style) */
 .download-button-card {
   width: 40px; 
   height: 40px; 
   border-radius: 50%;
   border: none;
-  background-color: hsla(var(--card-hsl-values, 0, 0%, 100%), 0.5); /* Use themed card with opacity */
+  background-color: hsla(var(--card-hsl-values), 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -846,15 +818,8 @@ body {
   cursor: pointer;
   position: relative; 
   transition-duration: .3s;
-  box-shadow: 0 1px 3px hsla(var(--foreground-hsl-values, 0, 0%, 0%), 0.1); /* Use themed foreground for shadow */
+  box-shadow: 0 1px 3px hsla(var(--foreground-hsl-values), 0.1);
 }
-:root { /* Ensure these HSL values exist for theming */
-  --foreground-hsl-values: var(--foreground-hsl-values, 0, 0%, 0%); /* Default to black */
-}
-.dark {
-  --foreground-hsl-values: var(--foreground-hsl-values, 220, 20%, 92%); /* Default to light gray */
-}
-
 
 .download-button-card .svgIcon {
   fill: hsl(var(--primary)); 
@@ -888,7 +853,7 @@ body {
   letter-spacing: 0.5px;
   white-space: nowrap;
   z-index: 50; 
-  box-shadow: 0 2px 8px hsla(var(--foreground-hsl-values, 0, 0%, 0%), 0.15);
+  box-shadow: 0 2px 8px hsla(var(--foreground-hsl-values), 0.15);
 }
 
 .download-button-card .tooltip::before {
@@ -956,89 +921,9 @@ body {
   }
 }
 
-/* CSS for orange room card - to be removed if not used */
-/*
-.room-card-orange {
-  --room-card-bg: 25 95% 60%; 
-  --room-card-fg: 25 85% 10%; 
-  --room-card-muted-fg: 25 80% 25%; 
-  --room-card-primary-icon: 25 85% 98%; 
-  --room-card-button-fg: 25 85% 10%; 
-  --room-card-button-hover-bg: 25 95% 55%; 
-  --room-card-button-hover-fg: 25 85% 5%; 
-  --room-card-destructive-fg: 0 70% 60%;
-  --room-card-destructive-hover-bg: 0 70% 50%;
-  --room-card-destructive-hover-fg: 0 0% 100%;
 
-  background-color: hsl(var(--room-card-bg));
-  color: hsl(var(--room-card-fg));
-}
-
-.room-card-orange .text-primary {
-  color: hsl(var(--room-card-primary-icon)) !important;
-}
-.room-card-orange .text-muted-foreground {
-  color: hsl(var(--room-card-muted-fg)) !important;
-}
-
-.room-card-orange .shadcn-button-default { 
-  background-color: hsl(var(--room-card-bg) / 0.1);
-  color: hsl(var(--room-card-button-fg));
-  border: 1px solid hsl(var(--room-card-button-fg) / 0.3);
-}
-.room-card-orange .shadcn-button-default:hover {
-  background-color: hsl(var(--room-card-button-hover-bg));
-  color: hsl(var(--room-card-button-hover-fg));
-}
-
-.room-card-orange .shadcn-button-outline {
-  color: hsl(var(--room-card-button-fg));
-  border-color: hsl(var(--room-card-button-fg) / 0.5);
-}
-.room-card-orange .shadcn-button-outline:hover {
-  background-color: hsl(var(--room-card-button-hover-bg) / 0.2);
-  border-color: hsl(var(--room-card-button-fg));
-}
-
-.room-card-orange .shadcn-button-ghost {
-  color: hsl(var(--room-card-button-fg));
-}
-.room-card-orange .shadcn-button-ghost:hover {
-  background-color: hsl(var(--room-card-button-hover-bg) / 0.2);
-  color: hsl(var(--room-card-button-hover-fg));
-}
-
-.room-card-orange .shadcn-button-destructive-outline {
-  color: hsl(var(--room-card-destructive-fg));
-  border-color: hsl(var(--room-card-destructive-fg) / 0.5);
-}
-.room-card-orange .shadcn-button-destructive-outline:hover {
-  background-color: hsl(var(--room-card-destructive-hover-bg) / 0.1);
-  border-color: hsl(var(--room-card-destructive-fg));
-  color: hsl(var(--room-card-destructive-fg));
-}
-.room-card-orange .download-button-card {
-  background-color: hsl(var(--room-card-bg) / 0.5);
-}
-.room-card-orange .download-button-card .svgIcon {
-  fill: hsl(var(--room-card-button-fg));
-}
-.room-card-orange .download-button-card .icon2 {
-  border-color: hsl(var(--room-card-button-fg));
-}
-.room-card-orange .download-button-card:hover {
-  background-color: hsl(var(--room-card-button-hover-bg));
-}
-.room-card-orange .download-button-card:hover .svgIcon {
-  fill: hsl(var(--room-card-button-hover-fg));
-}
-.room-card-orange .download-button-card:hover .icon2 {
-  border-color: hsl(var(--room-card-button-hover-fg));
-}
-*/
-
-/* Removed Kennyotsu 3D Card CSS */
-/* .room-card-3d-wrapper, .room-card-3d-canvas, .room-card-3d-content, .room-card-3d-tracker, etc. */
+/* Removed Kennyotsu 3D Card CSS (room-card-3d-wrapper, etc.) */
+/* The CSS for the 3D card effect by kennyotsu has been removed to simplify and avoid conflicts */
 
 /* End of globals.css content */
 
