@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image"; // Ensure Image is imported
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/config/firebase";
 import { signOut } from "@/lib/auth";
@@ -29,6 +29,8 @@ export function AppHeader() {
   const { user } = useAuthContext();
   const { showLoader, hideLoader } = useLoader();
 
+  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.appspot.com/o/Homiestan.png?alt=media";
+
   const handleLogout = async () => {
     showLoader();
     try {
@@ -47,12 +49,13 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2 mr-auto">
           <Image
-            src="/homiestan-logo.png" // Path relative to public folder
-            alt="HomieStan" // Updated alt text
-            width={150}    // Set explicit width
-            height={38}    // Set explicit height (maintaining ~4:1 aspect ratio)
+            src={logoUrl}
+            alt="" 
+            width={150}
+            height={38} 
+            className="object-contain" 
           />
         </Link>
         <div className="flex-grow text-center">
@@ -62,7 +65,7 @@ export function AppHeader() {
             </span>
           )}
         </div>
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4 ml-auto">
           {user && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
