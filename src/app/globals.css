@@ -586,7 +586,7 @@ main {
 
 @keyframes mh-rotateDots {
   to {
-    transform: translate(-50%, -50%) rotate(360deg);
+    transform: rotate(360deg);
   }
 }
 
@@ -844,7 +844,7 @@ main {
 .download-button-card .tooltip {
   position: absolute;
   top: 50%;
-  left: calc(100% + 12px);
+  left: calc(100% + 12px); /* Adjusted from right: -105px to be on the right */
   transform: translateY(-50%);
   opacity: 0;
   visibility: hidden;
@@ -859,7 +859,7 @@ main {
   pointer-events: none;
   letter-spacing: 0.5px;
   white-space: nowrap;
-  z-index: 50;
+  z-index: 50; /* Ensure tooltip is above other elements */
   box-shadow: 0 2px 8px hsla(var(--foreground-hsl-values), 0.15);
 }
 
@@ -869,19 +869,21 @@ main {
   width: 8px;
   height: 8px;
   background-color: hsl(var(--popover));
-  transform: translateY(-50%) rotate(45deg);
+  transform: translateY(-50%) rotate(45deg); /* Adjusted for left positioning */
   top: 50%;
-  left: -4px;
+  left: -4px; /* Position arrow on the left side of the tooltip */
 }
 
 .download-button-card:hover .tooltip {
   opacity: 1;
   visibility: visible;
+  /* transition-duration: .3s; No need to repeat, already on .tooltip */
 }
 
 .download-button-card:hover {
   background-color: hsl(var(--primary));
-  transform: scale(1.1);
+  transform: scale(1.1); /* Added scale effect on hover */
+  /* transition-duration: .3s; No need to repeat */
 }
 
 .download-button-card:hover .icon2 {
@@ -895,17 +897,18 @@ main {
   animation: slide-in-top 0.6s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
 }
 
+/* Disabled state for download-button-card */
 .download-button-card:disabled,
 .download-button-card[disabled] {
-  background-color: hsl(var(--muted)) !important;
+  background-color: hsl(var(--muted)) !important; /* Use important to override hover if needed */
   opacity: 0.6 !important;
   cursor: not-allowed !important;
-  transform: scale(1) !important;
+  transform: scale(1) !important; /* Reset scale on disabled */
 }
 .download-button-card:disabled .svgIcon,
 .download-button-card[disabled] .svgIcon {
   fill: hsl(var(--muted-foreground)) !important;
-  animation: none !important;
+  animation: none !important; /* Remove animation on disabled */
 }
 .download-button-card:disabled .icon2,
 .download-button-card[disabled] .icon2 {
@@ -917,11 +920,13 @@ main {
   visibility: hidden;
 }
 
+
 @keyframes slide-in-top {
   0% {
-    transform: translateY(-6px);
+    transform: translateY(-6px); /* Adjusted from -10px for less jump */
     opacity: 0;
   }
+
   100% {
     transform: translateY(0px);
     opacity: 1;
@@ -956,7 +961,151 @@ main {
 }
 
 /* Custom 3D Room Card (Kennyotsu) - Prefixed */
-/* Removed .room-card-3d-wrapper and related styles as RoomCard reverted to ShadCN */
+.room-card-3d-wrapper {
+  position: relative;
+  width: 280px; 
+  height: 374px; 
+  transition: 200ms;
+}
+
+.room-card-3d-wrapper:active {
+  width: 270px; 
+  height: 365px; 
+}
+
+.room-card-3d-interactive-area { 
+  position: absolute;
+  inset: 0;
+  z-index: 0; 
+  display: flex;
+  flex-direction: column; 
+  justify-content: space-between; 
+  align-items: center; 
+  border-radius: 20px;
+  transition: 700ms;
+  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%); 
+  overflow: hidden; 
+  padding: 1rem; 
+}
+
+.room-card-3d-wrapper:hover .room-card-3d-interactive-area {
+  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4); 
+}
+
+.room-card-3d-interactive-area .room-card-3d-content-header,
+.room-card-3d-interactive-area .room-card-3d-content-body,
+.room-card-3d-interactive-area .room-card-3d-content-footer {
+  width: 100%;
+  color: hsl(var(--primary-foreground)); 
+}
+
+.room-card-3d-content-footer {
+  position: relative; 
+  z-index: 10; 
+}
+
+.room-card-3d-tracker { 
+  position: absolute;
+  z-index: 200; 
+  width: 100%;
+  height: 100%;
+}
+
+.room-card-3d-tracker:hover {
+  cursor: pointer;
+}
+
+.room-card-3d-tracker:hover ~ .room-card-3d-interactive-area { 
+  transition: 300ms;
+  filter: brightness(1.1);
+}
+
+.room-card-3d-wrapper:hover .room-card-3d-interactive-area::before { 
+  transition: 200ms;
+  content: '';
+  opacity: 80%;
+}
+
+.room-card-3d-canvas {
+  perspective: 800px;
+  inset: 0;
+  z-index: 1; 
+  position: absolute;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+  gap: 0px 0px;
+  grid-template-areas: "tr-1 tr-2 tr-3 tr-4 tr-5"
+    "tr-6 tr-7 tr-8 tr-9 tr-10"
+    "tr-11 tr-12 tr-13 tr-14 tr-15"
+    "tr-16 tr-17 tr-18 tr-19 tr-20"
+    "tr-21 tr-22 tr-23 tr-24 tr-25";
+}
+
+.room-card-3d-interactive-area::before { 
+  content: '';
+  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%); 
+  filter: blur(2rem);
+  opacity: 30%;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  z-index: -1;
+  transition: 200ms;
+  border-radius: inherit; 
+}
+
+.room-card-3d-wrapper .tr-1 { grid-area: tr-1; }
+.room-card-3d-wrapper .tr-2 { grid-area: tr-2; }
+.room-card-3d-wrapper .tr-3 { grid-area: tr-3; }
+.room-card-3d-wrapper .tr-4 { grid-area: tr-4; }
+.room-card-3d-wrapper .tr-5 { grid-area: tr-5; }
+.room-card-3d-wrapper .tr-6 { grid-area: tr-6; }
+.room-card-3d-wrapper .tr-7 { grid-area: tr-7; }
+.room-card-3d-wrapper .tr-8 { grid-area: tr-8; }
+.room-card-3d-wrapper .tr-9 { grid-area: tr-9; }
+.room-card-3d-wrapper .tr-10 { grid-area: tr-10; }
+.room-card-3d-wrapper .tr-11 { grid-area: tr-11; }
+.room-card-3d-wrapper .tr-12 { grid-area: tr-12; }
+.room-card-3d-wrapper .tr-13 { grid-area: tr-13; }
+.room-card-3d-wrapper .tr-14 { grid-area: tr-14; }
+.room-card-3d-wrapper .tr-15 { grid-area: tr-15; }
+.room-card-3d-wrapper .tr-16 { grid-area: tr-16; }
+.room-card-3d-wrapper .tr-17 { grid-area: tr-17; }
+.room-card-3d-wrapper .tr-18 { grid-area: tr-18; }
+.room-card-3d-wrapper .tr-19 { grid-area: tr-19; }
+.room-card-3d-wrapper .tr-20 { grid-area: tr-20; }
+.room-card-3d-wrapper .tr-21 { grid-area: tr-21; }
+.room-card-3d-wrapper .tr-22 { grid-area: tr-22; }
+.room-card-3d-wrapper .tr-23 { grid-area: tr-23; }
+.room-card-3d-wrapper .tr-24 { grid-area: tr-24; }
+.room-card-3d-wrapper .tr-25 { grid-area: tr-25; }
+
+.room-card-3d-wrapper .tr-1:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-2:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-3:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-4:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-5:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-6:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-7:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-8:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-9:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-10:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-11:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-12:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-13:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-14:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-15:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-16:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-17:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-18:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-19:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-20:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-21:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-22:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-23:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-24:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
+.room-card-3d-wrapper .tr-25:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
 
 .noselect {
   -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
@@ -964,32 +1113,29 @@ main {
 
 /* Welcome Text Shine Effect */
 .welcome-text-shine {
-  /* Ensure it's not inheriting problematic positioning */
   position: relative; 
-  /* display: inline-block; /* Might help with background rendering */
-  font-weight: 600; /* From original example */
-  /* Adjusted gradient to be simpler and use theme variables more directly */
+  font-weight: 600; 
   background: linear-gradient(
     to right,
-    hsl(var(--foreground)) 20%,       /* Start with normal text color */
-    hsl(var(--primary-foreground)) 40%, /* Bright shine color (e.g., white) */
-    hsl(var(--primary-foreground)) 60%, /* Hold bright shine */
-    hsl(var(--foreground)) 80%        /* End with normal text color */
+    hsl(var(--foreground)) 20%,
+    hsl(var(--primary)) 40%, /* Pink shine */
+    hsl(var(--primary)) 60%, /* Hold pink shine */
+    hsl(var(--foreground)) 80%
   );
-  background-size: 200% auto; /* Needs to be larger than the text to allow for movement */
-  color: hsl(var(--foreground)); /* Fallback color, though transparent is desired */
+  background-size: 200% auto;
+  color: hsl(var(--foreground)); 
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine-welcome 3s linear infinite; /* Renamed animation to avoid conflicts */
-  white-space: nowrap; /* Prevent text from wrapping during animation */
+  animation: shine-welcome 3s linear infinite;
+  white-space: nowrap; 
 }
 
-@keyframes shine-welcome { /* Renamed animation */
+@keyframes shine-welcome { 
   0% {
-    background-position: 200% center; /* Start off-screen to the right */
+    background-position: 200% center;
   }
   100% {
-    background-position: -200% center; /* Move completely to the left */
+    background-position: -200% center;
   }
 }
 /* End of globals.css content */
