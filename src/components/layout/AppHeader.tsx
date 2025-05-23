@@ -52,8 +52,8 @@ export function AppHeader() {
            <Image 
             src="/homiestan-logo.png" 
             alt="HomieStan Logo" 
-            width={120} 
-            height={30} 
+            width={150} 
+            height={38} 
             className="h-auto" 
             priority
           />

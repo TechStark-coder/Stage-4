@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useRef, useEffect, type DragEvent } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -11,8 +11,8 @@ import { describeRoomObjects, type DescribeRoomObjectsInput } from "@/ai/flows/d
 import { setRoomAnalyzingStatus } from "@/lib/firestore";
 import { photoUploadSchema, type PhotoUploadFormData } from "@/schemas/roomSchemas";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, ImagePlus, Camera, X } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { UploadCloud, ImagePlus, Camera } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 import { storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -24,7 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -64,9 +63,9 @@ export function PhotoUploader({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-
   const form = useForm<PhotoUploadFormData>({
     resolver: zodResolver(photoUploadSchema),
+    // No defaultValues needed here as we manage File objects directly
   });
 
   const addNewFiles = (newFilesArray: File[]) => {
@@ -81,10 +80,11 @@ export function PhotoUploader({
       });
     }
     
-    if (currentPhotos.length + filteredNewFiles.length > MAX_PHOTOS) {
+    const totalAfterAdd = currentPhotos.length + filteredNewFiles.length;
+    if (totalAfterAdd > MAX_PHOTOS) {
       toast({
         title: "Photo Limit Exceeded",
-        description: `You can upload a maximum of ${MAX_PHOTOS} photos.`,
+        description: `You can upload a maximum of ${MAX_PHOTOS} photos. ${MAX_PHOTOS - currentPhotos.length} more can be added.`,
         variant: "destructive",
       });
       const remainingSlots = MAX_PHOTOS - currentPhotos.length;
@@ -148,9 +148,9 @@ export function PhotoUploader({
         console.error("Error accessing camera:", err);
         setHasCameraPermission(false);
         let message = "Could not access the camera.";
-        if (err.name === "NotAllowedError") {
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
           message = "Camera permission was denied. Please enable it in your browser settings.";
-        } else if (err.name === "NotFoundError") {
+        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
           message = "No camera found on this device.";
         }
         setCameraError(message);
@@ -203,8 +203,6 @@ export function PhotoUploader({
   useEffect(() => {
     if (showCameraDialog) {
       openCamera();
-    } else {
-      closeCamera(); // Ensure stream is stopped when dialog is closed externally
     }
     // Cleanup function to stop camera stream when component unmounts or dialog closes
     return () => {
@@ -230,8 +228,8 @@ export function PhotoUploader({
       return;
     }
 
-    setIsAnalyzingLocal(true);
     showAiLoader();
+    setIsAnalyzingLocal(true);
     
     let analysisSuccessful = false;
     let uploadedImageUrls: string[] = [];
@@ -241,11 +239,14 @@ export function PhotoUploader({
       await setRoomAnalyzingStatus(homeId, roomId, true);
 
       toast({ title: "Uploading Photos...", description: `Starting upload of ${currentPhotos.length} photo(s).`, duration: 2000 });
-      for (const file of currentPhotos) {
-        const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`; // Sanitize filename
+      
+      for (let i = 0; i < currentPhotos.length; i++) {
+        const file = currentPhotos[i];
+        const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '')}`;
         const imagePath = `roomAnalysisPhotos/${userId}/${roomId}/${uniqueFileName}`;
         const imageStorageRef = ref(storage, imagePath);
         
+        toast({ title: `Uploading ${i+1}/${currentPhotos.length}`, description: file.name, duration: 1500});
         await uploadBytes(imageStorageRef, file);
         const downloadURL = await getDownloadURL(imageStorageRef);
         uploadedImageUrls.push(downloadURL);
@@ -266,31 +267,35 @@ export function PhotoUploader({
       });
       analysisSuccessful = false;
       try {
-        await setRoomAnalyzingStatus(homeId, roomId, false); // Ensure status is reset on failure
+        await setRoomAnalyzingStatus(homeId, roomId, false);
       } catch (statusError) {
-        console.error("Error setting analyzing status to false after failure:", statusError);
+        console.error("Error resetting analyzing status after failure:", statusError);
       }
     } finally {
       setIsAnalyzingLocal(false);
-      onAnalysisComplete(analysisSuccessful, analysisSuccessful ? aiObjectNames : undefined, analysisSuccessful ? uploadedImageUrls : []);
-      hideAiLoader(); // Hide loader regardless of success or failure
+      onAnalysisComplete(
+        analysisSuccessful, 
+        analysisSuccessful ? aiObjectNames : undefined, 
+        analysisSuccessful ? uploadedImageUrls : []
+      );
+      hideAiLoader(); 
     }
   }
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UploadCloud className="h-6 w-6 text-primary" /> Manage Room Photos
         </CardTitle>
         <CardDescription>
-          Add photos via file upload, drag & drop, or capture from camera.
+          Add photos via file upload, drag & drop, or capture from camera. Max {MAX_PHOTOS} photos.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
           <CardContent 
-            className={`space-y-4 drop-zone ${isDraggingOver ? 'drop-zone-active' : ''}`}
+            className={`space-y-4 p-4 drop-zone ${isDraggingOver ? 'drop-zone-active' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -310,19 +315,19 @@ export function PhotoUploader({
                         className="hidden" 
                       />
                     <FormMessage /> 
-                    <div className="text-center text-muted-foreground">
-                       Drag & drop images here, or click "Add Photos". Max {MAX_PHOTOS} photos.
+                    <div className="text-center text-muted-foreground py-4">
+                       Drag & drop images here, or use buttons below.
                     </div>
                   </FormItem>
                 )}
               />
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="button" onClick={triggerFileInput} variant="outline" className="w-full sm:w-auto flex-1">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1">
                     <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
                 </Button>
                 <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
                   <DialogTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full sm:w-auto flex-1">
+                    <Button type="button" variant="outline" className="flex-1">
                       <Camera className="mr-2 h-4 w-4" /> Capture Image
                     </Button>
                   </DialogTrigger>
@@ -346,7 +351,7 @@ export function PhotoUploader({
                         <p className="text-center text-muted-foreground">Requesting camera access...</p>
                       )}
                     </div>
-                    <DialogFooter className="gap-2 sm:gap-0">
+                    <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
                       <Button variant="outline" onClick={closeCamera}>Cancel</Button>
                       <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false}>Snap Photo</Button>
                     </DialogFooter>
@@ -354,10 +359,10 @@ export function PhotoUploader({
                 </Dialog>
               </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="p-4">
             <button 
               type="submit" 
-              className="button analyze-button-animated w-full"
+              className="analyze-button-animated w-full"
               disabled={isAnalyzingLocal || currentPhotos.length === 0}
             >
               <div className="dots_border"></div>
@@ -400,4 +405,3 @@ export function PhotoUploader({
     </Card>
   );
 }
-
