@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import Image from "next/image"; // Ensure Image is imported
 import { Button } from "@/components/ui/button";
 import { auth } from "@/config/firebase";
 import { signOut } from "@/lib/auth";
@@ -22,7 +22,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
 
 export function AppHeader() {
   const { toast } = useToast();
@@ -49,13 +48,11 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-           <Image 
-            src="/homiestan-logo.png" 
-            alt="HomieStan Logo" 
-            width={150} 
-            height={38} // Adjusted to maintain aspect ratio (original 980x245 is approx 4:1)
-            className="h-auto" // Allow height to adjust based on width if needed, but explicit height is good
-            priority={false} // Not critical for LCP in header usually
+          <Image
+            src="/homiestan-logo.png" // Path relative to public folder
+            alt="HomieStan" // Updated alt text
+            width={150}    // Set explicit width
+            height={38}    // Set explicit height (maintaining ~4:1 aspect ratio)
           />
         </Link>
         <div className="flex-grow text-center">
