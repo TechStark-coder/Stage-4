@@ -684,7 +684,7 @@ main {
 }
 
 .auth-card-yashasvi {
-  background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+  background-image: linear-gradient(163deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%); /* Themed gradient */
   border-radius: 22px;
   transition: all 0.3s;
   width: 350px; /* Fixed width */
@@ -705,7 +705,7 @@ main {
 }
 
 .auth-card-yashasvi:hover {
-  box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.3);
+  box-shadow: 0px 0px 30px 1px hsla(var(--primary-hsl-values), 0.4); /* Themed shadow */
 }
 
 .auth-form-yashasvi {
@@ -951,131 +951,37 @@ main {
 }
 
 /* Custom 3D Room Card (Kennyotsu) - Prefixed */
-.room-card-3d-wrapper {
-  position: relative;
-  width: 280px; /* Increased width */
-  height: 374px; /* Adjusted height to maintain aspect ratio */
-  transition: 200ms;
-  margin: auto; /* Helps with grid centering if items are smaller than grid cells */
-}
-
-.room-card-3d-wrapper:active {
-  width: 270px; /* Adjusted */
-  height: 365px; /* Adjusted */
-}
-
-.room-card-3d-canvas {
-  perspective: 800px;
-  inset: 0;
-  z-index: 1; /* Ensure canvas is above its own wrapper's base, but content can be higher */
-  position: absolute;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  gap: 0px 0px;
-  grid-template-areas:
-    "tr-1 tr-2 tr-3 tr-4 tr-5"
-    "tr-6 tr-7 tr-8 tr-9 tr-10"
-    "tr-11 tr-12 tr-13 tr-14 tr-15"
-    "tr-16 tr-17 tr-18 tr-19 tr-20"
-    "tr-21 tr-22 tr-23 tr-24 tr-25";
-}
-
-.room-card-3d-interactive-area { /* Formerly #card */
-  position: absolute;
-  inset: 0;
-  z-index: 0; /* Behind trackers for hover, but above its ::before */
-  display: flex; /* Changed from grid to flex for internal layout */
-  flex-direction: column;
-  justify-content: space-between; /* For header/content/footer arrangement */
-  align-items: stretch; /* Make children take full width */
-  border-radius: 20px;
-  transition: transform 700ms, box-shadow 300ms;
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
-  overflow: hidden; /* To contain rounded corners of children */
-}
-
-.room-card-3d-wrapper:hover .room-card-3d-interactive-area {
-  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4); /* Blue glow */
-}
-
-.room-card-3d-interactive-area::before {
-  content: '';
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
-  filter: blur(2rem);
-  opacity: 0.3;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  z-index: -1;
-  transition: opacity 200ms;
-}
-
-.room-card-3d-wrapper:hover .room-card-3d-interactive-area::before {
-  opacity: 0.8;
-}
-
-.room-card-3d-tracker {
-  position: absolute;
-  z-index: 2; /* Trackers must be above the interactive area to trigger CSS hover transforms on it */
-  width: 100%;
-  height: 100%;
-}
-
-.room-card-3d-tracker:hover {
-  cursor: pointer;
-}
-
-.room-card-3d-tracker:hover ~ .room-card-3d-interactive-area {
-  transition-duration: 125ms; /* Keep fast transition for transform */
-  filter: brightness(1.1);
-}
-
-/* Specific tracker hover transforms */
-.tr-1:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-2:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-3:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
-.tr-4:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
-.tr-5:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
-.tr-6:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-7:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-8:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
-.tr-9:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
-.tr-10:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
-.tr-11:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-12:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-13:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-.tr-14:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
-.tr-15:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
-.tr-16:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-17:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-18:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
-.tr-19:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
-.tr-20:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
-.tr-21:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
-.tr-22:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
-.tr-23:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
-.tr-24:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
-.tr-25:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
-
-/* Tracker grid areas */
-.tr-1 { grid-area: tr-1; } .tr-2 { grid-area: tr-2; } .tr-3 { grid-area: tr-3; } .tr-4 { grid-area: tr-4; } .tr-5 { grid-area: tr-5; }
-.tr-6 { grid-area: tr-6; } .tr-7 { grid-area: tr-7; } .tr-8 { grid-area: tr-8; } .tr-9 { grid-area: tr-9; } .tr-10 { grid-area: tr-10; }
-.tr-11 { grid-area: tr-11; } .tr-12 { grid-area: tr-12; } .tr-13 { grid-area: tr-13; } .tr-14 { grid-area: tr-14; } .tr-15 { grid-area: tr-15; }
-.tr-16 { grid-area: tr-16; } .tr-17 { grid-area: tr-17; } .tr-18 { grid-area: tr-18; } .tr-19 { grid-area: tr-19; } .tr-20 { grid-area: tr-20; }
-.tr-21 { grid-area: tr-21; } .tr-22 { grid-area: tr-22; } .tr-23 { grid-area: tr-23; } .tr-24 { grid-area: tr-24; } .tr-25 { grid-area: tr-25; }
+/* Removed .room-card-3d-wrapper and related styles as RoomCard reverted to ShadCN */
 
 .noselect {
   -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
 }
 
-/* Ensure interactive elements inside the 3D card content area are prioritized for clicks if possible. */
-.room-card-3d-interactive-area button,
-.room-card-3d-interactive-area a {
-  position: relative; /* Establish new stacking context or allow z-index */
-  z-index: 5; /* Higher than the trackers implicitly if the event reaches this far */
+/* Welcome Text Shine Effect */
+.welcome-text-shine {
+  /* Removed absolute positioning and explicit font/padding */
+  /* The gradient should use theme colors */
+  background: linear-gradient(to right, 
+              hsl(var(--foreground)) 20%, 
+              hsl(var(--primary-foreground)) 40%, 
+              hsl(var(--primary-foreground)) 60%, 
+              hsl(var(--foreground)) 80%);
+  background-size: 200% auto; /* Ensure gradient covers text and can animate */
+  color: hsl(var(--foreground)); /* Fallback color */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine-welcome 3s linear infinite;
+  white-space: nowrap; /* Keep to prevent wrapping during animation */
 }
 
+@keyframes shine-welcome { /* Renamed from shine to avoid conflicts */
+  0% {
+    background-position: 200% center; /* Start off-screen to the right */
+  }
+  100% {
+    background-position: -200% center; /* Move completely to the left */
+  }
+}
 /* End of globals.css content */
 
     
