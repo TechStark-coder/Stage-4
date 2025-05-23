@@ -29,7 +29,7 @@ export function AppHeader() {
   const { user } = useAuthContext();
   const { showLoader, hideLoader } = useLoader();
 
-  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.appspot.com/o/Homiestan.png?alt=media";
+  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media";
 
   const handleLogout = async () => {
     showLoader();
@@ -52,10 +52,11 @@ export function AppHeader() {
         <Link href="/dashboard" className="flex items-center gap-2 mr-auto">
           <Image
             src={logoUrl}
-            alt="" 
-            width={150}
+            alt="HomieStan" 
+            width={150} 
             height={38} 
-            className="object-contain" 
+            className="object-contain"
+            unoptimized // Add if optimization causes issues with Firebase Storage URLs, usually not needed if domain is in next.config.js
           />
         </Link>
         <div className="flex-grow text-center">
