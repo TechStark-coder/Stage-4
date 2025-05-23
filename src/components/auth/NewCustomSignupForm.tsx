@@ -4,7 +4,7 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter }
+import { useRouter } from "next/navigation"; // Corrected import
 import { Eye, EyeOff } from "lucide-react"; // For password toggle
 import * as _React from "react"; // For useState
 
@@ -192,4 +192,3 @@ export function NewCustomSignupForm() {
     </div>
   );
 }
-
