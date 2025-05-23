@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-// import Image from "next/image"; // No longer using next/image for the logo here
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/config/firebase";
 import { signOut } from "@/lib/auth";
@@ -22,31 +22,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-const ArcStayLogo = () => (
-  <svg
-    width="32"
-    height="32"
-    viewBox="0 0 100 100"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-8 w-8 text-primary"
-  >
-    <path
-      d="M50 15L15 85H30L50 45L70 85H85L50 15Z"
-      stroke="currentColor"
-      strokeWidth="10"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M38 60H62"
-      stroke="currentColor"
-      strokeWidth="10"
-      strokeLinecap="round"
-    />
-  </svg>
-);
 
 
 export function AppHeader() {
@@ -74,12 +49,18 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
         <Link href="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-primary">
-          <ArcStayLogo />
-          <span>ARC Stay</span>
+           <Image 
+            src="/homiestan-logo.png" 
+            alt="HomieStan Logo" 
+            width={120} 
+            height={30} 
+            className="h-auto" 
+            priority
+          />
         </Link>
         <div className="flex-grow text-center">
           {user && (
-            <span className="text-sm font-medium text-foreground sm:text-base welcome-message-shine">
+            <span className="text-sm font-medium text-foreground sm:text-base">
               Welcome, {userName}!
             </span>
           )}

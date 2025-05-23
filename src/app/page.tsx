@@ -26,8 +26,9 @@ export default function HomePage() {
           <Skeleton className="h-12 w-12 mx-auto rounded-full bg-primary/20" />
           <Skeleton className="h-6 w-3/4 mx-auto bg-muted" />
           <Skeleton className="h-4 w-1/2 mx-auto bg-muted" />
-          <p className="text-sm text-muted-foreground pt-2">Loading ARC Stay...</p>
+          <p className="text-sm text-muted-foreground pt-2">Loading HomieStan...</p>
         </div>
       </div>
   );
 }
+

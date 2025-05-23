@@ -1,10 +1,12 @@
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google"; 
+import { Geist_Sans as Geist, Geist_Mono } from "next/font/google"; 
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { GlobalLoader } from "@/components/layout/GlobalLoader"; // Import GlobalLoader
-import { AppRouterEvents } from "@/components/layout/AppRouterEvents"; // Import AppRouterEvents
+import { GlobalLoader } from "@/components/layout/GlobalLoader";
+import { AppRouterEvents } from "@/components/layout/AppRouterEvents";
+import { GlobalAiAnalysisLoader } from "@/components/layout/GlobalAiAnalysisLoader"; // Ensure this import is correct
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ARC Stay - Your Home, Analyzed",
-  description: "Upload room photos and get AI-powered object descriptions.",
+  title: "HomieStan - Your Home, Analyzed",
+  description: "Upload room photos and get AI-powered object descriptions with HomieStan.",
 };
 
 export default function RootLayout({
@@ -32,8 +34,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <AppRouterEvents /> {/* Component to handle router events for loader */}
-          <GlobalLoader /> {/* Render the loader globally */}
+          <AppRouterEvents /> 
+          <GlobalLoader /> 
+          <GlobalAiAnalysisLoader />
           {children}
         </Providers>
       </body>

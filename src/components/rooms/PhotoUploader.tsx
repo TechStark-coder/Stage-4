@@ -1,26 +1,37 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, type DragEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button"; // Standard button for "Add Photos"
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { describeRoomObjects, type DescribeRoomObjectsInput } from "@/ai/flows/describe-room-objects";
-import { setRoomAnalyzingStatus } from "@/lib/firestore"; // updateRoomObjectNames is called by parent page
+import { setRoomAnalyzingStatus } from "@/lib/firestore";
 import { photoUploadSchema, type PhotoUploadFormData } from "@/schemas/roomSchemas";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, ImagePlus } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { UploadCloud, ImagePlus, Camera, X } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
-import { storage } from "@/config/firebase"; // Import Firebase storage instance
+import { storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PhotoUploaderProps {
   homeId: string;
   roomId: string;
-  userId: string; // Needed for Firebase Storage paths
+  userId: string;
   onAnalysisComplete: (
     analysisSuccessful: boolean,
     objectNames?: string[],
@@ -29,6 +40,8 @@ interface PhotoUploaderProps {
   currentPhotos: File[];
   onPhotosChange: (photos: File[]) => void;
 }
+
+const MAX_PHOTOS = 10; // Max number of photos allowed
 
 export function PhotoUploader({
   homeId,
@@ -43,19 +56,51 @@ export function PhotoUploader({
   const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [showCameraDialog, setShowCameraDialog] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+
   const form = useForm<PhotoUploadFormData>({
     resolver: zodResolver(photoUploadSchema),
-    // `values` are not needed as currentPhotos drives the UI for gallery
   });
+
+  const addNewFiles = (newFilesArray: File[]) => {
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const filteredNewFiles = newFilesArray.filter(file => validImageTypes.includes(file.type));
+
+    if (filteredNewFiles.length !== newFilesArray.length) {
+      toast({
+        title: "Invalid File Type",
+        description: "Some files were not valid image types and were not added.",
+        variant: "destructive",
+      });
+    }
+    
+    if (currentPhotos.length + filteredNewFiles.length > MAX_PHOTOS) {
+      toast({
+        title: "Photo Limit Exceeded",
+        description: `You can upload a maximum of ${MAX_PHOTOS} photos.`,
+        variant: "destructive",
+      });
+      const remainingSlots = MAX_PHOTOS - currentPhotos.length;
+      const filesToAdd = filteredNewFiles.slice(0, remainingSlots);
+       if (filesToAdd.length > 0) {
+        onPhotosChange([...currentPhotos, ...filesToAdd]);
+      }
+    } else if (filteredNewFiles.length > 0) {
+      onPhotosChange([...currentPhotos, ...filteredNewFiles]);
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newFilesArray = Array.from(files);
-      const uniqueNewFiles = newFilesArray.filter(
-        (newFile) => !currentPhotos.some((existingFile) => existingFile.name === newFile.name && existingFile.size === newFile.size)
-      );
-      onPhotosChange([...currentPhotos, ...uniqueNewFiles]);
+      addNewFiles(Array.from(files));
       if (event.target) {
         event.target.value = ""; 
       }
@@ -66,11 +111,116 @@ export function PhotoUploader({
     fileInputRef.current?.click();
   };
 
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      addNewFiles(Array.from(files));
+    }
+  };
+
+  const openCamera = async () => {
+    setHasCameraPermission(null);
+    setCameraError(null);
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        setCameraStream(stream);
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err: any) {
+        console.error("Error accessing camera:", err);
+        setHasCameraPermission(false);
+        let message = "Could not access the camera.";
+        if (err.name === "NotAllowedError") {
+          message = "Camera permission was denied. Please enable it in your browser settings.";
+        } else if (err.name === "NotFoundError") {
+          message = "No camera found on this device.";
+        }
+        setCameraError(message);
+        toast({
+          title: "Camera Error",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } else {
+      setCameraError("Camera access is not supported by your browser.");
+      toast({
+        title: "Unsupported Browser",
+        description: "Camera access is not supported by your browser.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const closeCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+    setCameraStream(null);
+    setShowCameraDialog(false);
+  };
+
+  const handleSnapPhoto = () => {
+    if (videoRef.current && canvasRef.current && cameraStream) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const newFile = new File([blob], `capture_${Date.now()}.png`, { type: 'image/png' });
+            addNewFiles([newFile]);
+            closeCamera();
+          } else {
+            toast({ title: "Capture Failed", description: "Could not capture image.", variant: "destructive"});
+          }
+        }, 'image/png');
+      }
+    }
+  };
+  
+  useEffect(() => {
+    if (showCameraDialog) {
+      openCamera();
+    } else {
+      closeCamera(); // Ensure stream is stopped when dialog is closed externally
+    }
+    // Cleanup function to stop camera stream when component unmounts or dialog closes
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCameraDialog]);
+
+
   async function onSubmit() {
     if (currentPhotos.length === 0) {
       toast({
         title: "No Photos",
-        description: "Please add photos before analyzing.",
+        description: "Please add or capture photos before analyzing.",
         variant: "destructive",
       });
       return;
@@ -81,7 +231,7 @@ export function PhotoUploader({
     }
 
     setIsAnalyzingLocal(true);
-    showAiLoader(); 
+    showAiLoader();
     
     let analysisSuccessful = false;
     let uploadedImageUrls: string[] = [];
@@ -90,10 +240,9 @@ export function PhotoUploader({
     try {
       await setRoomAnalyzingStatus(homeId, roomId, true);
 
-      // 1. Upload images to Firebase Storage
       toast({ title: "Uploading Photos...", description: `Starting upload of ${currentPhotos.length} photo(s).`, duration: 2000 });
       for (const file of currentPhotos) {
-        const uniqueFileName = `${Date.now()}-${file.name}`;
+        const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`; // Sanitize filename
         const imagePath = `roomAnalysisPhotos/${userId}/${roomId}/${uniqueFileName}`;
         const imageStorageRef = ref(storage, imagePath);
         
@@ -103,12 +252,9 @@ export function PhotoUploader({
       }
       toast({ title: "Upload Complete", description: "All photos uploaded. Starting AI analysis...", duration: 2000 });
 
-      // 2. Call AI flow with Firebase Storage URLs
       const aiInput: DescribeRoomObjectsInput = { photoDataUris: uploadedImageUrls };
       const result = await describeRoomObjects(aiInput);
       aiObjectNames = result.objectNames;
-      
-      // The actual Firestore update with results and URLs will be done by the parent page via onAnalysisComplete
       analysisSuccessful = true;
       
     } catch (error: any) {
@@ -120,15 +266,14 @@ export function PhotoUploader({
       });
       analysisSuccessful = false;
       try {
-        await setRoomAnalyzingStatus(homeId, roomId, false);
+        await setRoomAnalyzingStatus(homeId, roomId, false); // Ensure status is reset on failure
       } catch (statusError) {
         console.error("Error setting analyzing status to false after failure:", statusError);
       }
     } finally {
       setIsAnalyzingLocal(false);
-      // Pass all necessary info to the parent
-      onAnalysisComplete(analysisSuccessful, aiObjectNames, analysisSuccessful ? uploadedImageUrls : []);
-      // hideAiLoader() is now called by parent in handleAnalysisComplete
+      onAnalysisComplete(analysisSuccessful, analysisSuccessful ? aiObjectNames : undefined, analysisSuccessful ? uploadedImageUrls : []);
+      hideAiLoader(); // Hide loader regardless of success or failure
     }
   }
 
@@ -139,12 +284,17 @@ export function PhotoUploader({
           <UploadCloud className="h-6 w-6 text-primary" /> Manage Room Photos
         </CardTitle>
         <CardDescription>
-          Add photos of the room for analysis. Uploaded images will be stored in Firebase Storage.
+          Add photos via file upload, drag & drop, or capture from camera.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-          <CardContent className="space-y-4">
+          <CardContent 
+            className={`space-y-4 drop-zone ${isDraggingOver ? 'drop-zone-active' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
               <FormField
                 control={form.control}
                 name="photos" 
@@ -160,18 +310,54 @@ export function PhotoUploader({
                         className="hidden" 
                       />
                     <FormMessage /> 
+                    <div className="text-center text-muted-foreground">
+                       Drag & drop images here, or click "Add Photos". Max {MAX_PHOTOS} photos.
+                    </div>
                   </FormItem>
                 )}
               />
-              <Button type="button" onClick={triggerFileInput} variant="outline" className="w-full">
-                  <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button type="button" onClick={triggerFileInput} variant="outline" className="w-full sm:w-auto flex-1">
+                    <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
+                </Button>
+                <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full sm:w-auto flex-1">
+                      <Camera className="mr-2 h-4 w-4" /> Capture Image
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Capture Image</DialogTitle>
+                      <DialogDescription>
+                        Position the camera and click "Snap Photo".
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      <video ref={videoRef} autoPlay muted playsInline className="camera-video-preview" />
+                      <canvas ref={canvasRef} className="hidden"></canvas>
+                      {hasCameraPermission === false && cameraError && (
+                        <Alert variant="destructive">
+                          <AlertTitle>Camera Access Error</AlertTitle>
+                          <AlertDescription>{cameraError}</AlertDescription>
+                        </Alert>
+                      )}
+                       {hasCameraPermission === null && !cameraError && (
+                        <p className="text-center text-muted-foreground">Requesting camera access...</p>
+                      )}
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button variant="outline" onClick={closeCamera}>Cancel</Button>
+                      <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false}>Snap Photo</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
           </CardContent>
           <CardFooter>
-            {/* Custom Animated Button for "Analyze Images" */}
             <button 
               type="submit" 
-              className="button analyze-button-animated w-full" // Added w-full for consistency
+              className="button analyze-button-animated w-full"
               disabled={isAnalyzingLocal || currentPhotos.length === 0}
             >
               <div className="dots_border"></div>
@@ -214,3 +400,4 @@ export function PhotoUploader({
     </Card>
   );
 }
+

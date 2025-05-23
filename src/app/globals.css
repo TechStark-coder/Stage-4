@@ -371,7 +371,6 @@ main {
   gap: 1rem; /* Space between spinner and text */
 }
 
-
 .ai-spinner { 
   width: 6em; /* Increased size */
   height: 6em; /* Increased size */
@@ -802,8 +801,6 @@ main {
   width: 100%;
 }
 
-
-
 /* Download button card (Vinodjangid07 Style) */
 .download-button-card {
   width: 40px; 
@@ -921,9 +918,32 @@ main {
   }
 }
 
+/* Styles for PhotoUploader Drop Zone */
+.drop-zone {
+  border: 2px dashed hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  background-color: hsl(var(--card));
+}
 
-/* Removed Kennyotsu 3D Card CSS (room-card-3d-wrapper, etc.) */
-/* The CSS for the 3D card effect by kennyotsu has been removed to simplify and avoid conflicts */
+.drop-zone-active {
+  background-color: hsla(var(--primary-hsl-values), 0.1);
+  border-color: hsl(var(--primary));
+}
+
+.camera-video-preview {
+  width: 100%;
+  max-width: 500px; /* Or your preferred max width */
+  height: auto;
+  aspect-ratio: 16 / 9; /* Or 4 / 3, depending on desired aspect */
+  border-radius: var(--radius);
+  background-color: #000; /* Fallback if video doesn't load */
+  object-fit: cover; /* Or 'contain' if you want to see the whole frame */
+  margin-bottom: 1rem;
+}
 
 /* End of globals.css content */
 
