@@ -1,5 +1,5 @@
 
-import type { Auth, User } from "firebase/auth";
+import type { Auth, User, UserCredential } from "firebase/auth"; // Added UserCredential
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -9,20 +9,22 @@ import {
 } from "firebase/auth";
 import type { LoginFormData, SignupFormData } from "@/schemas/authSchemas";
 
-export async function signUpWithEmail(auth: Auth, data: SignupFormData): Promise<User> {
+export async function signUpWithEmail(auth: Auth, data: SignupFormData): Promise<UserCredential> { // Return UserCredential
   const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
   
   // After creating the user, update their profile with the display name
   // This ensures user.displayName is available on the auth object relatively quickly
-  await updateProfile(userCredential.user, {
-    displayName: data.displayName,
-  });
-
-  // The user object in userCredential might not immediately reflect the displayName update.
-  // However, onAuthStateChanged listeners will receive the updated user object.
-  // For immediate use post-signup, returning userCredential.user is standard, and
-  // Firestore document for the user can also use data.displayName as a reliable source.
-  return userCredential.user;
+  // and is important for creating the Firestore user document immediately after.
+  if (userCredential.user) {
+    await updateProfile(userCredential.user, {
+      displayName: data.displayName,
+    });
+  } else {
+    // This case should ideally not happen if createUserWithEmailAndPassword succeeds
+    throw new Error("User object not available after account creation.");
+  }
+  
+  return userCredential; // Return the full credential
 }
 
 export async function signInWithEmail(auth: Auth, data: LoginFormData): Promise<User> {
@@ -40,3 +42,5 @@ export function onAuthStateChangedHelper(
 ) {
   return onAuthStateChanged(auth, callback);
 }
+
+    

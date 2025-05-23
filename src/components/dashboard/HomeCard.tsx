@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2 } from "lucide-react"; // Removed Edit, already in EditHomeDialog
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import {
@@ -26,13 +26,12 @@ import { useLoader } from "@/contexts/LoaderContext";
 
 interface HomeCardProps {
   home: Home;
-  onHomeAction: () => void; // Renamed from onHomeDeleted for broader use (update/delete)
+  onHomeAction: () => void; 
 }
 
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
-  // No need for local coverImageSrc state, home.coverImageUrl is direct from Firestore
 
   const handleDelete = async () => {
     showLoader();
@@ -56,46 +55,46 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   };
 
   return (
-    <Card className="flex flex-col transition-all duration-300 ease-out hover:scale-105 hover:z-20 hover:shadow-2xl hover:shadow-primary/30 dark:hover:shadow-primary/50">
-      <CardHeader className="pb-2">
+    <Card className="flex flex-col transition-all duration-300 ease-out hover:shadow-xl hover:border-primary hover:scale-[1.03] rounded-lg overflow-hidden">
+      <CardHeader className="pb-2 p-4">
         {home.coverImageUrl ? (
-          <div className="relative w-full h-40 mb-4 rounded-t-lg overflow-hidden">
+          <div className="relative w-full h-40 mb-4 rounded-md overflow-hidden border">
             <Image
               src={home.coverImageUrl}
               alt={`${home.name} cover image`}
               layout="fill"
               objectFit="cover"
-              priority // Consider adding priority for LCP images if these are above the fold
+              priority 
               data-ai-hint="house exterior"
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-t-lg">
+          <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-md border">
             <ImageOff className="h-16 w-16 text-muted-foreground/50" />
           </div>
         )}
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
           <HomeIcon className="h-6 w-6 text-primary" />
           {home.name}
         </CardTitle>
         {home.createdAt && (
-          <CardDescription className="flex items-center gap-1 text-xs">
+          <CardDescription className="flex items-center gap-1 text-xs mt-1">
             <CalendarDays className="h-3 w-3" />
             Created on {format(home.createdAt.toDate(), "PPP")}
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="flex-grow pt-2">
+      <CardContent className="flex-grow pt-2 p-4">
         <p className="text-sm text-muted-foreground">
           Manage rooms and analyze objects within this home.
         </p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center gap-2 pt-4">
+      <CardFooter className="flex justify-between items-center gap-2 pt-4 p-4 border-t">
         <div className="flex gap-2">
            <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
            <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive-outline" size="sm" className="text-destructive hover:bg-destructive/10 border-destructive/50 hover:border-destructive">
+              <Button variant="destructive-outline" size="sm">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -125,3 +124,5 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
     </Card>
   );
 }
+
+    

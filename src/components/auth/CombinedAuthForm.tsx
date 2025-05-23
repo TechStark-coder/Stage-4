@@ -1,12 +1,11 @@
 
-// src/components/auth/CombinedAuthForm.tsx
 "use client";
 
-import { useState, type ChangeEvent, useEffect } from "react"; // Added useEffect
+import { useState, type ChangeEvent, useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react"; // Removed LogIn, UserPlus as they are not used in this custom form
+import { Eye, EyeOff } from "lucide-react";
 
 import { loginSchema, type LoginFormData, signupSchema, type SignupFormData } from "@/schemas/authSchemas";
 import { signInWithEmail, signUpWithEmail } from "@/lib/auth";
@@ -39,18 +38,17 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
     defaultValues: { displayName: "", email: "", password: "", confirmPassword: "" },
   });
 
-  // Sync the visual toggle with the initialMode prop
   useEffect(() => {
     setIsSignup(initialMode === "signup");
   }, [initialMode]);
 
 
   const handleToggle = (event: ChangeEvent<HTMLInputElement>) => {
-    setIsSignup(event.target.checked);
-     // Reset forms when toggling to clear previous errors/values
-    if (event.target.checked) { // Toggled to signup
+    const newIsSignup = event.target.checked;
+    setIsSignup(newIsSignup);
+    if (newIsSignup) { 
       loginForm.reset();
-    } else { // Toggled to login
+    } else { 
       signupForm.reset();
     }
   };
@@ -64,7 +62,6 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
         description: "Welcome back!",
       });
       router.push("/dashboard");
-      // hideLoader() will be handled by AppRouterEvents on successful navigation
     } catch (error: any) {
       console.error("Login error:", error);
       const invalidCredentialCodes = ["auth/invalid-credential", "auth/user-not-found", "auth/wrong-password", "auth/invalid-email"];
@@ -81,7 +78,7 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
           variant: "destructive",
         });
       }
-      hideLoader(); // Hide loader only if login fails
+      hideLoader(); 
     }
   };
 
@@ -89,46 +86,46 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
     showLoader();
     try {
       const userCredential = await signUpWithEmail(auth, data);
-      // Ensure user object is available for displayName update
-      if (userCredential && auth.currentUser) {
-        // The signUpWithEmail function in lib/auth.ts already handles updateProfile
-        // We just need to ensure the user document in Firestore is created
-         await setDoc(doc(db, "users", userCredential.uid), {
-          uid: userCredential.uid,
-          displayName: data.displayName, // Use displayName from form data
-          email: data.email,
-          createdAt: serverTimestamp(),
-        });
-      } else {
-        throw new Error("User creation failed or user not available immediately after signup.");
+      
+      if (!userCredential || !userCredential.user) {
+        throw new Error("User creation failed or user object not returned.");
       }
+      const user = userCredential.user;
+
+      // Firestore document creation
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        displayName: data.displayName, 
+        email: data.email,
+        createdAt: serverTimestamp(),
+      });
+
       toast({
         title: "Signup Successful",
         description: "Your account has been created. Welcome!",
       });
       router.push("/dashboard");
-      // hideLoader() will be handled by AppRouterEvents on successful navigation
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
         title: "Signup Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred during signup.",
         variant: "destructive",
       });
-      hideLoader(); // Hide loader only if signup fails
+      hideLoader(); 
     }
   };
 
   return (
     <div className="auth-container">
       <input type="checkbox" id="signup_toggle" checked={isSignup} onChange={handleToggle} />
-      <div className="auth-form">
+      <form className="auth-form"> {/* Removed onSubmit here, handled by individual buttons */}
         {/* Login Form Part */}
-        <form onSubmit={loginForm.handleSubmit(onSubmitLogin)} className="form_front" noValidate>
+        <div className="form_front">
           <div className="auth-form_details">Login</div>
           <div className="w-full">
             <input
-              placeholder="Email (Username)"
+              placeholder="Email"
               className="auth-input"
               type="email"
               {...loginForm.register("email")}
@@ -156,7 +153,12 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
               <p className="text-xs text-destructive mt-1">{loginForm.formState.errors.password.message}</p>
             )}
           </div>
-          <button className="auth-btn" type="submit" disabled={loginForm.formState.isSubmitting}>
+          <button 
+            className="auth-btn" 
+            type="button" /* Changed to button, onSubmit handled by RHF */
+            onClick={loginForm.handleSubmit(onSubmitLogin)} 
+            disabled={loginForm.formState.isSubmitting}
+          >
             {loginForm.formState.isSubmitting ? "Logging in..." : "Login"}
           </button>
           <span className="auth-switch">
@@ -165,10 +167,10 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
               Sign Up
             </label>
           </span>
-        </form>
+        </div>
 
         {/* Signup Form Part */}
-        <form onSubmit={signupForm.handleSubmit(onSubmitSignup)} className="form_back" noValidate>
+        <div className="form_back">
           <div className="auth-form_details">Sign Up</div>
           <div className="w-full">
             <input
@@ -183,7 +185,7 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
           </div>
           <div className="w-full">
             <input
-              placeholder="Email (Username)"
+              placeholder="Email"
               className="auth-input"
               type="email"
               {...signupForm.register("email")}
@@ -230,7 +232,12 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
               <p className="text-xs text-destructive mt-1">{signupForm.formState.errors.confirmPassword.message}</p>
             )}
           </div>
-          <button className="auth-btn" type="submit" disabled={signupForm.formState.isSubmitting}>
+          <button 
+            className="auth-btn" 
+            type="button" /* Changed to button, onSubmit handled by RHF */
+            onClick={signupForm.handleSubmit(onSubmitSignup)} 
+            disabled={signupForm.formState.isSubmitting}
+          >
             {signupForm.formState.isSubmitting ? "Signing up..." : "Sign Up"}
           </button>
           <span className="auth-switch">
@@ -239,9 +246,10 @@ export function CombinedAuthForm({ initialMode = "login" }: CombinedAuthFormProp
               Sign In
             </label>
           </span>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }
 
+    
