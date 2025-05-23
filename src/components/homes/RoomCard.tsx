@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import type { Room } from "@/types";
-import { ArrowRight, CalendarDays, DoorOpen, Download, Edit, Loader2, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, DoorOpen, Loader2, Trash2, Download } from "lucide-react"; // Added Download
 import * as _React from 'react';
 import {
   AlertDialog,
@@ -20,7 +21,10 @@ import { useToast } from "@/hooks/use-toast";
 import { EditRoomDialog } from "./EditRoomDialog";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button"; // Keep ShadCN Button for actions
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLoader } from "@/contexts/LoaderContext";
+
 
 export interface RoomCardProps {
   room: Room;
@@ -32,10 +36,10 @@ export interface RoomCardProps {
 export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps) {
   const { toast } = useToast();
   const [_isDownloading, setIsDownloading] = _React.useState(false);
+  const { showLoader, hideLoader } = useLoader(); // Using global loader
 
   const handleDelete = async () => {
-    // Assuming useLoader is available if we want a global loader for delete
-    // For now, button will just be disabled
+    showLoader();
     try {
       await deleteRoom(homeId, room.id);
       toast({
@@ -52,6 +56,8 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
         description: "Could not delete the room: " + error.message,
         variant: "destructive",
       });
+    } finally {
+      hideLoader();
     }
   };
 
@@ -64,7 +70,8 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
       });
       return;
     }
-    setIsDownloading(true);
+    setIsDownloading(true); // Local state for button's disabled status
+    showLoader(); // Use global loader for the operation
     try {
       const doc = new jsPDF();
       const roomTitle = `${homeName ? homeName + " - " : ""}${room.name}`;
@@ -105,96 +112,87 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
         toast({title: "PDF Generation Failed", description: "Could not generate the PDF.", variant: "destructive"})
     } finally {
         setIsDownloading(false);
+        hideLoader();
     }
   };
 
   const canDownload = room.objectNames && room.objectNames.length > 0 && !room.isAnalyzing;
 
   return (
-    <div className="room-card-3d-wrapper noselect">
-      <div className="room-card-3d-canvas">
-        {Array.from({ length: 25 }, (_, i) => (
-          <div key={`room-tracker-${room.id}-${i}`} className={`room-card-3d-tracker tr-${i + 1}`}></div>
-        ))}
-        <div className="room-card-3d-interactive-area p-4 flex flex-col justify-between">
-          {/* Header Equivalent */}
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <DoorOpen className="h-5 w-5" />
-                {room.name}
-              </h3>
-              {room.createdAt && (
-                <p className="text-xs text-neutral-300 flex items-center gap-1 mt-1">
-                  <CalendarDays className="h-3 w-3" />
-                  Added: {format(room.createdAt.toDate(), "MMM d, yyyy")}
-                </p>
-              )}
-            </div>
-            {canDownload && (
-               <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDownloadRoomPdf}
-                disabled={_isDownloading}
-                className="text-white hover:bg-white/20 shrink-0"
-                aria-label="Download room analysis PDF"
-              >
-                {_isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              </Button>
-            )}
-          </div>
-
-          {/* Content Equivalent */}
-          <div className="flex-grow my-3 text-sm">
-            {room.isAnalyzing ? (
-              <p className="text-neutral-300 flex items-center gap-1">
-                <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
-              </p>
-            ) : room.objectNames && room.objectNames.length > 0 ? (
-              <p className="text-neutral-300 line-clamp-3">
-                <span className="font-medium text-neutral-100">Last analysis:</span> {room.objectNames.join(', ').substring(0, 100)}{room.objectNames.join(', ').length > 100 ? '...' : ''}
-              </p>
-            ) : (
-              <p className="text-neutral-300 text-center italic py-2">No objects analyzed yet.</p>
-            )}
-          </div>
-
-          {/* Footer Equivalent - Buttons need high z-index */}
-          <div className="flex justify-between items-center border-t border-white/20 pt-3 relative z-10">
-            <div className="flex gap-2">
-              <EditRoomDialog room={room} homeId={homeId} onRoomUpdated={onRoomAction} />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-red-300 hover:bg-red-400/30 hover:text-red-200">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="bg-[hsl(var(--popover))] text-[hsl(var(--popover-foreground))]">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-[hsl(var(--muted-foreground))]">
-                      This action cannot be undone. This will permanently delete the room
-                      "{room.name}" and all its associated data and images.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                      Yes, delete room
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            <Button asChild variant="ghost" size="sm" className="text-white hover:bg-white/20">
-              <Link href={`/homes/${homeId}/rooms/${room.id}`}>
-                Manage <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+    <Card className="flex flex-col h-full transition-all duration-300 ease-out hover:shadow-2xl hover:shadow-primary/40 hover:scale-105 rounded-lg overflow-hidden bg-card">
+      <CardHeader className="flex flex-row justify-between items-start p-4">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+            <DoorOpen className="h-5 w-5 text-primary" />
+            {room.name}
+          </CardTitle>
+          {room.createdAt && (
+            <CardDescription className="flex items-center gap-1 text-xs mt-1">
+              <CalendarDays className="h-3 w-3" />
+              Added: {format(room.createdAt.toDate(), "MMM d, yyyy")}
+            </CardDescription>
+          )}
         </div>
-      </div>
-    </div>
+        {canDownload && (
+           <button 
+             onClick={handleDownloadRoomPdf} 
+             disabled={_isDownloading}
+             className="download-button-card"
+             aria-label="Download room analysis PDF"
+           >
+             <svg className="svgIcon" viewBox="0 0 384 512" height="1em" xmlns="http://www.w3.org/2000/svg"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8 224 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path></svg>
+             <span className="icon2"></span>
+             <span className="tooltip">Download</span>
+           </button>
+        )}
+      </CardHeader>
+
+      <CardContent className="flex-grow p-4 pt-0">
+        {room.isAnalyzing ? (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
+          </div>
+        ) : room.objectNames && room.objectNames.length > 0 ? (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            <span className="font-medium text-foreground">Last analysis:</span> {room.objectNames.join(', ').substring(0, 100)}{room.objectNames.join(', ').length > 100 ? '...' : ''}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic text-center py-2">No objects analyzed yet.</p>
+        )}
+      </CardContent>
+
+      <CardFooter className="flex justify-between items-center p-4 border-t">
+        <div className="flex gap-2">
+          <EditRoomDialog room={room} homeId={homeId} onRoomUpdated={onRoomAction} />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive-outline" size="sm">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the room
+                  "{room.name}" and all its associated data and images.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                  Yes, delete room
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        <Button asChild variant="default" size="sm">
+          <Link href={`/homes/${homeId}/rooms/${room.id}`}>
+            Manage <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

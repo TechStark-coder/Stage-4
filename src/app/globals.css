@@ -409,7 +409,6 @@ main {
   }
 }
 
-
 /* Codepen Button (Download PDF in ObjectAnalysisCard) */
 .codepen-button {
   display: block;
@@ -461,8 +460,8 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.8rem 1.3rem;
-  font-size: 0.9rem;
+  padding: 0.8rem 1.3rem; /* Adjusted padding */
+  font-size: 0.9rem; /* Adjusted font size */
   background: hsl(var(--card));
   border-radius: 3px;
   height: 100%;
@@ -471,26 +470,27 @@ main {
 
 /* MuhammadHasann Animated Button CSS (for Analyze Images) */
 .analyze-button-animated {
+  /* Use theme variables for colors */
   --mh-button-black-700: hsl(var(--primary));
   --mh-button-border-radius: 9999px;
   --mh-button-transition: 0.3s ease-in-out;
   --mh-button-offset: 2px;
 
-  --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75);
-  --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.85);
-  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.65);
+  --mh-button-active-shadow-color: hsla(var(--primary-hsl-values), 0.75); /* Adjusted from 0.6 */
+  --mh-button-gradient-start: hsla(var(--primary-hsl-values), 0.85); /* Adjusted from 0.6 */
+  --mh-button-gradient-mid: hsla(var(--primary-hsl-values), 0.65); /* Adjusted from 0.4 */
 
+  /* Use theme variables for foreground elements on the button */
   --mh-button-dots-color: hsl(var(--primary-foreground));
   --mh-button-sparkle-color: hsl(var(--primary-foreground));
-
   --mh-button-text-color: hsl(var(--primary-foreground));
-  --mh-button-text-hover-opacity: 1;
+  --mh-button-text-hover-opacity: 1; /* Adjusted from 0.95 */
 
-  --mh-button-disabled-opacity: 0.6; /* Adjusted opacity */
-  --mh-button-disabled-bg: hsl(var(--muted));
+
+  --mh-button-disabled-opacity: 0.6; /* Adjusted for better visibility when disabled */
+  --mh-button-disabled-bg: hsl(var(--muted)); /* Use theme muted for disabled bg */
   --mh-button-disabled-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values), 0.1),
-                              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.15); /* Softer disabled shadow */
-
+                              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.15); /* More subtle disabled shadow */
 
   cursor: pointer;
   position: relative;
@@ -499,13 +499,13 @@ main {
   justify-content: center;
   gap: 0.5rem;
   transform-origin: center;
-  padding: 0.8rem 1.5rem;
+  padding: 0.8rem 1.5rem; /* Default padding */
   background-color: transparent;
   border: none;
   border-radius: var(--mh-button-border-radius);
-  transform: scale(calc(1 + (var(--active, 0) * 0.05)));
+  transform: scale(calc(1 + (var(--active, 0) * 0.05))); /* Reduced active scale slightly */
   transition: transform var(--mh-button-transition);
-  min-width: 150px;
+  min-width: 150px; /* Ensure some base width */
 }
 
 .analyze-button-animated::before {
@@ -516,11 +516,11 @@ main {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: var(--mh-button-black-700);
+  background-color: var(--mh-button-black-700); /* This is themed to --primary */
   border-radius: var(--mh-button-border-radius);
   box-shadow: inset 0 0.5px hsla(var(--primary-foreground-hsl-values), 0.2),
-              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.3),
-              0px 2px 4px -1px hsla(var(--primary-hsl-values), calc(0.3 * (1 - var(--active, 0)))),
+              inset 0 -1px 1px 0 hsla(0, 0%, 0%, 0.3), /* Darker inner bottom shadow */
+              0px 2px 4px -1px hsla(var(--primary-hsl-values), calc(0.3 * (1 - var(--active, 0)))), /* Softer outer shadow */
               0 0 0 calc(var(--active, 0) * 0.25rem) var(--mh-button-active-shadow-color);
   transition: all var(--mh-button-transition);
   z-index: 0;
@@ -534,7 +534,7 @@ main {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: hsla(var(--primary-hsl-values), 0.75);
+  background-color: hsla(var(--primary-hsl-values), 0.75); /* Base color for the after element */
   background-image: radial-gradient(
       at 51% 89%,
       var(--mh-button-gradient-start) 0px,
@@ -546,18 +546,18 @@ main {
   opacity: var(--active, 0);
   border-radius: var(--mh-button-border-radius);
   transition: opacity var(--mh-button-transition);
-  z-index: 2;
+  z-index: 2; /* Should be above ::before but below text/icon */
 }
 
 .analyze-button-animated:is(:hover, :focus-visible) {
   --active: 1;
 }
 .analyze-button-animated:active {
-  transform: scale(0.98);
+  transform: scale(0.98); /* Slightly more pronounced active press */
 }
 
 .analyze-button-animated .dots_border {
-  --size_border: calc(100% + 2px);
+  --size_border: calc(100% + 2px); /* Original size */
   overflow: hidden;
   position: absolute;
   top: 50%;
@@ -567,41 +567,41 @@ main {
   height: var(--size_border);
   background-color: transparent;
   border-radius: var(--mh-button-border-radius);
-  z-index: -10;
+  z-index: -10; /* Keep it behind */
 }
 
 .analyze-button-animated .dots_border::before {
   content: "";
   position: absolute;
-  top: 30%;
+  top: 30%; /* Original value */
   left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg);
-  transform-origin: center;
-  width: 100%;
-  height: 2rem;
-  background-color: var(--mh-button-dots-color);
+  transform: translate(-50%, -50%) rotate(0deg); /* Ensure it starts at 0deg */
+  transform-origin: center; /* Changed from left for smoother rotation */
+  width: 100%; /* Original value */
+  height: 2rem; /* Original value */
+  background-color: var(--mh-button-dots-color); /* Themed */
   mask: linear-gradient(transparent 0%, var(--mh-button-dots-color) 120%);
   animation: mh-rotateDots 2s linear infinite;
 }
 
 @keyframes mh-rotateDots {
   to {
-    transform: rotate(360deg);
+    transform: translate(-50%, -50%) rotate(360deg); /* Ensure translate is maintained */
   }
 }
 
 .analyze-button-animated .sparkle {
   position: relative;
   z-index: 10;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.5rem; /* Original value: 1.75rem, adjusted for balance */
+  height: 1.5rem; /* Original value: 1.75rem, adjusted for balance */
 }
 
 .analyze-button-animated .sparkle .path {
-  fill: currentColor;
-  stroke: currentColor;
+  fill: currentColor; /* Allows color to be set by parent */
+  stroke: currentColor; /* Allows color to be set by parent */
   transform-origin: center;
-  color: var(--mh-button-sparkle-color);
+  color: var(--mh-button-sparkle-color); /* Themed */
 }
 
 .analyze-button-animated:is(:hover, :focus) .sparkle .path {
@@ -638,15 +638,15 @@ main {
 
 .analyze-button-animated .text_button {
   position: relative;
-  z-index: 10;
+  z-index: 10; /* Above ::after */
   background-image: linear-gradient(
     90deg,
-    var(--mh-button-text-color) 0%,
+    var(--mh-button-text-color) 0%, /* Start with solid themed text color */
     hsla(var(--primary-foreground-hsl-values), calc(var(--active, 0) * var(--mh-button-text-hover-opacity))) 120%
   );
   background-clip: text;
-  font-size: 1rem;
-  color: transparent;
+  font-size: 1rem; /* Consistent font size */
+  color: transparent; /* To allow gradient to show through */
   font-weight: 600;
 }
 
@@ -663,19 +663,19 @@ main {
 
 .analyze-button-animated:disabled::after,
 .analyze-button-animated:disabled .dots_border::before {
-  display: none;
+  display: none; /* Hide animations when disabled */
 }
 
 .analyze-button-animated:disabled .sparkle {
-  opacity: 0.3;
+  opacity: 0.3; /* Dim sparkle when disabled */
 }
 .analyze-button-animated:disabled .text_button {
-  background-image: none;
-  color: hsl(var(--muted-foreground));
+  background-image: none; /* Remove gradient */
+  color: hsl(var(--muted-foreground)); /* Show muted text color */
 }
 
 
-/* Yashasvi9199 Auth Card CSS */
+/* Auth Card CSS (Yashasvi9199) - Adapted for theme */
 .auth-card-yashasvi-wrapper { /* New wrapper for centering */
   display: flex;
   justify-content: center;
@@ -810,8 +810,8 @@ main {
 
 /* Download button card (Vinodjangid07 Style) */
 .download-button-card {
-  width: 40px;
-  height: 40px;
+  width: 40px; /* Adjusted for better alignment */
+  height: 40px; /* Adjusted for better alignment */
   border-radius: 50%;
   border: none;
   background-color: hsla(var(--card-hsl-values), 0.8); /* Adjusted for visibility on theme */
@@ -827,14 +827,14 @@ main {
 
 .download-button-card .svgIcon {
   fill: hsl(var(--primary));
-  height: 1.1em;
-  width: 1.1em;
-  transition: fill 0.3s, transform 0.3s;
+  height: 1.1em; /* Slightly increased for visibility */
+  width: 1.1em; /* Slightly increased for visibility */
+  transition: fill 0.3s, transform 0.3s; /* Added transform for smoother animation */
 }
 
 .download-button-card .icon2 {
-  width: 14px;
-  height: 4px;
+  width: 14px; /* Original size */
+  height: 4px; /* Original size */
   border-bottom: 2px solid hsl(var(--primary));
   border-left: 2px solid hsl(var(--primary));
   border-right: 2px solid hsl(var(--primary));
@@ -843,24 +843,24 @@ main {
 
 .download-button-card .tooltip {
   position: absolute;
-  top: 50%;
-  left: calc(100% + 12px); /* Adjusted from right: -105px to be on the right */
-  transform: translateY(-50%);
+  top: 50%; /* Center tooltip vertically */
+  left: calc(100% + 12px); /* Position to the right of the button */
+  transform: translateY(-50%); /* Fine-tune vertical centering */
   opacity: 0;
-  visibility: hidden;
+  visibility: hidden; /* Use visibility for better accessibility with opacity */
   background-color: hsl(var(--popover));
   color: hsl(var(--popover-foreground));
-  padding: 6px 12px;
-  border-radius: var(--radius);
+  padding: 6px 12px; /* Adjusted padding */
+  border-radius: var(--radius); /* Use theme radius */
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out; /* Smooth transition */
   pointer-events: none;
   letter-spacing: 0.5px;
-  white-space: nowrap;
+  white-space: nowrap; /* Prevent tooltip text from wrapping */
   z-index: 50; /* Ensure tooltip is above other elements */
-  box-shadow: 0 2px 8px hsla(var(--foreground-hsl-values), 0.15);
+  box-shadow: 0 2px 8px hsla(var(--foreground-hsl-values), 0.15); /* Subtle shadow */
 }
 
 .download-button-card .tooltip::before {
@@ -869,7 +869,7 @@ main {
   width: 8px;
   height: 8px;
   background-color: hsl(var(--popover));
-  transform: translateY(-50%) rotate(45deg); /* Adjusted for left positioning */
+  transform: translateY(-50%) rotate(45deg); /* Keep arrow pointing left */
   top: 50%;
   left: -4px; /* Position arrow on the left side of the tooltip */
 }
@@ -960,163 +960,7 @@ main {
   margin-bottom: 1rem;
 }
 
-/* Custom 3D Room Card (Kennyotsu) - Prefixed */
-/* NOTE: This effect has known issues with button clickability inside the card */
-/* due to the tracker divs overlaying the content. */
-.room-card-3d-wrapper {
-  position: relative;
-  width: 280px; /* Increased width */
-  height: 374px; /* Adjusted height proportionally */
-  transition: 200ms;
-}
-
-.room-card-3d-wrapper:active {
-  width: 270px; /* Adjusted active state */
-  height: 365px; /* Adjusted active state */
-}
-
-.room-card-3d-interactive-area { /* This is the main content area that gets transformed */
-  position: absolute;
-  inset: 0;
-  z-index: 0; /* Content area itself is at base z-index within its canvas */
-  display: flex;
-  flex-direction: column; /* To stack header, content, footer */
-  justify-content: space-between; /* Distribute space */
-  align-items: center; /* Center content horizontally if it doesn't fill width */
-  border-radius: 20px;
-  transition: 700ms;
-  /* Updated gradient */
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
-  overflow: hidden; /* Important for border-radius and ::before */
-  padding: 1rem; /* Padding for the content inside the card */
-  color: hsl(var(--primary-foreground)); /* Default text color for readability */
-}
-
-.room-card-3d-wrapper:hover .room-card-3d-interactive-area {
-  /* Blue glow using theme's primary color HSL values */
-  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4);
-}
-
-.room-card-3d-interactive-area .room-card-3d-content-header,
-.room-card-3d-interactive-area .room-card-3d-content-body,
-.room-card-3d-interactive-area .room-card-3d-content-footer {
-  width: 100%; /* Ensure these sections take full width of the card */
-  color: hsl(var(--primary-foreground)); /* Ensure text inside is light for contrast */
-}
-
-.room-card-3d-content-footer {
-  position: relative; /* To allow z-index for buttons inside if needed */
-  z-index: 10; /* Attempt to bring buttons above other internal elements */
-}
-
-.room-card-3d-tracker { /* These are the hover trigger areas */
-  position: absolute;
-  z-index: 200; /* Trackers need to be on top to capture hover */
-  width: 100%;
-  height: 100%;
-}
-
-.room-card-3d-tracker:hover {
-  cursor: pointer;
-}
-
-.room-card-3d-tracker:hover ~ .room-card-3d-interactive-area { /* Sibling selector */
-  transition: 300ms;
-  filter: brightness(1.1);
-}
-
-.room-card-3d-wrapper:hover .room-card-3d-interactive-area::before { /* Glow effect for ::before */
-  transition: 200ms;
-  content: '';
-  opacity: 80%;
-}
-
-.room-card-3d-canvas {
-  perspective: 800px;
-  inset: 0;
-  z-index: 1; /* Canvas is above wrapper, trackers are within canvas */
-  position: absolute;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
-  gap: 0px 0px;
-  grid-template-areas: "tr-1 tr-2 tr-3 tr-4 tr-5"
-    "tr-6 tr-7 tr-8 tr-9 tr-10"
-    "tr-11 tr-12 tr-13 tr-14 tr-15"
-    "tr-16 tr-17 tr-18 tr-19 tr-20"
-    "tr-21 tr-22 tr-23 tr-24 tr-25";
-}
-
-.room-card-3d-interactive-area::before {
-  content: '';
-  /* Updated gradient */
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
-  filter: blur(2rem);
-  opacity: 30%;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  z-index: -1; /* Behind the content area */
-  transition: 200ms;
-  border-radius: inherit; /* Match parent's border-radius */
-}
-
-.room-card-3d-wrapper .tr-1 { grid-area: tr-1; }
-.room-card-3d-wrapper .tr-2 { grid-area: tr-2; }
-.room-card-3d-wrapper .tr-3 { grid-area: tr-3; }
-.room-card-3d-wrapper .tr-4 { grid-area: tr-4; }
-.room-card-3d-wrapper .tr-5 { grid-area: tr-5; }
-.room-card-3d-wrapper .tr-6 { grid-area: tr-6; }
-.room-card-3d-wrapper .tr-7 { grid-area: tr-7; }
-.room-card-3d-wrapper .tr-8 { grid-area: tr-8; }
-.room-card-3d-wrapper .tr-9 { grid-area: tr-9; }
-.room-card-3d-wrapper .tr-10 { grid-area: tr-10; }
-.room-card-3d-wrapper .tr-11 { grid-area: tr-11; }
-.room-card-3d-wrapper .tr-12 { grid-area: tr-12; }
-.room-card-3d-wrapper .tr-13 { grid-area: tr-13; }
-.room-card-3d-wrapper .tr-14 { grid-area: tr-14; }
-.room-card-3d-wrapper .tr-15 { grid-area: tr-15; }
-.room-card-3d-wrapper .tr-16 { grid-area: tr-16; }
-.room-card-3d-wrapper .tr-17 { grid-area: tr-17; }
-.room-card-3d-wrapper .tr-18 { grid-area: tr-18; }
-.room-card-3d-wrapper .tr-19 { grid-area: tr-19; }
-.room-card-3d-wrapper .tr-20 { grid-area: tr-20; }
-.room-card-3d-wrapper .tr-21 { grid-area: tr-21; }
-.room-card-3d-wrapper .tr-22 { grid-area: tr-22; }
-.room-card-3d-wrapper .tr-23 { grid-area: tr-23; }
-.room-card-3d-wrapper .tr-24 { grid-area: tr-24; }
-.room-card-3d-wrapper .tr-25 { grid-area: tr-25; }
-
-/* Transformations - applied to .room-card-3d-interactive-area */
-.room-card-3d-wrapper .tr-1:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-2:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-3:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-4:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-5:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-6:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-7:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-8:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-9:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-10:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-11:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-12:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-13:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-14:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-15:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-16:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-17:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-18:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-19:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-20:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-21:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-22:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-23:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-24:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
-.room-card-3d-wrapper .tr-25:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
-
-.noselect {
-  -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
-}
+/* Removed Kennyotsu 3D Card Styles - No longer needed */
 
 /* Welcome Text Shine Effect */
 .welcome-text-shine {
@@ -1148,4 +992,3 @@ main {
   }
 }
 /* End of globals.css content */
-
