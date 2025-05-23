@@ -961,52 +961,57 @@ main {
 }
 
 /* Custom 3D Room Card (Kennyotsu) - Prefixed */
+/* NOTE: This effect has known issues with button clickability inside the card */
+/* due to the tracker divs overlaying the content. */
 .room-card-3d-wrapper {
   position: relative;
-  width: 280px; 
-  height: 374px; 
+  width: 280px; /* Increased width */
+  height: 374px; /* Adjusted height proportionally */
   transition: 200ms;
 }
 
 .room-card-3d-wrapper:active {
-  width: 270px; 
-  height: 365px; 
+  width: 270px; /* Adjusted active state */
+  height: 365px; /* Adjusted active state */
 }
 
-.room-card-3d-interactive-area { 
+.room-card-3d-interactive-area { /* This is the main content area that gets transformed */
   position: absolute;
   inset: 0;
-  z-index: 0; 
+  z-index: 0; /* Content area itself is at base z-index within its canvas */
   display: flex;
-  flex-direction: column; 
-  justify-content: space-between; 
-  align-items: center; 
+  flex-direction: column; /* To stack header, content, footer */
+  justify-content: space-between; /* Distribute space */
+  align-items: center; /* Center content horizontally if it doesn't fill width */
   border-radius: 20px;
   transition: 700ms;
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%); 
-  overflow: hidden; 
-  padding: 1rem; 
+  /* Updated gradient */
+  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
+  overflow: hidden; /* Important for border-radius and ::before */
+  padding: 1rem; /* Padding for the content inside the card */
+  color: hsl(var(--primary-foreground)); /* Default text color for readability */
 }
 
 .room-card-3d-wrapper:hover .room-card-3d-interactive-area {
-  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4); 
+  /* Blue glow using theme's primary color HSL values */
+  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4);
 }
 
 .room-card-3d-interactive-area .room-card-3d-content-header,
 .room-card-3d-interactive-area .room-card-3d-content-body,
 .room-card-3d-interactive-area .room-card-3d-content-footer {
-  width: 100%;
-  color: hsl(var(--primary-foreground)); 
+  width: 100%; /* Ensure these sections take full width of the card */
+  color: hsl(var(--primary-foreground)); /* Ensure text inside is light for contrast */
 }
 
 .room-card-3d-content-footer {
-  position: relative; 
-  z-index: 10; 
+  position: relative; /* To allow z-index for buttons inside if needed */
+  z-index: 10; /* Attempt to bring buttons above other internal elements */
 }
 
-.room-card-3d-tracker { 
+.room-card-3d-tracker { /* These are the hover trigger areas */
   position: absolute;
-  z-index: 200; 
+  z-index: 200; /* Trackers need to be on top to capture hover */
   width: 100%;
   height: 100%;
 }
@@ -1015,12 +1020,12 @@ main {
   cursor: pointer;
 }
 
-.room-card-3d-tracker:hover ~ .room-card-3d-interactive-area { 
+.room-card-3d-tracker:hover ~ .room-card-3d-interactive-area { /* Sibling selector */
   transition: 300ms;
   filter: brightness(1.1);
 }
 
-.room-card-3d-wrapper:hover .room-card-3d-interactive-area::before { 
+.room-card-3d-wrapper:hover .room-card-3d-interactive-area::before { /* Glow effect for ::before */
   transition: 200ms;
   content: '';
   opacity: 80%;
@@ -1029,7 +1034,7 @@ main {
 .room-card-3d-canvas {
   perspective: 800px;
   inset: 0;
-  z-index: 1; 
+  z-index: 1; /* Canvas is above wrapper, trackers are within canvas */
   position: absolute;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
@@ -1042,17 +1047,18 @@ main {
     "tr-21 tr-22 tr-23 tr-24 tr-25";
 }
 
-.room-card-3d-interactive-area::before { 
+.room-card-3d-interactive-area::before {
   content: '';
-  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%); 
+  /* Updated gradient */
+  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
   filter: blur(2rem);
   opacity: 30%;
   width: 100%;
   height: 100%;
   position: absolute;
-  z-index: -1;
+  z-index: -1; /* Behind the content area */
   transition: 200ms;
-  border-radius: inherit; 
+  border-radius: inherit; /* Match parent's border-radius */
 }
 
 .room-card-3d-wrapper .tr-1 { grid-area: tr-1; }
@@ -1081,6 +1087,7 @@ main {
 .room-card-3d-wrapper .tr-24 { grid-area: tr-24; }
 .room-card-3d-wrapper .tr-25 { grid-area: tr-25; }
 
+/* Transformations - applied to .room-card-3d-interactive-area */
 .room-card-3d-wrapper .tr-1:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
 .room-card-3d-wrapper .tr-2:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
 .room-card-3d-wrapper .tr-3:hover ~ .room-card-3d-interactive-area { transition: 125ms ease-in-out; transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
@@ -1113,8 +1120,9 @@ main {
 
 /* Welcome Text Shine Effect */
 .welcome-text-shine {
-  position: relative; 
-  font-weight: 600; 
+  position: relative; /* Needed for potential ::before/::after pseudo-elements if used for shine */
+  font-weight: 600; /* Or as desired */
+  /* Gradient for the shine - uses theme foreground and primary (pink) */
   background: linear-gradient(
     to right,
     hsl(var(--foreground)) 20%,
@@ -1123,14 +1131,15 @@ main {
     hsl(var(--foreground)) 80%
   );
   background-size: 200% auto;
-  color: hsl(var(--foreground)); 
+  color: hsl(var(--foreground)); /* Base text color */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine-welcome 3s linear infinite;
-  white-space: nowrap; 
+  animation: shine-welcome 5s linear infinite; /* Increased duration to 5s */
+  white-space: nowrap; /* Prevents text from wrapping which can affect the gradient */
+  display: inline-block; /* Helps with background clipping */
 }
 
-@keyframes shine-welcome { 
+@keyframes shine-welcome { /* Keyframes for the welcome text shine */
   0% {
     background-position: 200% center;
   }
@@ -1139,3 +1148,4 @@ main {
   }
 }
 /* End of globals.css content */
+
