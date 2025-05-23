@@ -35,10 +35,10 @@ export function NewCustomLoginForm() {
       });
       router.push("/dashboard");
       // hideLoader() will be handled by AppRouterEvents on new page
-    } catch (error: any)
+    } catch (error: any) { // Added missing opening curly brace here
       console.error("Login error:", error);
       const invalidCredentialCodes = ["auth/invalid-credential", "auth/user-not-found", "auth/wrong-password", "auth/invalid-email"];
-      if (invalidCredentialCodes.includes(error.code) || error.message.includes("invalid-credential")) {
+      if (invalidCredentialCodes.includes(error.code) || (error.message && error.message.includes("invalid-credential"))) {
         toast({
           title: "Login Failed",
           description: "Invalid email or password. Please try again.",
@@ -76,7 +76,7 @@ export function NewCustomLoginForm() {
                 ></path>
               </svg>
               <input
-                type="text" // Should be email, but matching placeholder "Username"
+                type="text" 
                 className="auth-input-field-yashasvi"
                 placeholder="Email (Username)"
                 autoComplete="email"
