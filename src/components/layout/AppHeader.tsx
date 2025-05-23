@@ -48,14 +48,14 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-primary">
+        <Link href="/dashboard" className="flex items-center gap-2">
            <Image 
             src="/homiestan-logo.png" 
             alt="HomieStan Logo" 
             width={150} 
-            height={38} 
-            className="h-auto" 
-            priority
+            height={38} // Adjusted to maintain aspect ratio (original 980x245 is approx 4:1)
+            className="h-auto" // Allow height to adjust based on width if needed, but explicit height is good
+            priority={false} // Not critical for LCP in header usually
           />
         </Link>
         <div className="flex-grow text-center">
@@ -83,7 +83,7 @@ export function AppHeader() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                     Yes, logout
                   </AlertDialogAction>
                 </AlertDialogFooter>

@@ -12,9 +12,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             src="/homiestan-logo.png" 
             alt="HomieStan Logo" 
             width={180} 
-            height={45}  
+            height={45}  // Adjusted to maintain aspect ratio (original 980x245 is approx 4:1)
             className="h-auto" 
-            priority
+            priority // Good to have priority for LCP on auth pages
           />
         </Link>
         <p className="text-muted-foreground">
