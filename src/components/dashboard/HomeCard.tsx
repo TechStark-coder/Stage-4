@@ -1,12 +1,11 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2, Edit } from "lucide-react";
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2 } from "lucide-react"; // Removed Edit, already in EditHomeDialog
 import { format } from "date-fns";
 import Image from "next/image";
 import {
@@ -20,48 +19,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteHome } from "@/lib/firestore"; // Changed import
+import { deleteHome } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { EditHomeDialog } from "./EditHomeDialog";
 import { useLoader } from "@/contexts/LoaderContext";
 
 interface HomeCardProps {
   home: Home;
-  onHomeAction: () => void;
+  onHomeAction: () => void; // Renamed from onHomeDeleted for broader use (update/delete)
 }
 
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
-  const [coverImageSrc, setCoverImageSrc] = useState<string | null>(null);
-  const [isLoadingImage, setIsLoadingImage] = useState(true);
-
-  useEffect(() => {
-    setIsLoadingImage(true);
-    const storedImage = localStorage.getItem(`homeCover_${home.id}`);
-    if (storedImage) {
-      setCoverImageSrc(storedImage);
-    } else {
-      setCoverImageSrc(null);
-    }
-    setIsLoadingImage(false);
-  }, [home.id, onHomeAction]);
+  // No need for local coverImageSrc state, home.coverImageUrl is direct from Firestore
 
   const handleDelete = async () => {
     showLoader();
     try {
-      await deleteHome(home.id); // Use imported deleteHome
-      localStorage.removeItem(`homeCover_${home.id}`); // Remove from localStorage
+      await deleteHome(home.id); 
       toast({
         title: "Home Deleted",
         description: `Home "${home.name}" and all its data have been deleted.`,
       });
       onHomeAction();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting home:", error);
       toast({
         title: "Error Deleting Home",
-        description: "Could not delete the home. Please try again.",
+        description: "Could not delete the home: " + error.message,
         variant: "destructive",
       });
     } finally {
@@ -72,16 +58,14 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   return (
     <Card className="flex flex-col transition-all duration-300 ease-out hover:scale-105 hover:z-20 hover:shadow-2xl hover:shadow-primary/30 dark:hover:shadow-primary/50">
       <CardHeader className="pb-2">
-        {isLoadingImage ? (
-           <div className="flex items-center justify-center w-full h-40 mb-4 bg-muted rounded-t-lg animate-pulse">
-           </div>
-        ) : coverImageSrc ? (
+        {home.coverImageUrl ? (
           <div className="relative w-full h-40 mb-4 rounded-t-lg overflow-hidden">
             <Image
-              src={coverImageSrc}
+              src={home.coverImageUrl}
               alt={`${home.name} cover image`}
               layout="fill"
               objectFit="cover"
+              priority // Consider adding priority for LCP images if these are above the fold
               data-ai-hint="house exterior"
             />
           </div>
@@ -103,7 +87,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
       </CardHeader>
       <CardContent className="flex-grow pt-2">
         <p className="text-sm text-muted-foreground">
-          Manage rooms and analyze objects within this home. Cover image stored in browser.
+          Manage rooms and analyze objects within this home.
         </p>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-2 pt-4">
@@ -120,7 +104,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete the home
-                  "{home.name}" and all its associated rooms and data. The locally stored cover image will also be removed.
+                  "{home.name}" and all its associated rooms, data, and stored images.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

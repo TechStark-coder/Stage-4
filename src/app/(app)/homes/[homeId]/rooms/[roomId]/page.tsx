@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { getHome, getRoom, clearRoomObjectNames } from "@/lib/firestore";
+import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, setRoomAnalyzingStatus } from "@/lib/firestore";
 import type { Home, Room } from "@/types";
 import { PhotoUploader } from "@/components/rooms/PhotoUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
@@ -15,36 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
-
-// Helper function to convert File to Data URL
-const fileToDataURL = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
-};
-
-// Helper function to convert Data URL back to File
-interface PersistedPhotoInfo {
-  name: string;
-  type: string;
-  dataUrl: string;
-}
-
-const dataURLtoFile = (dataurl: string, filename: string, filetype?: string): File => {
-  const arr = dataurl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || filetype || 'application/octet-stream';
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, { type: mime });
-};
-
 
 export default function RoomDetailPage() {
   const { user } = useAuthContext();
@@ -57,9 +27,9 @@ export default function RoomDetailPage() {
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+  
+  // State for photos selected in the current session, before analysis
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
-
-  const sessionStorageKey = roomId ? `pendingRoomPhotos_${roomId}` : null;
 
   const fetchRoomDetails = useCallback(async () => {
     if (user && homeId && roomId) {
@@ -73,6 +43,7 @@ export default function RoomDetailPage() {
         } else {
           setHome(null);
           setRoom(null);
+          toast({ title: "Access Denied", description: "Room not found or you do not have access.", variant: "destructive" });
         }
       } catch (error) {
         console.error("Failed to fetch room details:", error);
@@ -87,105 +58,54 @@ export default function RoomDetailPage() {
     fetchRoomDetails();
   }, [fetchRoomDetails]);
 
-  useEffect(() => {
-    if (sessionStorageKey && uploadedPhotos.length === 0) {
-      const storedPhotosJson = sessionStorage.getItem(sessionStorageKey);
-      if (storedPhotosJson) {
-        try {
-          const storedPhotosInfo: PersistedPhotoInfo[] = JSON.parse(storedPhotosJson);
-          if (Array.isArray(storedPhotosInfo) && storedPhotosInfo.length > 0) {
-            const reconstructedFiles = storedPhotosInfo.map(info =>
-              dataURLtoFile(info.dataUrl, info.name, info.type)
-            );
-            setUploadedPhotos(reconstructedFiles);
-          }
-        } catch (e) {
-          console.error("Error parsing photos from session storage:", e);
-          sessionStorage.removeItem(sessionStorageKey);
-        }
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
-
-
-  useEffect(() => {
-    if (sessionStorageKey) {
-      if (uploadedPhotos.length > 0) {
-        const savePhotosToSession = async () => {
-          try {
-            const photosToStore: PersistedPhotoInfo[] = await Promise.all(
-              uploadedPhotos.map(async (file) => {
-                const dataUrl = await fileToDataURL(file);
-                return { name: file.name, type: file.type, dataUrl };
-              })
-            );
-            try {
-              sessionStorage.setItem(sessionStorageKey, JSON.stringify(photosToStore));
-            } catch (e: any) {
-              if (e.name === 'QuotaExceededError') {
-                console.warn("Session storage quota exceeded. Pending photos might not persist on page reload/navigation.", e);
-                toast({
-                  title: "Storage Warning",
-                  description: "Too many/large photos selected. They may not be saved if you navigate away before analysis. Please consider reducing the number of photos.",
-                  variant: "default",
-                  duration: 7000,
-                });
-              } else {
-                console.error("Error saving photos to session storage:", e);
-              }
-            }
-          } catch (error) {
-            console.error("Error preparing photos for session storage:", error);
-          }
-        };
-        savePhotosToSession();
-      } else {
-        sessionStorage.removeItem(sessionStorageKey);
-      }
-    }
-  }, [uploadedPhotos, sessionStorageKey, toast]);
-
-
   const handlePhotosChange = (newPhotos: File[]) => {
     setUploadedPhotos(newPhotos);
   };
 
-  const handleRemovePhoto = (indexToRemove: number) => {
+  const handleRemovePendingPhoto = (indexToRemove: number) => {
     setUploadedPhotos(prevPhotos => prevPhotos.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleAnalysisInitiated = () => {
-    showAiLoader();
-  };
-
-  const handleAnalysisComplete = (analysisSuccessful: boolean) => {
-    hideAiLoader();
-    fetchRoomDetails();
-    if (analysisSuccessful) {
-      if (sessionStorageKey) {
-        sessionStorage.removeItem(sessionStorageKey);
+  const handleAnalysisComplete = async (
+    analysisSuccessful: boolean,
+    objectNames?: string[],
+    photoUrls?: string[]
+  ) => {
+    hideAiLoader(); // Hide loader regardless of success
+    if (analysisSuccessful && objectNames && photoUrls && homeId && roomId) {
+      try {
+        await updateRoomAnalysisData(homeId, roomId, objectNames, photoUrls);
+        toast({ title: "Analysis Complete", description: "Room analysis results have been updated." });
+        setUploadedPhotos([]); // Clear pending photos from UI
+      } catch (error) {
+        console.error("Error updating room analysis data:", error);
+        toast({ title: "Update Error", description: "Failed to save analysis results.", variant: "destructive" });
+        // Photos remain in UI for retry if saving fails
       }
-      setUploadedPhotos([]);
+    } else if (!analysisSuccessful) {
+      // Toast for AI failure is usually handled in PhotoUploader
+      // Photos remain in UI for retry
     }
+    fetchRoomDetails(); // Re-fetch to get the latest room data (including new analyzedPhotoUrls)
   };
 
   const handleClearResults = async () => {
     if (!homeId || !roomId) return;
-    setPageLoading(true); // Using pageLoading for this general action
+    setPageLoading(true); 
     try {
-      await clearRoomObjectNames(homeId, roomId);
-      toast({ title: "Results Cleared", description: "The object analysis results have been cleared." });
+      await clearRoomAnalysisData(homeId, roomId);
+      toast({ title: "Results Cleared", description: "The object analysis results and stored images have been cleared." });
+      setUploadedPhotos([]); // Clear any pending photos in UI as well
       fetchRoomDetails();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to clear results:", error);
-      toast({ title: "Error", description: "Failed to clear analysis results.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to clear analysis results: " + error.message, variant: "destructive" });
     } finally {
       setPageLoading(false);
     }
   };
 
-  if (pageLoading && !room) {
+  if (pageLoading && !room) { // Initial page load skeleton
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-40 mb-4" />
@@ -238,14 +158,18 @@ export default function RoomDetailPage() {
           <PhotoUploader
             homeId={homeId}
             roomId={roomId}
-            onAnalysisInitiated={handleAnalysisInitiated}
+            userId={user?.uid || ""} // Pass userId for storage paths
             onAnalysisComplete={handleAnalysisComplete}
             currentPhotos={uploadedPhotos}
             onPhotosChange={handlePhotosChange}
           />
         </div>
         <div>
-            <ImageGallery photos={uploadedPhotos} onRemovePhoto={handleRemovePhoto} />
+           <ImageGallery 
+             pendingPhotos={uploadedPhotos} 
+             analyzedPhotoUrls={room.analyzedPhotoUrls || []}
+             onRemovePendingPhoto={handleRemovePendingPhoto} 
+            />
         </div>
       </div>
        <ObjectAnalysisCard

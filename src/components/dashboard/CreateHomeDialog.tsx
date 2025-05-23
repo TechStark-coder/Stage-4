@@ -39,15 +39,6 @@ interface CreateHomeDialogProps {
   onHomeCreated: () => void;
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-};
-
 export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -65,7 +56,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   });
 
   useEffect(() => {
-    if (user && open) { // Only set if user is available and dialog opens
+    if (user && open) {
       form.setValue("ownerDisplayName", user.displayName || "");
     }
   }, [open, user, form]);
@@ -74,7 +65,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      form.setValue("coverImage", files); // react-hook-form expects FileList
+      form.setValue("coverImage", files);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -86,7 +77,6 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     }
   };
 
-
   async function onSubmit(data: HomeFormData) {
     if (!user) {
       toast({ title: "Error", description: "You must be logged in to create a home.", variant: "destructive" });
@@ -94,45 +84,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     }
     showLoader();
     try {
-      // Update user's display name in Firebase Auth if provided and different
       if (auth.currentUser && data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
-        try {
-          await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
-          // No toast here for profile update, to keep focus on home creation
-          // Or, if desired: toast({ title: "Profile Updated", description: "Your display name has been updated." });
-        } catch (profileError: any) {
-          console.error("Failed to update profile name:", profileError);
-          // Optionally toast a non-critical error for profile update failure
-        }
+        await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
       }
 
       const homeDataToSubmit: CreateHomeData = { name: data.name };
-      const newHomeId = await addHome(user.uid, homeDataToSubmit);
-
-      // Handle cover image saving to localStorage
-      if (data.coverImage && data.coverImage.length > 0) {
-        const imageFile = data.coverImage[0];
-        try {
-          const base64Image = await fileToBase64(imageFile);
-          localStorage.setItem(`homeCover_${newHomeId}`, base64Image);
-        } catch (e: any) {
-          console.error("Failed to convert image or save to local storage:", e);
-          if (e.name === 'QuotaExceededError') {
-            toast({
-              title: "Image Too Large",
-              description: "Cover image is too large to save in browser storage. Home created without it.",
-              variant: "default",
-              duration: 7000,
-            });
-          } else {
-            toast({
-              title: "Image Warning",
-              description: "Home created, but cover image could not be saved locally.",
-              variant: "default",
-            });
-          }
-        }
-      }
+      const coverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
+      
+      await addHome(user.uid, homeDataToSubmit, coverImageFile);
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
       form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", coverImage: undefined });
@@ -168,7 +127,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <HousePlus className="h-5 w-5" /> Create a New Home
           </DialogTitle>
           <DialogDescription>
-            Enter details for your new home. The cover image will be stored in your browser.
+            Enter details for your new home. The cover image will be uploaded to cloud storage.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -202,14 +161,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={({ field }) => ( // field is not directly used for value, but for onChange etc.
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cover Image (Optional, stored in browser)</FormLabel>
+                  <FormLabel>Cover Image (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange} // Use custom handler
+                      onChange={handleFileChange}
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>

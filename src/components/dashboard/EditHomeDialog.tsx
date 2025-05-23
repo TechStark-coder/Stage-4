@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { updateHome } from "@/lib/firestore";
+import { updateHome, removeHomeCoverImage } from "@/lib/firestore";
 import { homeFormSchema, type HomeFormData } from "@/schemas/homeSchemas";
 import { Pencil } from "lucide-react";
 import type { Home, UpdateHomeData } from "@/types";
@@ -31,44 +31,35 @@ import {
 } from "@/components/ui/form";
 import Image from "next/image";
 import { useLoader } from "@/contexts/LoaderContext";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 interface EditHomeDialogProps {
   home: Home;
   onHomeUpdated: () => void;
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-};
-
 export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
   const [open, setOpen] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(home.coverImageUrl || null);
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
+  const { user } = useAuthContext();
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: home.name,
       coverImage: undefined,
-      // ownerDisplayName is not edited here, so we don't set it
+      // ownerDisplayName is not typically edited here, but could be added
     },
   });
 
   useEffect(() => {
     if (open) {
       form.reset({ name: home.name, coverImage: undefined });
-      const existingImage = localStorage.getItem(`homeCover_${home.id}`);
-      setImagePreview(existingImage);
+      setImagePreview(home.coverImageUrl || null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, home.name, home.id]); // form is not needed here as it's reset
+  }, [open, home.name, home.coverImageUrl, form]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -82,47 +73,25 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
       reader.readAsDataURL(file);
     } else {
       form.setValue("coverImage", undefined);
-      // If clearing input, revert to existing stored image if any, or null
-      const existingImage = localStorage.getItem(`homeCover_${home.id}`);
-      setImagePreview(existingImage);
+      setImagePreview(home.coverImageUrl || null); // Revert to original if selection is cleared
     }
   };
 
-
   async function onSubmit(data: HomeFormData) {
+    if (!user) {
+      toast({ title: "Error", description: "Authentication error.", variant: "destructive" });
+      return;
+    }
     showLoader();
     try {
       const homeUpdateData: UpdateHomeData = { name: data.name };
-      await updateHome(home.id, homeUpdateData);
-
-      // Handle cover image saving to localStorage
-      if (data.coverImage && data.coverImage.length > 0) {
-        const imageFile = data.coverImage[0];
-        try {
-          const base64Image = await fileToBase64(imageFile);
-          localStorage.setItem(`homeCover_${home.id}`, base64Image);
-        } catch (e: any) {
-          console.error("Failed to convert image to base64 or save to local storage:", e);
-          if (e.name === 'QuotaExceededError') {
-            toast({
-              title: "Image Too Large",
-              description: "New cover image is too large to save in browser storage. Home updated, existing image (if any) retained or new image not saved.",
-              variant: "default",
-              duration: 7000,
-            });
-          } else {
-            toast({
-              title: "Image Warning",
-              description: "Home updated, but new cover image could not be saved locally.",
-              variant: "default",
-            });
-          }
-        }
-      }
+      const newCoverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
+      
+      await updateHome(home.id, user.uid, homeUpdateData, newCoverImageFile);
       
       toast({ title: "Home Updated", description: `Home "${data.name}" has been successfully updated.` });
-      onHomeUpdated(); // This will cause HomeCard to re-fetch its image from localStorage
-      setOpen(false); // Form will be reset by onOpenChange or useEffect when dialog reopens
+      onHomeUpdated();
+      setOpen(false);
     } catch (error: any) {
       toast({ title: "Failed to Update Home", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     } finally {
@@ -130,30 +99,32 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
     }
   }
 
-  const handleRemoveCoverImage = () => {
+  const handleRemoveCoverImage = async () => {
+    if (!user) {
+        toast({ title: "Error", description: "Authentication error.", variant: "destructive" });
+        return;
+    }
     showLoader();
     try {
-      localStorage.removeItem(`homeCover_${home.id}`);
+      await removeHomeCoverImage(home.id);
       setImagePreview(null);
       form.setValue("coverImage", undefined); // Clear the file input in the form
-      toast({ title: "Cover Image Removed", description: "The cover image has been removed from browser storage." });
-      // onHomeUpdated(); // To refresh the card view immediately after removal
-    } catch (error) {
-      toast({ title: "Error", description: "Could not remove cover image.", variant: "destructive"});
+      toast({ title: "Cover Image Removed", description: "The cover image has been removed." });
+      onHomeUpdated(); // To refresh the card view immediately
+    } catch (error: any) {
+      console.error("Failed to remove cover image:", error)
+      toast({ title: "Error", description: "Could not remove cover image: " + error.message, variant: "destructive"});
     } finally {
       hideLoader();
     }
   };
 
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (!isOpen) {
-        // Reset form and preview when dialog closes
         form.reset({ name: home.name, coverImage: undefined });
-        const existingImage = localStorage.getItem(`homeCover_${home.id}`);
-        setImagePreview(existingImage || null);
+        setImagePreview(home.coverImageUrl || null);
       }
     }}>
       <DialogTrigger asChild>
@@ -165,7 +136,7 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
         <DialogHeader>
           <DialogTitle>Edit Home</DialogTitle>
           <DialogDescription>
-            Update the name or cover image for your home. Cover image is stored in your browser.
+            Update the name or cover image for your home.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -186,7 +157,7 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={() => ( // field not directly used for value
+              render={() => ( 
                 <FormItem>
                   <FormLabel>New Cover Image (Optional)</FormLabel>
                   <FormControl>
@@ -212,14 +183,14 @@ export function EditHomeDialog({ home, onHomeUpdated }: EditHomeDialogProps) {
                 </Button>
               </div>
             )}
-            {!imagePreview && (
+            {!imagePreview && home.coverImageUrl && ( /* This case might not be hit if preview always shows original */
+                <p className="text-sm text-muted-foreground text-center py-2">Cover image previously set.</p>
+            )}
+             {!imagePreview && !home.coverImageUrl && (
                 <p className="text-sm text-muted-foreground text-center py-2">No cover image set.</p>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => {
-                setOpen(false);
-                // Form reset and preview update handled by onOpenChange
-              }}>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>

@@ -2,7 +2,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage"; // Added FirebaseStorage
+import { getStorage, type FirebaseStorage } from "firebase/storage"; // Ensure this is imported
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,15 +14,11 @@ const firebaseConfig = {
 };
 
 // --- VITAL DIAGNOSTIC LOG ---
-// Check your browser's developer console for this output.
-// This shows the exact configuration your Firebase app is trying to use.
 console.log("Firebase Initialization - Attempting to use config:", firebaseConfig);
 
-// Explicitly check if the API key is missing, a placeholder, or too short.
-if (!firebaseConfig.apiKey || 
-    firebaseConfig.apiKey === "YOUR_FIREBASE_API_KEY" || // Check for common placeholder
-    firebaseConfig.apiKey.includes("YOUR_") || // Check for other placeholder patterns
-    firebaseConfig.apiKey.length < 10) { // Basic sanity check for length
+if (!firebaseConfig.apiKey ||
+    firebaseConfig.apiKey.includes("YOUR_") ||
+    firebaseConfig.apiKey.length < 10) {
   console.error(
     "******************************************************************************************\n" +
     "CRITICAL FIREBASE CONFIG ERROR: Invalid or Missing API Key.\n" +
@@ -39,7 +35,7 @@ if (!firebaseConfig.apiKey ||
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
-let storage: FirebaseStorage; // Added storage
+let storage: FirebaseStorage; // Declare storage
 
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
