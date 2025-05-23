@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 body {
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: var(--font-inter), sans-serif; /* Updated to use Inter */
   background: linear-gradient(to right, #1D2671, #C33764); /* Indigo to Pink/Purple Gradient */
   color: hsl(var(--foreground));
   min-height: 100vh;
@@ -83,6 +83,7 @@ main {
     --mh-button-disabled-bg: hsl(var(--muted));
     --mh-button-disabled-shadow: none;
     --primary-foreground-hsl-values: 0, 0%, 100%; /* Assuming primary-foreground is white */
+    --foreground-hsl-values: 250, 30%, 90%; /* Added for download button */
   }
 
   .dark { /* The dark class might not be strictly necessary if :root is already the dark theme */
@@ -138,6 +139,7 @@ main {
     --mh-button-sparkle-color: hsl(var(--primary-foreground));
     --mh-button-text-color: hsl(var(--primary-foreground));
      --primary-foreground-hsl-values: 0, 0%, 100%;
+     --foreground-hsl-values: 250, 30%, 90%;
   }
 }
 
@@ -371,11 +373,13 @@ main {
   gap: 1rem; /* Space between spinner and text */
 }
 
+/* From Uiverse.io by mrhyddenn - Adapted for AI Loader */
 .ai-spinner { 
   width: 6em; /* Increased size */
   height: 6em; /* Increased size */
+  cursor: not-allowed;
   border-radius: 50%;
-  border: 3px solid hsl(var(--border)); /* Thicker border */
+  border: 3px solid hsl(var(--border)); /* Thicker border, uses theme border color */
   box-shadow: -12px -12px 12px hsla(var(--primary-hsl-values), 0.7), 
               0px -12px 12px 0px hsla(var(--accent-hsl-values), 0.7),  
               12px -12px 12px hsla(var(--destructive-hsl-values), 0.5), 
@@ -386,7 +390,7 @@ main {
   animation: rot55 0.9s linear infinite; /* Slightly slower animation */
 }
 
-.ai-spinner-inner {
+.ai-spinner-inner { /* Renamed from .spinnerin to avoid conflict */
   border: 3px solid hsl(var(--border));  /* Thicker border */
   width: 3em; /* Increased size */
   height: 3em; /* Increased size */
@@ -402,6 +406,7 @@ main {
     transform: rotate(360deg);
   }
 }
+
 
 /* Codepen Button (Download PDF in ObjectAnalysisCard) */
 .codepen-button {
@@ -674,7 +679,7 @@ main {
   justify-content: center;
   align-items: center;
   width: 100%;
-  min-height: calc(100vh - 150px); /* Adjust based on header/footer height */
+ /* min-height: calc(100vh - 150px); /* Adjust based on header/footer height */
   padding: 20px;
 }
 
@@ -689,7 +694,7 @@ main {
 .auth-card-yashasvi-inner {
   border-radius: 0; /* Will be overridden by parent's border-radius effectively */
   transition: all 0.2s;
-  background-color: #1a1a1a; /* Form background */
+  background-color: hsl(var(--card)); /* Form background, use theme card color */
   border-radius: 20px; /* Inner radius */
   padding: 1px; /* For border gradient effect if parent has padding */
 }
@@ -708,7 +713,7 @@ main {
   flex-direction: column;
   gap: 15px; /* Adjusted gap */
   padding: 2em; /* Adjusted padding */
-  background-color: #171717; /* Form background, matches original */
+  background-color: hsl(var(--card)); /* Form background, matches inner card, use theme */
   border-radius: 20px; /* Matches inner card */
   transition: 0.4s ease-in-out;
 }
@@ -716,7 +721,7 @@ main {
 .auth-heading-yashasvi {
   text-align: center;
   margin: 1em 0; /* Adjusted margin */
-  color: rgb(255, 255, 255);
+  color: hsl(var(--card-foreground)); /* Use theme card foreground */
   font-size: 1.5em; /* Adjusted size */
   font-weight: 600;
 }
@@ -730,15 +735,15 @@ main {
   padding: 0.8em 1em; /* Adjusted padding */
   border: none;
   outline: none;
-  color: white;
-  background-color: #212121; /* Darker field background */
-  box-shadow: inset 2px 5px 10px rgb(5, 5, 5);
+  color: hsl(var(--input-foreground)); /* Use theme input foreground */
+  background-color: hsl(var(--input)); /* Darker field background from theme */
+  box-shadow: inset 2px 5px 10px hsla(var(--card-hsl-values), 0.5); /* Adjusted shadow */
 }
 
 .auth-input-icon-yashasvi {
   height: 1.3em;
   width: 1.3em;
-  fill: white;
+  fill: hsl(var(--input-foreground)); /* Use theme input foreground */
 }
 
 .auth-input-field-yashasvi {
@@ -746,11 +751,11 @@ main {
   border: none;
   outline: none;
   width: 100%;
-  color: #d3d3d3;
+  color: hsl(var(--input-foreground)); /* Use theme input foreground */
   font-size: 0.9rem; /* Adjusted size */
 }
 .auth-input-field-yashasvi::placeholder {
-  color: #777; /* Darker placeholder */
+  color: hsl(var(--muted-foreground)); /* Darker placeholder from theme */
 }
 
 
@@ -767,8 +772,8 @@ main {
   border: none;
   outline: none;
   transition: 0.3s ease-in-out;
-  background-color: #2f2f2f; /* Slightly lighter button */
-  color: white;
+  background-color: hsl(var(--primary)); /* Use theme primary for main action */
+  color: hsl(var(--primary-foreground)); /* Use theme primary foreground */
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -776,19 +781,19 @@ main {
   text-align: center;
 }
 .auth-button-yashasvi:hover {
-  background-color: #00C472; /* Brighter green from gradient on hover */
-  color: #171717; /* Dark text on hover */
+  background-color: hsla(var(--primary-hsl-values), 0.8); /* Slightly darker primary on hover */
+  color: hsl(var(--primary-foreground)); 
 }
 
 .auth-button-yashasvi.signup-link { /* Specific for "Sign Up" / "Sign In" link-like button */
   background-color: transparent;
-  color: #00C472; /* Green text */
+  color: hsl(var(--primary)); /* Primary color text */
   padding: 0.7em 0.5em;
   font-weight: normal;
 }
 .auth-button-yashasvi.signup-link:hover {
   background-color: transparent;
-  color: #00ff75; /* Brighter green on hover */
+  color: hsla(var(--primary-hsl-values), 0.8); /* Brighter primary on hover */
   text-decoration: underline;
 }
 
@@ -807,7 +812,7 @@ main {
   height: 40px; 
   border-radius: 50%;
   border: none;
-  background-color: hsla(var(--card-hsl-values), 0.5);
+  background-color: hsla(var(--card-hsl-values), 0.8); /* Adjusted for visibility on theme */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -945,6 +950,133 @@ main {
   margin-bottom: 1rem;
 }
 
+/* Custom 3D Room Card (Kennyotsu) - Prefixed */
+.room-card-3d-wrapper {
+  position: relative;
+  width: 280px; /* Increased width */
+  height: 374px; /* Adjusted height to maintain aspect ratio */
+  transition: 200ms;
+  margin: auto; /* Helps with grid centering if items are smaller than grid cells */
+}
+
+.room-card-3d-wrapper:active {
+  width: 270px; /* Adjusted */
+  height: 365px; /* Adjusted */
+}
+
+.room-card-3d-canvas {
+  perspective: 800px;
+  inset: 0;
+  z-index: 1; /* Ensure canvas is above its own wrapper's base, but content can be higher */
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 0px 0px;
+  grid-template-areas:
+    "tr-1 tr-2 tr-3 tr-4 tr-5"
+    "tr-6 tr-7 tr-8 tr-9 tr-10"
+    "tr-11 tr-12 tr-13 tr-14 tr-15"
+    "tr-16 tr-17 tr-18 tr-19 tr-20"
+    "tr-21 tr-22 tr-23 tr-24 tr-25";
+}
+
+.room-card-3d-interactive-area { /* Formerly #card */
+  position: absolute;
+  inset: 0;
+  z-index: 0; /* Behind trackers for hover, but above its ::before */
+  display: flex; /* Changed from grid to flex for internal layout */
+  flex-direction: column;
+  justify-content: space-between; /* For header/content/footer arrangement */
+  align-items: stretch; /* Make children take full width */
+  border-radius: 20px;
+  transition: transform 700ms, box-shadow 300ms;
+  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
+  overflow: hidden; /* To contain rounded corners of children */
+}
+
+.room-card-3d-wrapper:hover .room-card-3d-interactive-area {
+  box-shadow: 0 0 25px 10px hsla(var(--primary-hsl-values), 0.4); /* Blue glow */
+}
+
+.room-card-3d-interactive-area::before {
+  content: '';
+  background: linear-gradient(43deg, hsl(var(--primary)) 0%, #1a1a1a 46%, #000000 100%);
+  filter: blur(2rem);
+  opacity: 0.3;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  z-index: -1;
+  transition: opacity 200ms;
+}
+
+.room-card-3d-wrapper:hover .room-card-3d-interactive-area::before {
+  opacity: 0.8;
+}
+
+.room-card-3d-tracker {
+  position: absolute;
+  z-index: 2; /* Trackers must be above the interactive area to trigger CSS hover transforms on it */
+  width: 100%;
+  height: 100%;
+}
+
+.room-card-3d-tracker:hover {
+  cursor: pointer;
+}
+
+.room-card-3d-tracker:hover ~ .room-card-3d-interactive-area {
+  transition-duration: 125ms; /* Keep fast transition for transform */
+  filter: brightness(1.1);
+}
+
+/* Specific tracker hover transforms */
+.tr-1:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-2:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-3:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
+.tr-4:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
+.tr-5:hover ~ .room-card-3d-interactive-area { transform: rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
+.tr-6:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-7:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-8:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
+.tr-9:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
+.tr-10:hover ~ .room-card-3d-interactive-area { transform: rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
+.tr-11:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-12:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-13:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+.tr-14:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
+.tr-15:hover ~ .room-card-3d-interactive-area { transform: rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
+.tr-16:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-17:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-18:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
+.tr-19:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
+.tr-20:hover ~ .room-card-3d-interactive-area { transform: rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
+.tr-21:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
+.tr-22:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
+.tr-23:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
+.tr-24:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
+.tr-25:hover ~ .room-card-3d-interactive-area { transform: rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
+
+/* Tracker grid areas */
+.tr-1 { grid-area: tr-1; } .tr-2 { grid-area: tr-2; } .tr-3 { grid-area: tr-3; } .tr-4 { grid-area: tr-4; } .tr-5 { grid-area: tr-5; }
+.tr-6 { grid-area: tr-6; } .tr-7 { grid-area: tr-7; } .tr-8 { grid-area: tr-8; } .tr-9 { grid-area: tr-9; } .tr-10 { grid-area: tr-10; }
+.tr-11 { grid-area: tr-11; } .tr-12 { grid-area: tr-12; } .tr-13 { grid-area: tr-13; } .tr-14 { grid-area: tr-14; } .tr-15 { grid-area: tr-15; }
+.tr-16 { grid-area: tr-16; } .tr-17 { grid-area: tr-17; } .tr-18 { grid-area: tr-18; } .tr-19 { grid-area: tr-19; } .tr-20 { grid-area: tr-20; }
+.tr-21 { grid-area: tr-21; } .tr-22 { grid-area: tr-22; } .tr-23 { grid-area: tr-23; } .tr-24 { grid-area: tr-24; } .tr-25 { grid-area: tr-25; }
+
+.noselect {
+  -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+}
+
+/* Ensure interactive elements inside the 3D card content area are prioritized for clicks if possible. */
+.room-card-3d-interactive-area button,
+.room-card-3d-interactive-area a {
+  position: relative; /* Establish new stacking context or allow z-index */
+  z-index: 5; /* Higher than the trackers implicitly if the event reaches this far */
+}
+
 /* End of globals.css content */
 
     
+

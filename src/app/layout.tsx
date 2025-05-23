@@ -1,21 +1,21 @@
 
 import type { Metadata } from "next";
-import { Geist_Sans as Geist, Geist_Mono } from "next/font/google"; 
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { GlobalLoader } from "@/components/layout/GlobalLoader";
 import { AppRouterEvents } from "@/components/layout/AppRouterEvents";
-import { GlobalAiAnalysisLoader } from "@/components/layout/GlobalAiAnalysisLoader"; // Ensure this import is correct
+import { GlobalAiAnalysisLoader } from "@/components/layout/GlobalAiAnalysisLoader";
 
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
   subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -31,13 +31,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${robotoMono.variable} antialiased`}
       >
         <Providers>
-          <AppRouterEvents /> 
-          <GlobalLoader /> 
+          <AppRouterEvents />
+          <GlobalLoader />
           <GlobalAiAnalysisLoader />
-          {children}
+          {children} {/* Ensure children are rendered here */}
         </Providers>
       </body>
     </html>
