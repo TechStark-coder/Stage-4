@@ -42,15 +42,22 @@ const prompt = ai.definePrompt({
 Your task is to analyze the provided images of a room with extreme attention to detail.
 You must identify and list the name of *every single distinct item* visible in the photos. This includes small items, decorative objects, items in the background, items partially obscured, etc. Be exhaustive, highly accurate, and comprehensive.
 
-IMPORTANT - INDIVIDUAL ITEM IDENTIFICATION:
-You must list every single item separately. Do not summarize or group items.
-For collections of similar items (e.g., multiple 'toy figurines', 'Funko Pop figures', 'books', 'tools'):
-1. List each item individually.
-2. If an item's specific name, character, or title is legible or clearly identifiable, use that specific identifier. For instance, instead of just 'Funko Pop figure', list 'Spider-Man Funko Pop figure', 'Batman Funko Pop figure', etc. For books, if titles are visible, list 'The Great Gatsby book', 'Moby Dick book'.
-3. If the specific name is NOT clear, but the item is still distinct, list the item individually by its general category or a brief description (e.g., 'red toy car', 'unidentified Funko Pop figure', 'small blue figurine'). For example, if you see three Funko Pop figures, and can only identify one as 'Batman Funko Pop figure', your list should include 'Batman Funko Pop figure', 'Funko Pop figure', 'Funko Pop figure'.
-Do NOT simply state "multiple toy figurines" or count them. Each distinct physical object should result in a separate entry in the list of names.
+CRITICAL INSTRUCTIONS FOR IDENTIFYING MULTIPLE SIMILAR ITEMS (e.g., Funko Pops, figurines, books, tools):
 
-Your output must be a list of object names only. Do not provide descriptions, counts, or any other information beyond the names of the identified items.
+1.  **INDIVIDUAL LISTING IS MANDATORY:** Each physically distinct item MUST be listed as a separate entry in the 'objectNames' array. Do NOT group them (e.g., do not say "three Funko Pop figures").
+
+2.  **SPECIFIC IDENTIFICATION FIRST:** If an item's specific name, character, title, or unique identifier (like a specific model of a car or brand of a tool) is legible or clearly visually identifiable from its features, you MUST use that specific identifier in its name.
+    *   Example: If you see three Funko Pop figures, and one is clearly Batman and another is Superman, list them as "Batman Funko Pop figure", "Superman Funko Pop figure".
+    *   Example: For books, if titles are visible, list them like "The Great Gatsby book", "Moby Dick book".
+
+3.  **VISUAL DIFFERENTIATION IF NAME IS UNKNOWN:** If the specific name/character/title is NOT clear or identifiable, you **MUST STILL LIST THE ITEM INDIVIDUALLY**. To differentiate it from other similar items whose specific names are also unknown, add a brief, unique visual descriptor based on color, shape, pose, or any other noticeable feature if possible.
+    *   Continuing the Funko Pop example: If the third Funko Pop figure's character is unidentifiable, but it's predominantly red and holding a sword, list it as "red Funko Pop figure holding sword". If it's just a generic shape you can't name but is distinct from others, list it as "unidentified Funko Pop figure with blue hat" or "small green figurine with wings".
+    *   **IT IS NOT ACCEPTABLE TO SIMPLY REPEAT THE GENERIC CATEGORY NAME** (e.g., listing "Funko Pop figure" ten times) if the items are visually distinct entities in the image. You must attempt to provide *some* distinguishing feature in the name.
+    *   If, and only if, multiple items are truly visually indistinguishable from each other (e.g., five identical plain, unmarked screws of the same size), then listing the generic name multiple times (e.g., "screw", "screw", "screw", "screw", "screw") is acceptable. But for items like figurines or collectibles, this is rare.
+
+4.  **BE EXHAUSTIVE:** Each distinct physical object should result in a separate entry in the list of object names. Your goal is a comprehensive inventory of individual items.
+
+Your output must be a JSON object with a single key "objectNames" which is an array of strings (the names of the identified items). Do not provide descriptions, counts, or any other information beyond this array of names.
 
 {{#each photoDataUris}}
 Photo {{@index}}:
