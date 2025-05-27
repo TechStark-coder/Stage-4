@@ -42,7 +42,13 @@ const prompt = ai.definePrompt({
 Your task is to analyze the provided images of a room with extreme attention to detail.
 You must identify and list the name of *every single distinct item* visible in the photos. This includes small items, decorative objects, items in the background, items partially obscured, etc. Be exhaustive, highly accurate, and comprehensive.
 
-IMPORTANT: If you identify a collection of similar items that are individually recognizable (e.g., a shelf of 'Funko Pop figures', 'action figures', 'books', 'comic books', 'video games', 'trading cards'), make your best effort to list each one by its specific name, character, or title if it's legible or visually identifiable. For example, instead of just listing 'Funko Pop figures' multiple times or as a group, try to identify them as 'Spider-Man Funko Pop figure', 'Batman Funko Pop figure', 'Wonder Woman Funko Pop figure'. Similarly, for books, if titles are visible, list them individually like 'The Great Gatsby book', 'Moby Dick book'.
+IMPORTANT - INDIVIDUAL ITEM IDENTIFICATION:
+You must list every single item separately. Do not summarize or group items.
+For collections of similar items (e.g., multiple 'toy figurines', 'Funko Pop figures', 'books', 'tools'):
+1. List each item individually.
+2. If an item's specific name, character, or title is legible or clearly identifiable, use that specific identifier. For instance, instead of just 'Funko Pop figure', list 'Spider-Man Funko Pop figure', 'Batman Funko Pop figure', etc. For books, if titles are visible, list 'The Great Gatsby book', 'Moby Dick book'.
+3. If the specific name is NOT clear, but the item is still distinct, list the item individually by its general category or a brief description (e.g., 'red toy car', 'unidentified Funko Pop figure', 'small blue figurine'). For example, if you see three Funko Pop figures, and can only identify one as 'Batman Funko Pop figure', your list should include 'Batman Funko Pop figure', 'Funko Pop figure', 'Funko Pop figure'.
+Do NOT simply state "multiple toy figurines" or count them. Each distinct physical object should result in a separate entry in the list of names.
 
 Your output must be a list of object names only. Do not provide descriptions, counts, or any other information beyond the names of the identified items.
 
@@ -63,3 +69,4 @@ const describeRoomObjectsFlow = ai.defineFlow(
     return output;
   }
 );
+
