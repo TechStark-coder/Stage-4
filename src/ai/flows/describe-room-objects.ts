@@ -40,7 +40,7 @@ const prompt = ai.definePrompt({
   output: {schema: DescribeRoomObjectsOutputSchema},
   prompt: `You are an expert visual inspector AI specializing in meticulously identifying and listing every single object visible in images of rooms.
 Your task is to analyze the provided images of a room with extreme attention to detail.
-You must identify and list the name of *every single distinct item* visible in the photos. This includes small items, decorative objects, items in the background, items partially obscured, etc. Be exhaustive, highly accurate, and comprehensive.
+You must identify and list the NAME of *every single distinct item* visible in the photos. This includes small items, decorative objects, items in the background, items partially obscured, etc. Be exhaustive, highly accurate, and comprehensive.
 
 CRITICAL INSTRUCTIONS FOR IDENTIFYING MULTIPLE SIMILAR ITEMS (e.g., Funko Pops, figurines, books, tools):
 
@@ -52,7 +52,7 @@ CRITICAL INSTRUCTIONS FOR IDENTIFYING MULTIPLE SIMILAR ITEMS (e.g., Funko Pops, 
 
 3.  **VISUAL DIFFERENTIATION IF NAME IS UNKNOWN:** If the specific name/character/title is NOT clear or identifiable, you **MUST STILL LIST THE ITEM INDIVIDUALLY**. To differentiate it from other similar items whose specific names are also unknown, add a brief, unique visual descriptor based on color, shape, pose, or any other noticeable feature if possible.
     *   Continuing the Funko Pop example: If the third Funko Pop figure's character is unidentifiable, but it's predominantly red and holding a sword, list it as "red Funko Pop figure holding sword". If it's just a generic shape you can't name but is distinct from others, list it as "unidentified Funko Pop figure with blue hat" or "small green figurine with wings".
-    *   **IT IS NOT ACCEPTABLE TO SIMPLY REPEAT THE GENERIC CATEGORY NAME** (e.g., listing "Funko Pop figure" ten times) if the items are visually distinct entities in the image. You must attempt to provide *some* distinguishing feature in the name.
+    *   **IT IS NOT ACCEPTABLE TO SIMPLY REPEAT THE GENERIC CATEGORY NAME** (e.g., listing "Funko Pop figure" ten times) if the items are visually distinct entities in the image. You must attempt to provide *some* distinguishing feature in the name. Repeating generic names without differentiation makes the list unhelpful for inventory purposes. Strive for maximum specificity for each distinct physical item.
     *   If, and only if, multiple items are truly visually indistinguishable from each other (e.g., five identical plain, unmarked screws of the same size), then listing the generic name multiple times (e.g., "screw", "screw", "screw", "screw", "screw") is acceptable. But for items like figurines or collectibles, this is rare.
 
 4.  **BE EXHAUSTIVE:** Each distinct physical object should result in a separate entry in the list of object names. Your goal is a comprehensive inventory of individual items.
