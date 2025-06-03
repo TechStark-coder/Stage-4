@@ -128,12 +128,12 @@ export default function HomeDetailPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => (
-            <RoomCard 
-              key={room.id} 
-              room={room} 
-              homeId={homeId} 
-              onRoomDeleted={fetchHomeAndRooms} 
-              onRoomUpdated={fetchHomeAndRooms} // Ensure this prop is passed
+            <RoomCard
+              key={room.id}
+              room={room}
+              homeId={homeId}
+              homeName={home.name} // Pass homeName for PDF title in RoomCard
+              onRoomAction={fetchHomeAndRooms} // Corrected prop name
             />
           ))}
         </div>
