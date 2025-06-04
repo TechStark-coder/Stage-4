@@ -31,11 +31,13 @@ export function NewCustomLoginForm() {
       await signInWithEmail(auth, data);
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: "Redirecting to your dashboard...",
       });
+      sessionStorage.setItem("showWelcomeOnLoad", "true");
+      sessionStorage.setItem("lastAuthAction", "login");
       router.push("/dashboard");
       // hideLoader() will be handled by AppRouterEvents on new page
-    } catch (error: any) { // Added missing opening curly brace here
+    } catch (error: any) { 
       console.error("Login error:", error);
       const invalidCredentialCodes = ["auth/invalid-credential", "auth/user-not-found", "auth/wrong-password", "auth/invalid-email"];
       if (invalidCredentialCodes.includes(error.code) || (error.message && error.message.includes("invalid-credential"))) {
@@ -127,7 +129,6 @@ export function NewCustomLoginForm() {
                 <button type="button" className="auth-button-yashasvi signup-link">Sign Up</button>
               </Link>
             </div>
-            {/* "Forgot Password" button removed as per request */}
           </form>
         </div>
       </div>

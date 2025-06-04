@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getHomes } from "@/lib/firestore";
 import type { Home } from "@/types";
@@ -10,14 +10,15 @@ import { CreateHomeDialog } from "@/components/dashboard/CreateHomeDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { Home as HomeIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
   const [homes, setHomes] = useState<Home[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast(); // Initialize useToast
 
-  // Renamed from fetchHomes to handleHomesUpdated for clarity
-  const handleHomesUpdated = async () => {
+  const handleHomesUpdated = useCallback(async () => {
     if (user) {
       setLoading(true);
       try {
@@ -25,16 +26,51 @@ export default function DashboardPage() {
         setHomes(userHomes);
       } catch (error) {
         console.error("Failed to fetch homes:", error);
-        // Optionally, show a toast message
+        // Optionally, show a toast message for fetch error
       } finally {
         setLoading(false);
       }
+    } else {
+      // If no user, ensure homes are cleared and not loading
+      setHomes([]);
+      setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    handleHomesUpdated();
-  }, [user]);
+    if (user) {
+      // Welcome message logic
+      const shouldShowWelcome = sessionStorage.getItem("showWelcomeOnLoad");
+      if (shouldShowWelcome === "true") {
+        const lastAuthAction = sessionStorage.getItem("lastAuthAction");
+        const userName = user.displayName || user.email?.split('@')[0] || "User";
+        let toastTitle = "Welcome Back!";
+        let toastDescription = `Hello ${userName}, let's manage your homes.`;
+
+        if (lastAuthAction === "signup") {
+          toastTitle = "Welcome to HomieStan!";
+          toastDescription = `Great to have you, ${userName}! Get started by creating your first home.`;
+        }
+
+        toast({
+          title: toastTitle,
+          description: toastDescription,
+          duration: 7000, 
+        });
+
+        sessionStorage.removeItem("showWelcomeOnLoad");
+        sessionStorage.removeItem("lastAuthAction");
+      }
+      // Fetch homes
+      handleHomesUpdated();
+    } else {
+      // Handle case where user logs out or session expires
+      // (though AppLayout usually redirects, this is a safeguard)
+      setLoading(false);
+      setHomes([]);
+    }
+  }, [user, toast, handleHomesUpdated]);
+
 
   if (loading) {
     return (
