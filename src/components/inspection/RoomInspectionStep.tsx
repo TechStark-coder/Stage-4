@@ -4,7 +4,7 @@
 import * as React from 'react';
 import type { Room, RoomInspectionReportData, InspectionDiscrepancy } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Added this import
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, CheckCircle, AlertTriangle, UploadCloud, Sparkles, ImagePlus, XCircle, RefreshCw } from 'lucide-react';
@@ -35,6 +35,16 @@ interface RoomInspectionStepProps {
 
 const MAX_PHOTOS_PER_ROOM = 5;
 
+// Helper function to convert File to Data URI
+const fileToDataUri = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 export function RoomInspectionStep({
   homeId,
   room,
@@ -45,7 +55,6 @@ export function RoomInspectionStep({
 }: RoomInspectionStepProps) {
   const [photos, setPhotos] = React.useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = React.useState<string[]>([]);
-  const [isCapturing, setIsCapturing] = React.useState(false); // If using direct camera capture UI
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
   const [analysisResult, setAnalysisResult] = React.useState<IdentifyDiscrepanciesOutput | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -114,7 +123,6 @@ export function RoomInspectionStep({
     setPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
     setPhotoPreviews(prev => {
       const newPreviews = prev.filter((_,i) => i !== indexToRemove);
-      // It's good practice to revoke object URLs when they are no longer needed
       if (photoPreviews[indexToRemove]) {
         URL.revokeObjectURL(photoPreviews[indexToRemove]);
       }
@@ -122,7 +130,6 @@ export function RoomInspectionStep({
     });
   };
   
-  // Camera Logic
   const openCamera = async () => {
     setHasCameraPermission(null);
     setCameraError(null);
@@ -178,9 +185,9 @@ export function RoomInspectionStep({
 
   React.useEffect(() => {
     if (showCameraDialog) openCamera();
-    return () => { // Cleanup
+    return () => { 
       if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-      photoPreviews.forEach(url => URL.revokeObjectURL(url)); // Revoke all on unmount/change
+      photoPreviews.forEach(url => URL.revokeObjectURL(url)); 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCameraDialog]);
@@ -196,23 +203,28 @@ export function RoomInspectionStep({
     setAnalysisResult(null);
 
     try {
-      toast({ title: "Uploading Photos...", description: `Uploading ${photos.length} photo(s) for ${room.name}.`, duration: 2000 });
-      const uploadedPhotoUrls: string[] = [];
+      toast({ title: "Processing Photos...", description: `Preparing ${photos.length} photo(s) for ${room.name}.`, duration: 2000 });
+      
+      // 1. Convert the first photo to Data URI for AI analysis
+      const firstPhotoFile = photos[0];
+      const tenantPhotoDataUriForAI = await fileToDataUri(firstPhotoFile);
+
+      // 2. Upload all photos to Firebase Storage for record-keeping
+      const uploadedPhotoUrlsForReport: string[] = [];
       for (const photo of photos) {
         const uniqueFileName = `inspection_${homeId}_${room.id}_${Date.now()}_${photo.name.replace(/\s+/g, '_')}`;
         const photoPath = `inspectionPhotos/${homeId}/${room.id}/${uniqueFileName}`;
         const sRef = storageRef(storage, photoPath);
         await uploadBytes(sRef, photo);
         const downloadURL = await getDownloadURL(sRef);
-        uploadedPhotoUrls.push(downloadURL);
+        uploadedPhotoUrlsForReport.push(downloadURL);
       }
       toast({ title: "Upload Complete!", description: "Analyzing photos with AI...", duration: 2000 });
 
+      // 3. Call AI with the Data URI of the first photo
       const aiInput: IdentifyDiscrepanciesInput = {
-        tenantPhotoDataUri: uploadedPhotoUrls[0], // Using the first photo for AI comparison for now
-        // To use multiple photos, the AI flow would need to accept an array and be prompted accordingly.
-        // For this demo, simplifying to one primary photo for discrepancy check.
-        expectedItems: room.analyzedObjects || [], // Owner's analysis results
+        tenantPhotoDataUri: tenantPhotoDataUriForAI,
+        expectedItems: room.analyzedObjects || [], 
       };
       const result = await aiIdentifyDiscrepancies(aiInput);
       setAnalysisResult(result);
@@ -220,7 +232,7 @@ export function RoomInspectionStep({
       const reportData: RoomInspectionReportData = {
         roomId: room.id,
         roomName: room.name,
-        tenantPhotoUrls: uploadedPhotoUrls,
+        tenantPhotoUrls: uploadedPhotoUrlsForReport, // Store all uploaded URLs
         discrepancies: result.discrepancies,
         missingItemSuggestionForRoom: result.missingItemSuggestion,
       };
@@ -230,8 +242,21 @@ export function RoomInspectionStep({
 
     } catch (err: any) {
       console.error(`Error during analysis for room ${room.name}:`, err);
-      setError(`Failed to analyze photos for ${room.name}. ${err.message || "Please try again."}`);
-      toast({ title: `Analysis Failed for ${room.name}`, description: err.message || "An unexpected error occurred.", variant: "destructive" });
+      let errorMessage = "An unexpected error occurred.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for specific Genkit/AI related errors vs. upload errors
+      if (errorMessage.includes("storage/")) {
+         setError(`Failed to upload photos for ${room.name}. ${errorMessage}. Please check network and try again.`);
+         toast({ title: `Upload Failed for ${room.name}`, description: errorMessage, variant: "destructive" });
+      } else {
+        setError(`Failed to analyze photos for ${room.name}. ${errorMessage}. Please try again.`);
+        toast({ title: `Analysis Failed for ${room.name}`, description: errorMessage, variant: "destructive" });
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -381,7 +406,7 @@ export function RoomInspectionStep({
               </ul>
             </div>
           ) : (
-             !analysisResult.missingItemSuggestion.toLowerCase().includes("missing") && // Check if suggestion doesn't imply missing items already
+             !analysisResult.missingItemSuggestion.toLowerCase().includes("missing") && 
             <p className="text-sm text-green-600">No major discrepancies found based on the primary photo analysis.</p>
           )}
            {stepCompleted && !error &&
@@ -401,3 +426,5 @@ export function RoomInspectionStep({
     </Card>
   );
 }
+
+    
