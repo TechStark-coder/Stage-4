@@ -54,18 +54,19 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     defaultValues: {
       name: "",
       ownerDisplayName:  "",
-      address: "", // Default for address
+      address: "", 
       coverImage: undefined,
     },
   });
 
   useEffect(() => {
     if (user && open) {
+      // Set ownerDisplayName from user's current profile, or clear if no user
       form.setValue("ownerDisplayName", user.displayName || "");
-      form.setValue("name", ""); // Clear name on open
-      form.setValue("address", ""); // Clear address on open
-      form.setValue("coverImage", undefined); // Clear cover image on open
-      setImagePreview(null); // Clear preview
+      form.setValue("name", ""); 
+      form.setValue("address", ""); 
+      form.setValue("coverImage", undefined); 
+      setImagePreview(null); 
     }
   }, [open, user, form]);
 
@@ -92,20 +93,30 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     }
     showLoader();
     try {
+      // Update user's Firebase Auth profile display name if it has changed in the form
       if (auth.currentUser && data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
         await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
+        // Re-fetch user or update context if display name change should be immediately reflected app-wide
+        // For now, this primarily updates the auth profile.
       }
 
       const homeDataToSubmit: CreateHomeData = { 
         name: data.name,
-        address: data.address || "", 
+        address: data.address || "",
+        // Use the (potentially updated) displayName from the form, or fallback to current user's displayName
+        ownerDisplayName: data.ownerDisplayName || user.displayName || "Home Owner",
       };
       const coverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
       
       const newHomeId = await addHome(user.uid, homeDataToSubmit, coverImageFile);
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", address: "", coverImage: undefined });
+      form.reset({ 
+        name: "", 
+        ownerDisplayName: data.ownerDisplayName || user.displayName || "", // Persist updated name for next dialog open in same session
+        address: "", 
+        coverImage: undefined 
+      });
       setImagePreview(null);
       onHomeCreated(); 
       setOpen(false);
@@ -120,10 +131,6 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
           variant: "destructive",
           duration: 7000,
         });
-         // If image fails but home details are okay, still try to create home and redirect
-        // Assuming addHome can handle coverImageFile being null if quota error occurred during its processing phase
-        // This part might need addHome to return the ID even if image upload partially fails
-        // For now, we assume addHome throws before returning ID if image is the sole issue.
       } else {
         toast({ title: "Failed to Create Home", description: errorMessage, variant: "destructive" });
       }
@@ -135,10 +142,10 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
-      if (!isOpen) {
+      if (!isOpen) { // Reset form when dialog is closed
         form.reset({ name: "", ownerDisplayName: user?.displayName || "", address: "", coverImage: undefined });
         setImagePreview(null);
-      } else if (user) {
+      } else if (user) { // Reset/initialize form when dialog is opened
         form.setValue("ownerDisplayName", user.displayName || "");
         form.setValue("name", "");
         form.setValue("address", "");
@@ -157,7 +164,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <HousePlus className="h-5 w-5" /> Create a New Home
           </DialogTitle>
           <DialogDescription>
-            Enter details for your new home. The cover image will be uploaded.
+            Enter details for your new home.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -198,7 +205,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
               name="ownerDisplayName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Your Name (for welcome message)</FormLabel>
+                  <FormLabel>Your Name (for welcome messages & reports)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Asif Khan" {...field} />
                   </FormControl>
@@ -235,6 +242,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
+                // Explicitly reset with potentially updated user.displayName if dialog was submitted
                 form.reset({ name: "", ownerDisplayName: user?.displayName || "", address: "", coverImage: undefined });
                 setImagePreview(null);
               }}>

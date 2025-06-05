@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db, storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Home, Room, CreateHomeData, CreateRoomData, UpdateHomeData, UpdateRoomData } from "@/types";
+import type { Home, Room, CreateHomeData, CreateRoomData, UpdateHomeData, UpdateRoomData, InspectionReport } from "@/types";
 
 // Helper function to safely delete from Firebase Storage, handling full URLs
 const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
@@ -71,6 +71,7 @@ export async function addHome(
   const homeDataToSave: any = {
     name: data.name,
     ownerId: userId,
+    ownerDisplayName: data.ownerDisplayName || "Home Owner", // Save owner's display name
     createdAt: serverTimestamp(),
   };
 
@@ -100,7 +101,9 @@ export async function updateHome(
   if (data.name !== undefined) {
     updateData.name = data.name;
   }
-  // Handle address update: set if provided, deleteField if null
+  if (data.ownerDisplayName !== undefined) {
+    updateData.ownerDisplayName = data.ownerDisplayName;
+  }
   if (data.address !== undefined) {
     updateData.address = data.address === null ? deleteField() : data.address;
   }
@@ -186,7 +189,7 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
   const docRef = await addDoc(roomsCollectionRef, {
     ...data,
     createdAt: serverTimestamp(),
-    analyzedObjects: null, // Correct initialization
+    analyzedObjects: null, 
     isAnalyzing: false,
     lastAnalyzedAt: null,
     analyzedPhotoUrls: [],
@@ -221,7 +224,7 @@ export async function getRoom(homeId: string, roomId: string): Promise<Room | nu
 export async function updateRoomAnalysisData(
   homeId: string,
   roomId: string,
-  analyzedObjectsData: Array<{ name: string; count: number }>, // Corrected type
+  analyzedObjectsData: Array<{ name: string; count: number }>, 
   newlyUploadedPhotoUrls: string[]
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
@@ -231,7 +234,6 @@ export async function updateRoomAnalysisData(
   if (roomSnap.exists()) {
     const roomData = roomSnap.data() as Room;
     if (roomData.analyzedPhotoUrls && roomData.analyzedPhotoUrls.length > 0) {
-      // Merge and deduplicate photo URLs
       const existingUrls = new Set(roomData.analyzedPhotoUrls);
       newlyUploadedPhotoUrls.forEach(url => existingUrls.add(url));
       allPhotoUrls = Array.from(existingUrls);
@@ -239,7 +241,7 @@ export async function updateRoomAnalysisData(
   }
 
   await updateDoc(roomDocRef, {
-    analyzedObjects: analyzedObjectsData, // Use the correct field name
+    analyzedObjects: analyzedObjectsData, 
     isAnalyzing: false,
     lastAnalyzedAt: serverTimestamp(),
     analyzedPhotoUrls: allPhotoUrls,
@@ -258,7 +260,7 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string): Pro
     }
   }
   await updateDoc(roomDocRef, {
-    analyzedObjects: null, // Correct field name
+    analyzedObjects: null, 
     isAnalyzing: false,
     lastAnalyzedAt: null,
     analyzedPhotoUrls: [], 
@@ -286,4 +288,14 @@ export async function deleteRoom(homeId: string, roomId: string): Promise<void> 
     }
   }
   await deleteDoc(roomDocRef);
+}
+
+// Inspection Reports
+export async function saveInspectionReport(reportData: Omit<InspectionReport, 'id' | 'inspectionDate'>): Promise<string> {
+  const inspectionsCollectionRef = collection(db, "inspections");
+  const docRef = await addDoc(inspectionsCollectionRef, {
+    ...reportData,
+    inspectionDate: serverTimestamp(),
+  });
+  return docRef.id;
 }

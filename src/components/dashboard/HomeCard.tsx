@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2 } from "lucide-react"; // Added MapPin
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, Link2, Copy } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
+import * as React from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,21 @@ interface HomeCardProps {
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
+  const [copied, setCopied] = React.useState(false);
+
+  const inspectionLink = typeof window !== 'undefined' ? `${window.location.origin}/inspect/${home.id}` : '';
+
+  const handleCopyLink = () => {
+    if (!inspectionLink) return;
+    navigator.clipboard.writeText(inspectionLink).then(() => {
+      setCopied(true);
+      toast({ title: "Link Copied!", description: "Inspection link copied to clipboard."});
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error("Failed to copy link:", err);
+      toast({ title: "Copy Failed", description: "Could not copy link.", variant: "destructive"});
+    });
+  };
 
   const handleDelete = async () => {
     showLoader();
@@ -86,7 +102,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             )}
         </div>
       </CardHeader>
-      <CardContent className="flex-grow pt-2 p-4">
+      <CardContent className="flex-grow pt-2 p-4 space-y-2">
         {home.address ? (
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
@@ -96,6 +112,23 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           <p className="text-sm text-muted-foreground italic">
             No address provided.
           </p>
+        )}
+        {inspectionLink && (
+          <div className="pt-2">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Inspection Link:</p>
+            <div className="flex items-center gap-2">
+              <input 
+                type="text" 
+                value={inspectionLink} 
+                readOnly 
+                className="flex-grow p-1.5 text-xs border rounded-md bg-input/50 text-foreground/80 h-8"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <Button variant="outline" size="sm" onClick={handleCopyLink} className="h-8 px-2.5">
+                {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
         )}
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-2 pt-4 p-4 border-t">

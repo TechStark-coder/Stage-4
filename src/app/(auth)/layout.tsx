@@ -16,7 +16,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             height={45}
             priority
             className="object-contain"
-            unoptimized // Add if optimization causes issues with Firebase Storage URLs
           />
         </Link>
         <p className="text-muted-foreground">
