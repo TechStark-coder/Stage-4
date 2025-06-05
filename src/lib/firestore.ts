@@ -14,7 +14,7 @@ import {
   Timestamp,
   writeBatch,
   setDoc,
-  deleteField, // Import deleteField
+  deleteField,
 } from "firebase/firestore";
 import { db, storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -26,13 +26,10 @@ const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
   let storageRefPath: string;
 
   if (fileUrlOrPath.startsWith('gs://') || !fileUrlOrPath.includes('firebasestorage.googleapis.com')) {
-    // Assume it's already a gs:// path or a direct path
     storageRefPath = fileUrlOrPath;
   } else {
-    // It's an HTTPS URL, extract the path
     try {
       const url = new URL(fileUrlOrPath);
-      // Path is usually after /o/ and before ?alt=media
       const pathWithBucket = url.pathname.substring(url.pathname.indexOf('/o/') + 3);
       storageRefPath = decodeURIComponent(pathWithBucket.split('?')[0]);
     } catch (error) {
@@ -61,7 +58,7 @@ export async function addHome(
   coverImageFile?: File | null
 ): Promise<string> {
   const homesCollectionRef = collection(db, "homes");
-  const newHomeRef = doc(homesCollectionRef); // Generate ID upfront
+  const newHomeRef = doc(homesCollectionRef); 
 
   let coverImageUrl: string | undefined = undefined;
   if (coverImageFile && userId) {
@@ -71,13 +68,20 @@ export async function addHome(
     coverImageUrl = await getDownloadURL(imageStorageRef);
   }
 
-  await setDoc(newHomeRef, {
+  const homeDataToSave: any = {
     name: data.name,
-    description: data.description || "", // Save description
     ownerId: userId,
     createdAt: serverTimestamp(),
-    ...(coverImageUrl && { coverImageUrl }),
-  });
+  };
+
+  if (data.address) {
+    homeDataToSave.address = data.address;
+  }
+  if (coverImageUrl) {
+    homeDataToSave.coverImageUrl = coverImageUrl;
+  }
+
+  await setDoc(newHomeRef, homeDataToSave);
   return newHomeRef.id;
 }
 
@@ -92,16 +96,14 @@ export async function updateHome(
   if (!homeSnap.exists()) throw new Error("Home not found for update");
   const currentHomeData = homeSnap.data() as Home;
 
-  const updateData: any = {}; // Use any to allow deleteField
+  const updateData: any = {};
   if (data.name !== undefined) {
     updateData.name = data.name;
   }
-  if (data.description !== undefined) {
-    updateData.description = data.description === null ? deleteField() : data.description;
-  } else if (data.description === null) { // Explicitly clear if null
-    updateData.description = deleteField();
+  // Handle address update: set if provided, deleteField if null
+  if (data.address !== undefined) {
+    updateData.address = data.address === null ? deleteField() : data.address;
   }
-
 
   if (newCoverImageFile && userId) {
     if (currentHomeData.coverImageUrl) {
@@ -154,7 +156,6 @@ export async function deleteHome(homeId: string): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
   const homeSnap = await getDoc(homeDocRef);
 
-  // Delete associated images from Firebase Storage
   if (homeSnap.exists()) {
     const homeData = homeSnap.data() as Home;
     if (homeData.coverImageUrl) {
@@ -162,7 +163,6 @@ export async function deleteHome(homeId: string): Promise<void> {
     }
   }
 
-  // Delete rooms and their associated images
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
   const batch = writeBatch(db);
@@ -177,7 +177,6 @@ export async function deleteHome(homeId: string): Promise<void> {
   }
   await batch.commit();
 
-  // Delete the home document itself
   await deleteDoc(homeDocRef);
 }
 
@@ -187,10 +186,10 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
   const docRef = await addDoc(roomsCollectionRef, {
     ...data,
     createdAt: serverTimestamp(),
-    objectNames: null,
+    analyzedObjects: null, // Correct initialization
     isAnalyzing: false,
     lastAnalyzedAt: null,
-    analyzedPhotoUrls: [], // Initialize as empty array
+    analyzedPhotoUrls: [],
   });
   return docRef.id;
 }
@@ -222,15 +221,28 @@ export async function getRoom(homeId: string, roomId: string): Promise<Room | nu
 export async function updateRoomAnalysisData(
   homeId: string,
   roomId: string,
-  objectNames: string[],
-  analyzedPhotoUrls: string[]
+  analyzedObjectsData: Array<{ name: string; count: number }>, // Corrected type
+  newlyUploadedPhotoUrls: string[]
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
+  const roomSnap = await getDoc(roomDocRef);
+  let allPhotoUrls = newlyUploadedPhotoUrls;
+
+  if (roomSnap.exists()) {
+    const roomData = roomSnap.data() as Room;
+    if (roomData.analyzedPhotoUrls && roomData.analyzedPhotoUrls.length > 0) {
+      // Merge and deduplicate photo URLs
+      const existingUrls = new Set(roomData.analyzedPhotoUrls);
+      newlyUploadedPhotoUrls.forEach(url => existingUrls.add(url));
+      allPhotoUrls = Array.from(existingUrls);
+    }
+  }
+
   await updateDoc(roomDocRef, {
-    objectNames: objectNames,
+    analyzedObjects: analyzedObjectsData, // Use the correct field name
     isAnalyzing: false,
     lastAnalyzedAt: serverTimestamp(),
-    analyzedPhotoUrls: analyzedPhotoUrls,
+    analyzedPhotoUrls: allPhotoUrls,
   });
 }
 
@@ -246,10 +258,10 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string): Pro
     }
   }
   await updateDoc(roomDocRef, {
-    objectNames: null,
+    analyzedObjects: null, // Correct field name
     isAnalyzing: false,
     lastAnalyzedAt: null,
-    analyzedPhotoUrls: [], // Clear the array
+    analyzedPhotoUrls: [], 
   });
 }
 

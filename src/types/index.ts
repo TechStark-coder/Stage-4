@@ -9,19 +9,19 @@ export interface Home extends FirebaseDocument {
   name: string;
   ownerId: string;
   createdAt: Timestamp;
-  coverImageUrl?: string; // URL from Firebase Storage
-  description?: string; // New optional description field
+  coverImageUrl?: string;
+  address?: string; // Changed from description
 }
 
 export interface CreateHomeData {
   name: string;
-  description?: string; // New optional description field
+  address?: string; // Changed from description
   // coverImageFile is handled in the component, not directly in this type for addHome
 }
 
 export interface UpdateHomeData {
   name?: string;
-  description?: string; // New optional description field
+  address?: string | null; // Changed from description, allow null to clear
   // coverImageFile is handled in the component
 }
 
@@ -30,7 +30,7 @@ export interface Room extends FirebaseDocument {
   name: string;
   homeId?: string; // Optional if rooms collection is directly under homes/{homeId}/rooms
   createdAt: Timestamp;
-  objectNames: string[] | null;
+  analyzedObjects: Array<{ name: string; count: number }> | null; // Updated from objectNames
   isAnalyzing?: boolean;
   lastAnalyzedAt?: Timestamp | null;
   analyzedPhotoUrls?: string[]; // URLs from Firebase Storage
@@ -43,3 +43,4 @@ export interface CreateRoomData {
 export interface UpdateRoomData {
   name?: string;
 }
+
