@@ -28,16 +28,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useLoader } from "@/contexts/LoaderContext";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 interface CreateRoomDialogProps {
   homeId: string;
-  onRoomCreated: () => void;
+  onRoomCreated: () => void; // This can still be used for other purposes like refetching if needed elsewhere
 }
 
 export function CreateRoomDialog({ homeId, onRoomCreated }: CreateRoomDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
+  const router = useRouter(); // Initialize useRouter
+
   const form = useForm<CreateRoomFormData>({
     resolver: zodResolver(createRoomSchema),
     defaultValues: {
@@ -48,11 +51,12 @@ export function CreateRoomDialog({ homeId, onRoomCreated }: CreateRoomDialogProp
   async function onSubmit(data: CreateRoomFormData) {
     showLoader();
     try {
-      await addRoom(homeId, data);
+      const newRoomId = await addRoom(homeId, data); // Capture newRoomId
       toast({ title: "Room Created", description: `Room "${data.name}" has been successfully added.` });
       form.reset();
-      onRoomCreated();
+      onRoomCreated(); // Call original callback if needed
       setOpen(false);
+      router.push(`/homes/${homeId}/rooms/${newRoomId}`); // Redirect to the new room's page
     } catch (error: any) {
       toast({ title: "Failed to Create Room", description: error.message, variant: "destructive" });
     } finally {

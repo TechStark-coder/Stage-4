@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -35,9 +35,10 @@ import type { CreateHomeData } from "@/types";
 import { updateProfile } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { useLoader } from "@/contexts/LoaderContext";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 interface CreateHomeDialogProps {
-  onHomeCreated: () => void;
+  onHomeCreated: () => void; // This can still be used for other purposes like refetching if needed elsewhere
 }
 
 export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
@@ -46,13 +47,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   const { user } = useAuthContext();
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
+  const router = useRouter(); // Initialize useRouter
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: "",
       ownerDisplayName:  "",
-      description: "", // Add description default
+      address: "", // Updated from description
       coverImage: undefined,
     },
   });
@@ -88,34 +90,32 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     try {
       if (auth.currentUser && data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
         await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
-         // Re-fetch user or update context if needed for immediate UI update of name
       }
 
       const homeDataToSubmit: CreateHomeData = { 
         name: data.name,
-        description: data.description || "", // Include description
+        address: data.address || "", // Updated from description
       };
       const coverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
       
-      await addHome(user.uid, homeDataToSubmit, coverImageFile);
+      const newHomeId = await addHome(user.uid, homeDataToSubmit, coverImageFile); // Capture newHomeId
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", description: "", coverImage: undefined });
+      form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", address: "", coverImage: undefined });
       setImagePreview(null);
-      onHomeCreated();
+      onHomeCreated(); // Call original callback if needed
       setOpen(false);
+      router.push(`/homes/${newHomeId}`); // Redirect to the new home's page
     } catch (error: any) {
       console.error("Failed to create home:", error);
       const errorMessage = error.message || "An unexpected error occurred.";
       if (error.name === 'QuotaExceededError' || (typeof error.message === 'string' && error.message.includes("quota"))) {
         toast({ 
           title: "Image Too Large", 
-          description: "Cover image is too large to save in browser storage. Home created without it.", 
+          description: "Cover image is too large to save. Home created without it.", 
           variant: "destructive",
           duration: 7000,
         });
-         // Still proceed to create home without image or handle as per UX decision
-         // For Firebase Storage, this quota error is less likely for a single image unless it's truly massive
       } else {
         toast({ title: "Failed to Create Home", description: errorMessage, variant: "destructive" });
       }
@@ -128,7 +128,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (!isOpen) {
-        form.reset({ name: "", ownerDisplayName: user?.displayName || "", description: "", coverImage: undefined });
+        form.reset({ name: "", ownerDisplayName: user?.displayName || "", address: "", coverImage: undefined });
         setImagePreview(null);
       } else if (user) {
         form.setValue("ownerDisplayName", user.displayName || "");
@@ -165,13 +165,13 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             />
              <FormField
               control={form.control}
-              name="description"
+              name="address" // Updated from description
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel>Address (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Add address or description for your house"
+                      placeholder="Enter the full address of the home"
                       className="resize-none"
                       {...field}
                       value={field.value ?? ""}
@@ -197,14 +197,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={({ field }) => ( // field is not directly used for value, but for errors etc.
+              render={({ field }) => ( 
                 <FormItem>
                   <FormLabel>Cover Image (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange} // Directly use custom handler
+                      onChange={handleFileChange} 
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>
@@ -223,7 +223,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
-                form.reset({ name: "", ownerDisplayName: user?.displayName || "", description: "", coverImage: undefined });
+                form.reset({ name: "", ownerDisplayName: user?.displayName || "", address: "", coverImage: undefined });
                 setImagePreview(null);
               }}>
                 Cancel
