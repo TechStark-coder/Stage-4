@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, type DragEvent } from "react";
+import { useState, useRef, useEffect, type DragEvent, type FormEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ export function PhotoUploader({
   onPhotosChange
 }: PhotoUploaderProps) {
   const { toast } = useToast();
-  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
+  const { showAiLoader } = useAiAnalysisLoader(); // hideAiLoader removed as it's called in onAnalysisComplete
   const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +65,7 @@ export function PhotoUploader({
 
   const form = useForm<PhotoUploadFormData>({
     resolver: zodResolver(photoUploadSchema),
+    // No defaultValues needed as we manage files separately
   });
 
   const addNewFiles = (newFilesArray: File[]) => {
@@ -175,6 +176,8 @@ export function PhotoUploader({
     }
     setCameraStream(null);
     setShowCameraDialog(false);
+    setHasCameraPermission(null);
+    setCameraError(null);
   };
 
   const handleSnapPhoto = () => {
@@ -204,7 +207,7 @@ export function PhotoUploader({
       openCamera();
     }
     return () => {
-      if (cameraStream) {
+      if (cameraStream) { // Ensure stream is stopped if dialog closes unexpectedly
         cameraStream.getTracks().forEach(track => track.stop());
       }
     };
@@ -212,7 +215,8 @@ export function PhotoUploader({
   }, [showCameraDialog]);
 
 
-  async function onSubmit() {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); // Prevent default form submission
     if (currentPhotos.length === 0) {
       toast({
         title: "No Photos",
@@ -253,7 +257,7 @@ export function PhotoUploader({
       const aiInput: DescribeRoomObjectsInput = { photoDataUris: uploadedImageUrls };
       const result = await describeRoomObjects(aiInput);
       
-      if (result && result.objects) { // Check if result and result.objects are defined
+      if (result && result.objects) {
         aiAnalyzedObjects = result.objects;
         analysisSuccessful = true;
       } else {
@@ -278,14 +282,14 @@ export function PhotoUploader({
       onAnalysisComplete(
         analysisSuccessful, 
         analysisSuccessful ? aiAnalyzedObjects : undefined, 
-        analysisSuccessful ? uploadedImageUrls : []
+        analysisSuccessful ? uploadedImageUrls : [] 
       );
-      hideAiLoader(); 
+      // hideAiLoader(); // This is called by onAnalysisComplete on the page level
     }
   }
 
   return (
-    <Card className="shadow-lg w-full">
+    <Card className="shadow-lg w-full h-full flex flex-col">
       <CardHeader className="p-6">
         <CardTitle className="flex items-center gap-2">
           <UploadCloud className="h-6 w-6 text-primary" /> Manage Room Photos
@@ -295,10 +299,10 @@ export function PhotoUploader({
         </CardDescription>
       </CardHeader>
       <Form {...form}>
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-          <CardContent className="p-6">
+        <form onSubmit={onSubmit} className="flex flex-col flex-grow">
+          <CardContent className="p-6 flex-grow">
             <div 
-              className={`drop-zone ${isDraggingOver ? 'drop-zone-active' : ''}`}
+              className={`h-full flex flex-col justify-center items-center ${isDraggingOver ? 'drop-zone-active' : 'drop-zone'}`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -307,7 +311,7 @@ export function PhotoUploader({
                 control={form.control}
                 name="photos" 
                 render={() => (
-                  <FormItem>
+                  <FormItem className="w-full">
                     <Input
                         id="photos-input"
                         type="file"
@@ -324,7 +328,7 @@ export function PhotoUploader({
                   </FormItem>
                 )}
               />
-              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full px-4 sm:px-0">
                 <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1">
                     <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
                 </Button>
@@ -344,26 +348,32 @@ export function PhotoUploader({
                     <div className="py-4 space-y-4">
                       <video ref={videoRef} autoPlay muted playsInline className="camera-video-preview" />
                       <canvas ref={canvasRef} className="hidden"></canvas>
-                      {hasCameraPermission === false && cameraError && (
+                       {hasCameraPermission === false && cameraError && (
                         <Alert variant="destructive">
+                           <Camera className="h-4 w-4" />
                           <AlertTitle>Camera Access Error</AlertTitle>
                           <AlertDescription>{cameraError}</AlertDescription>
                         </Alert>
                       )}
                        {hasCameraPermission === null && !cameraError && (
-                        <p className="text-center text-muted-foreground">Requesting camera access...</p>
+                         <div className="flex items-center justify-center text-muted-foreground"> 
+                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                           Requesting camera access...
+                         </div>
                       )}
                     </div>
                     <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
                       <Button variant="outline" onClick={closeCamera}>Cancel</Button>
-                      <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false}>Snap Photo</Button>
+                      <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>
+                        Snap Photo
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="p-6">
+          <CardFooter className="p-6 border-t mt-auto">
             <Button 
               type="submit"
               className="w-full"

@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { XCircle, ImageIcon, ImageOff as ImageOffIcon } from "lucide-react"; // Renamed ImageOff to ImageOffIcon to avoid conflict
+import { XCircle, ImageIcon, ImageOff as ImageOffIcon } from "lucide-react"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ImageGalleryProps {
@@ -18,16 +18,15 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
 
   if (!hasPendingPhotos && !hasAnalyzedPhotos) {
     return (
-      <Card className="shadow-lg border-dashed border-muted-foreground/30 bg-card/80">
+      <Card className="shadow-lg border-dashed border-muted-foreground/30 bg-card/80 h-full flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-muted-foreground">
             <ImageIcon className="h-6 w-6" /> Image Previews
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow flex items-center justify-center">
           <p className="text-center text-muted-foreground py-8">
             No photos added for analysis yet. Click "Add Photos" to begin.
-            If analysis was run, results will appear below.
           </p>
         </CardContent>
       </Card>
@@ -35,11 +34,11 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
   }
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ImageIcon className="h-6 w-6 text-primary" /> 
-          {hasPendingPhotos ? `Selected Photos (${pendingPhotos.length})` : "Previously Analyzed Photos"}
+          {hasPendingPhotos ? `Selected Photos (${pendingPhotos.length})` : `Analyzed Photos (${analyzedPhotoUrls.length})`}
         </CardTitle>
         <CardDescription>
           {hasPendingPhotos 
@@ -47,9 +46,9 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
             : "These images were used for the last successful analysis."}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {hasPendingPhotos ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {pendingPhotos.map((file, index) => (
               <div key={`pending-${index}-${file.name}`} className="relative group aspect-square rounded-md overflow-hidden border border-border shadow-sm">
                 <Image
@@ -58,7 +57,7 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
                   layout="fill"
                   objectFit="cover"
                   data-ai-hint="room interior"
-                  onLoad={(e) => { /* URL.revokeObjectURL might be needed in a cleanup effect if many images are added/removed frequently */ }}
+                  onLoad={(e) => { /* Consider revoking ObjectURL in a cleanup if many images are handled */ }}
                 />
                 <Button
                   variant="destructive"
@@ -73,7 +72,7 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
             ))}
           </div>
         ) : hasAnalyzedPhotos ? (
-           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {analyzedPhotoUrls.map((url, index) => (
               <div key={`analyzed-${index}`} className="relative aspect-square rounded-md overflow-hidden border border-border shadow-sm">
                 <Image
@@ -87,8 +86,7 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
             ))}
           </div>
         ) : (
-          // This case should ideally not be reached if the top-level if caught it, but as a fallback:
-          <div className="flex flex-col items-center justify-center text-center py-8 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center text-center py-8 text-muted-foreground h-full">
             <ImageOffIcon className="h-12 w-12 mb-4 opacity-50" />
              <p className="font-medium">No images to display.</p>
              <p className="text-sm">Add photos or check analysis results.</p>
