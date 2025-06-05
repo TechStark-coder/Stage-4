@@ -4,6 +4,7 @@
 import * as React from 'react';
 import type { Room, RoomInspectionReportData, InspectionDiscrepancy } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // Added this import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, CheckCircle, AlertTriangle, UploadCloud, Sparkles, ImagePlus, XCircle, RefreshCw } from 'lucide-react';
@@ -97,7 +98,7 @@ export function RoomInspectionStep({
       }
     } else if (filteredNewFiles.length > 0) {
       setPhotos(prev => [...prev, ...filteredNewFiles]);
-      setPhotoPreviews(prev => [...prev, ...filesToAdd.map(f => URL.createObjectURL(f))]);
+      setPhotoPreviews(prev => [...prev, ...filteredNewFiles.map(f => URL.createObjectURL(f))]);
     }
   };
 
