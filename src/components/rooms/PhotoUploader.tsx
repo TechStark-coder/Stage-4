@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, type DragEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useRef, useEffect, type DragEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { describeRoomObjects, type DescribeRoomObjectsInput } from "@/ai/flows/d
 import { setRoomAnalyzingStatus } from "@/lib/firestore";
 import { photoUploadSchema, type PhotoUploadFormData } from "@/schemas/roomSchemas";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, ImagePlus, Camera, Sparkles } from "lucide-react"; // Added Sparkles
+import { UploadCloud, ImagePlus, Camera, Sparkles, Loader2 } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 import { storage } from "@/config/firebase";
@@ -33,7 +33,7 @@ interface PhotoUploaderProps {
   userId: string;
   onAnalysisComplete: (
     analysisSuccessful: boolean,
-    analyzedObjects?: Array<{ name: string; count: number }>, // Ensure this matches the flow output
+    analyzedObjects?: Array<{ name: string; count: number }>,
     photoUrls?: string[]
   ) => void;
   currentPhotos: File[];
@@ -54,7 +54,6 @@ export function PhotoUploader({
   const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
   const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const analyzeButtonRef = useRef<HTMLButtonElement>(null); // Ref for the animated button
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showCameraDialog, setShowCameraDialog] = useState(false);
@@ -67,25 +66,6 @@ export function PhotoUploader({
   const form = useForm<PhotoUploadFormData>({
     resolver: zodResolver(photoUploadSchema),
   });
-
-  // Effect for animated button's mouse move
-  useEffect(() => {
-    const btn = analyzeButtonRef.current;
-    if (!btn) return;
-
-    const handleMouseMove = (e: globalThis.MouseEvent) => { // Ensure globalThis.MouseEvent for clarity
-      const rect = btn.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      btn.style.setProperty("--x", x + "px");
-      btn.style.setProperty("--y", y + "px");
-    };
-
-    btn.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      btn.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, [isAnalyzingLocal]); // Re-run if button might be re-rendered due to state change
 
   const addNewFiles = (newFilesArray: File[]) => {
     const validImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -272,8 +252,13 @@ export function PhotoUploader({
 
       const aiInput: DescribeRoomObjectsInput = { photoDataUris: uploadedImageUrls };
       const result = await describeRoomObjects(aiInput);
-      aiAnalyzedObjects = result.objects; // Ensure this matches the flow's output schema
-      analysisSuccessful = true;
+      
+      if (result && result.objects) { // Check if result and result.objects are defined
+        aiAnalyzedObjects = result.objects;
+        analysisSuccessful = true;
+      } else {
+        throw new Error("AI analysis did not return the expected object structure.");
+      }
       
     } catch (error: any) {
       console.error("Error during photo upload or AI Analysis:", error);
@@ -311,12 +296,13 @@ export function PhotoUploader({
       </CardHeader>
       <Form {...form}>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-          <CardContent 
-            className={`space-y-6 p-6 drop-zone ${isDraggingOver ? 'drop-zone-active' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
+          <CardContent className="p-6">
+            <div 
+              className={`drop-zone ${isDraggingOver ? 'drop-zone-active' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <FormField
                 control={form.control}
                 name="photos" 
@@ -338,7 +324,7 @@ export function PhotoUploader({
                   </FormItem>
                 )}
               />
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
                 <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1">
                     <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
                 </Button>
@@ -375,18 +361,21 @@ export function PhotoUploader({
                   </DialogContent>
                 </Dialog>
               </div>
+            </div>
           </CardContent>
           <CardFooter className="p-6">
-            <button 
+            <Button 
               type="submit"
-              ref={analyzeButtonRef}
-              className="analyze-button-animated w-full"
+              className="w-full"
               disabled={isAnalyzingLocal || currentPhotos.length === 0}
             >
-              <div className="dots_border"></div>
-              <Sparkles className="sparkle h-5 w-5" /> {/* Using Sparkles from lucide */}
-              <span className="text_button">{isAnalyzingLocal ? "Analyzing..." : "Analyze Images"}</span>
-            </button>
+              {isAnalyzingLocal ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              {isAnalyzingLocal ? "Analyzing..." : "Analyze Images"}
+            </Button>
           </CardFooter>
         </form>
       </Form>

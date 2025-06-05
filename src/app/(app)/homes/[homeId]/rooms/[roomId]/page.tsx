@@ -67,7 +67,7 @@ export default function RoomDetailPage() {
 
   const handleAnalysisComplete = async (
     analysisSuccessful: boolean,
-    analyzedObjects?: Array<{ name: string; count: number }>, // Updated type
+    analyzedObjects?: Array<{ name: string; count: number }>,
     newlyUploadedPhotoUrls?: string[]
   ) => {
     hideAiLoader();
@@ -75,12 +75,13 @@ export default function RoomDetailPage() {
       try {
         await updateRoomAnalysisData(homeId, roomId, analyzedObjects, newlyUploadedPhotoUrls);
         toast({ title: "Analysis Complete", description: "Room analysis results have been updated." });
-        setUploadedPhotos([]); 
+        setUploadedPhotos([]); // Clear pending photos only on successful analysis
       } catch (error) {
         console.error("Error updating room analysis data:", error);
         toast({ title: "Update Error", description: "Failed to save analysis results.", variant: "destructive" });
       }
     }
+    // If analysis failed, uploadedPhotos remains, allowing user to retry or modify.
     fetchRoomDetails(); 
   };
 
