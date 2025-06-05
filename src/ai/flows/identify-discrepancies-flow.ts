@@ -17,7 +17,8 @@ const ExpectedItemSchema = z.object({
   count: z.number().int().positive().describe('The expected count of this item.'),
 });
 
-export const IdentifyDiscrepanciesInputSchema = z.object({
+// REMOVED export from the line below
+const IdentifyDiscrepanciesInputSchema = z.object({
   tenantPhotoDataUri: z
     .string()
     .describe(
@@ -29,7 +30,8 @@ export const IdentifyDiscrepanciesInputSchema = z.object({
 });
 export type IdentifyDiscrepanciesInput = z.infer<typeof IdentifyDiscrepanciesInputSchema>;
 
-export const IdentifyDiscrepanciesOutputSchema = z.object({
+// REMOVED export from the line below
+const IdentifyDiscrepanciesOutputSchema = z.object({
   discrepancies: z
     .array(
       z.object({
@@ -114,3 +116,4 @@ const identifyDiscrepanciesFlow = ai.defineFlow(
 
 // Add this flow to dev.ts
 // import '@/ai/flows/identify-discrepancies-flow.ts';
+
