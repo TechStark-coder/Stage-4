@@ -27,7 +27,7 @@ const DescribeRoomObjectsOutputSchema = z.object({
     .array(
       z.object({
         name: z.string().describe('The name of the distinct object type identified.'),
-        count: z.number().int().positive().describe('The number of times this specific object type appears in the images.'),
+        count: z.number().int().min(1).describe('The number of times this specific object type appears in the images (must be at least 1).'),
       })
     )
     .describe('A list of distinct objects, each with its name and count.'),
@@ -49,7 +49,7 @@ Your task is to analyze the provided images of a room with extreme attention to 
 
 CRITICAL INSTRUCTIONS FOR OBJECT IDENTIFICATION AND COUNTING:
 
-1.  **DISTINCT OBJECT TYPES AND COUNTS:** Your primary goal is to identify *distinct types* of objects. For each distinct type, you must provide its name and the *total count* of how many instances of that specific object type are visible across all provided images.
+1.  **DISTINCT OBJECT TYPES AND COUNTS:** Your primary goal is to identify *distinct types* of objects. For each distinct type, you must provide its name and the *total count* of how many instances of that specific object type are visible across all provided images. The count must be at least 1.
     *   Example: If there are six identical white ceramic plates, your output for this item should be: { "name": "white ceramic plate", "count": 6 }.
     *   Example: If there is one red chair and two blue chairs, your output should include two separate entries: { "name": "red chair", "count": 1 } and { "name": "blue chair", "count": 2 }.
 
