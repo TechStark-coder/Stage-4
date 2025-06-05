@@ -5,7 +5,7 @@ import * as React from 'react';
 import type { Room, RoomInspectionReportData, InspectionDiscrepancy } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'; // Added CardFooter
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, CheckCircle, AlertTriangle, UploadCloud, Sparkles, ImagePlus, XCircle, RefreshCw } from 'lucide-react';
 import type { FirebaseStorage } from 'firebase/storage';
@@ -17,7 +17,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter as DialogModalFooter, // Aliased to avoid conflict with CardFooter if used
+  DialogFooter as DialogModalFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -106,7 +106,7 @@ export function RoomInspectionStep({
         setPhotoPreviews(prev => [...prev, ...filesToAdd.map(f => URL.createObjectURL(f))]);
       }
     } else if (filteredNewFiles.length > 0) {
-      setPhotos(prev => [...prev, ...filesToAdd]);
+      setPhotos(prev => [...prev, ...filteredNewFiles]);
       setPhotoPreviews(prev => [...prev, ...filteredNewFiles.map(f => URL.createObjectURL(f))]);
     }
   };
@@ -228,20 +228,21 @@ export function RoomInspectionStep({
            toast({ title: "Partial Report Photo Save", description: "Some tenant photos could not be saved for the record due to an issue.", variant: "default", duration: 5000 });
         }
       } catch (uploadError: any) {
-        console.warn(`Tenant photo upload failed for room ${room.name}:`, uploadError);
         const uploadErrorMessage = uploadError.message || "An unknown error occurred during photo upload.";
-        const isPermissionError = uploadError.code === 'storage/unauthorized' || (typeof uploadErrorMessage === 'string' && uploadErrorMessage.includes('permission'));
+        const isPermissionError = typeof uploadErrorMessage === 'string' && (uploadErrorMessage.includes('permission') || uploadErrorMessage.includes('storage/unauthorized'));
         
-        setError(`Failed to upload photos for ${room.name}. ${uploadErrorMessage}. Please check network and try again.`);
+        const clientSideErrorMsg = isPermissionError
+            ? `Could not save tenant photos due to a permission error. Please contact the owner about storage permissions for path: inspectionPhotos/${homeId}/${room.id}/.`
+            : `Could not save all tenant photos for the report: ${uploadErrorMessage}.`;
+
+        console.warn(`Tenant photo upload failed for room ${room.name}:`, uploadError);
+        setError(clientSideErrorMsg + " AI analysis will still proceed using the first photo.");
         toast({
           title: "Photo Upload Issue",
-          description: isPermissionError 
-            ? `Could not save tenant photos to the report due to a permission error. The AI analysis will still proceed using the first photo. Please contact the owner about storage permissions.`
-            : `Could not save all tenant photos for the report: ${uploadErrorMessage}. AI analysis will still proceed.`,
+          description: clientSideErrorMsg + " AI analysis will still proceed.",
           variant: "default", 
-          duration: 8000,
+          duration: 10000,
         });
-        // uploadedPhotoUrlsForReport will contain successfully uploaded URLs, or be empty.
       }
 
       // 3. Call AI with the Data URI of the first photo
@@ -256,7 +257,7 @@ export function RoomInspectionStep({
       const reportData: RoomInspectionReportData = {
         roomId: room.id,
         roomName: room.name,
-        tenantPhotoUrls: uploadedPhotoUrlsForReport, // Store successfully uploaded URLs
+        tenantPhotoUrls: uploadedPhotoUrlsForReport, 
         discrepancies: result.discrepancies,
         missingItemSuggestionForRoom: result.missingItemSuggestion,
       };
@@ -272,8 +273,8 @@ export function RoomInspectionStep({
       } else if (typeof err === 'string') {
         errorMessage = err;
       }
-      // Ensure the error shown to the user doesn't duplicate the photo upload error if that was the primary cause.
-      if (!error || !error.startsWith("Failed to upload photos")) { 
+      
+      if (!error || !error.toLowerCase().includes("could not save tenant photos")) { 
         setError(`Failed to analyze photos for ${room.name}. ${errorMessage}. Please try again.`);
       }
       toast({ title: `Analysis Failed for ${room.name}`, description: errorMessage, variant: "destructive" });
@@ -403,7 +404,7 @@ export function RoomInspectionStep({
       )}
       
       
-      {error && analysisResult && !isAnalyzing && error.startsWith("Failed to upload photos") && (
+      {error && analysisResult && !isAnalyzing && error.toLowerCase().includes("could not save tenant photos") && (
          <CardContent className="pt-0">
             <Alert variant="default" className="bg-amber-500/10 border-amber-500/50">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -460,6 +461,8 @@ export function RoomInspectionStep({
     </Card>
   );
 }
+    
+
     
 
     
