@@ -28,7 +28,6 @@ export default function RoomDetailPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
-  // State for photos selected in the current session, before analysis
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
 
   const fetchRoomDetails = useCallback(async () => {
@@ -68,25 +67,21 @@ export default function RoomDetailPage() {
 
   const handleAnalysisComplete = async (
     analysisSuccessful: boolean,
-    objectNames?: string[],
-    photoUrls?: string[]
+    analyzedObjects?: Array<{ name: string; count: number }>, // Updated type
+    newlyUploadedPhotoUrls?: string[]
   ) => {
-    hideAiLoader(); // Hide loader regardless of success
-    if (analysisSuccessful && objectNames && photoUrls && homeId && roomId) {
+    hideAiLoader();
+    if (analysisSuccessful && analyzedObjects && newlyUploadedPhotoUrls && homeId && roomId) {
       try {
-        await updateRoomAnalysisData(homeId, roomId, objectNames, photoUrls);
+        await updateRoomAnalysisData(homeId, roomId, analyzedObjects, newlyUploadedPhotoUrls);
         toast({ title: "Analysis Complete", description: "Room analysis results have been updated." });
-        setUploadedPhotos([]); // Clear pending photos from UI
+        setUploadedPhotos([]); 
       } catch (error) {
         console.error("Error updating room analysis data:", error);
         toast({ title: "Update Error", description: "Failed to save analysis results.", variant: "destructive" });
-        // Photos remain in UI for retry if saving fails
       }
-    } else if (!analysisSuccessful) {
-      // Toast for AI failure is usually handled in PhotoUploader
-      // Photos remain in UI for retry
     }
-    fetchRoomDetails(); // Re-fetch to get the latest room data (including new analyzedPhotoUrls)
+    fetchRoomDetails(); 
   };
 
   const handleClearResults = async () => {
@@ -95,7 +90,7 @@ export default function RoomDetailPage() {
     try {
       await clearRoomAnalysisData(homeId, roomId);
       toast({ title: "Results Cleared", description: "The object analysis results and stored images have been cleared." });
-      setUploadedPhotos([]); // Clear any pending photos in UI as well
+      setUploadedPhotos([]); 
       fetchRoomDetails();
     } catch (error: any) {
       console.error("Failed to clear results:", error);
@@ -105,7 +100,7 @@ export default function RoomDetailPage() {
     }
   };
 
-  if (pageLoading && !room) { // Initial page load skeleton
+  if (pageLoading && !room) { 
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-40 mb-4" />
@@ -137,7 +132,7 @@ export default function RoomDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Button variant="outline" size="sm" asChild className="mb-6 bg-card/80 hover:bg-card">
+      <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent">
         <Link href={`/homes/${homeId}`}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to {home?.name || "Home"}
         </Link>
@@ -154,23 +149,19 @@ export default function RoomDetailPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <div className="space-y-6">
-          <PhotoUploader
-            homeId={homeId}
-            roomId={roomId}
-            userId={user?.uid || ""} // Pass userId for storage paths
-            onAnalysisComplete={handleAnalysisComplete}
-            currentPhotos={uploadedPhotos}
-            onPhotosChange={handlePhotosChange}
-          />
-        </div>
-        <div>
-           <ImageGallery 
-             pendingPhotos={uploadedPhotos} 
-             analyzedPhotoUrls={room.analyzedPhotoUrls || []}
-             onRemovePendingPhoto={handleRemovePendingPhoto} 
-            />
-        </div>
+        <PhotoUploader
+          homeId={homeId}
+          roomId={roomId}
+          userId={user?.uid || ""}
+          onAnalysisComplete={handleAnalysisComplete}
+          currentPhotos={uploadedPhotos}
+          onPhotosChange={handlePhotosChange}
+        />
+        <ImageGallery 
+          pendingPhotos={uploadedPhotos} 
+          analyzedPhotoUrls={room.analyzedPhotoUrls || []}
+          onRemovePendingPhoto={handleRemovePendingPhoto} 
+        />
       </div>
        <ObjectAnalysisCard
          room={room}
