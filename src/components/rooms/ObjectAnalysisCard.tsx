@@ -58,7 +58,8 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
           yPos +=10
            doc.setFontSize(10);
         }
-        doc.text(`${index + 1}. ${item.name} (Count: ${item.count})`, 14, yPos);
+        const countText = item.count > 1 ? ` (Count: ${item.count})` : "";
+        doc.text(`${index + 1}. ${item.name}${countText}`, 14, yPos);
         yPos += 8;
       });
 
@@ -128,7 +129,10 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
             <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border max-h-60 overflow-y-auto">
               {room.analyzedObjects.map((item, index) => (
                 <li key={index} className="text-foreground">
-                  {item.name} <span className="text-muted-foreground/80">(Count: {item.count})</span>
+                  {item.name}
+                  {item.count > 1 && (
+                    <span className="text-muted-foreground/80"> (Count: {item.count})</span>
+                  )}
                 </li>
               ))}
             </ol>

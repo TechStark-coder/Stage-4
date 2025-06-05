@@ -100,7 +100,8 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
           yPos += 10;
           doc.setFontSize(10);
         }
-        doc.text(`${index + 1}. ${item.name} (Count: ${item.count})`, 14, yPos);
+        const countText = item.count > 1 ? ` (Count: ${item.count})` : "";
+        doc.text(`${index + 1}. ${item.name}${countText}`, 14, yPos);
         yPos += 8;
       });
 
@@ -154,7 +155,7 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
           </div>
         ) : room.analyzedObjects && room.analyzedObjects.length > 0 ? (
           <p className="text-sm text-muted-foreground line-clamp-3">
-            <span className="font-medium text-foreground">Last analysis:</span> {room.analyzedObjects.map(obj => `${obj.name} (x${obj.count})`).join(', ').substring(0, 100)}{room.analyzedObjects.map(obj => `${obj.name} (x${obj.count})`).join(', ').length > 100 ? '...' : ''}
+            <span className="font-medium text-foreground">Last analysis:</span> {room.analyzedObjects.map(obj => `${obj.name}${obj.count > 1 ? ` (x${obj.count})` : ''}`).join(', ').substring(0, 100)}{room.analyzedObjects.map(obj => `${obj.name}${obj.count > 1 ? ` (x${obj.count})` : ''}`).join(', ').length > 100 ? '...' : ''}
           </p>
         ) : (
           <p className="text-sm text-muted-foreground italic text-center py-2">No objects analyzed yet.</p>
