@@ -22,7 +22,14 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
   const [isClearing, setIsClearing] = _React.useState(false);
 
   const handleDownloadPdf = async () => {
-    if (isDownloading || !room || !room.objectNames || !room.name) return;
+    if (isDownloading || !room || !room.analyzedObjects || room.analyzedObjects.length === 0 || !room.name) {
+        toast({
+            title: "No Analysis Data",
+            description: "This room has no analyzed objects to download.",
+            variant: "default",
+        });
+        return;
+    }
     setIsDownloading(true);
     try {
       const doc = new jsPDF();
@@ -38,13 +45,21 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
       doc.text("Identified Objects:", 14, 45);
       
       let yPos = 55;
-      room.objectNames.forEach((name, index) => {
+      doc.setFontSize(10);
+      room.analyzedObjects.forEach((item, index) => {
         if (yPos > 270) { 
           doc.addPage();
           yPos = 20;
+           doc.setFontSize(18);
+          doc.text(`Object Analysis (cont.): ${homeName ? homeName + " - " : ""}${room.name}`, 14, yPos);
+          yPos +=15
+          doc.setFontSize(14);
+          doc.text("Identified Objects (cont.):", 14, yPos);
+          yPos +=10
+           doc.setFontSize(10);
         }
-        doc.text(`${index + 1}. ${name}`, 14, yPos);
-        yPos += 10;
+        doc.text(`${index + 1}. ${item.name} (Count: ${item.count})`, 14, yPos);
+        yPos += 8;
       });
 
       const fileName = `${(homeName ? homeName.replace(/ /g, "_") + "_" : "") + room.name.replace(/ /g, "_")}_analysis.pdf`;
@@ -107,14 +122,16 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
         )}
       </CardHeader>
       <CardContent>
-        {room?.objectNames && room.objectNames.length > 0 ? (
+        {room?.analyzedObjects && room.analyzedObjects.length > 0 ? (
           <div className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
-            <ul className="list-disc list-inside space-y-1 bg-background/50 p-4 rounded-md border max-h-60 overflow-y-auto">
-              {room.objectNames.map((name, index) => (
-                <li key={index} className="text-foreground">{name}</li>
+            <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border max-h-60 overflow-y-auto">
+              {room.analyzedObjects.map((item, index) => (
+                <li key={index} className="text-foreground">
+                  {item.name} <span className="text-muted-foreground/80">(Count: {item.count})</span>
+                </li>
               ))}
-            </ul>
+            </ol>
           </div>
         ) : !room.isAnalyzing ? ( 
           <div className="text-center py-8 text-muted-foreground">
@@ -124,7 +141,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
           </div>
         ) : null }
       </CardContent>
-      {(room?.objectNames && room.objectNames.length > 0 && !room.isAnalyzing) && (
+      {(room?.analyzedObjects && room.analyzedObjects.length > 0 && !room.isAnalyzing) && (
         <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-4">
           <a 
             onClick={handleDownloadPdf} 
@@ -157,3 +174,4 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     </Card>
   );
 }
+

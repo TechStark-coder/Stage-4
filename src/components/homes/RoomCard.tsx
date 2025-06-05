@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import type { Room } from "@/types";
-import { ArrowRight, CalendarDays, DoorOpen, Loader2, Trash2, Download } from "lucide-react"; // Added Download
+import { ArrowRight, CalendarDays, DoorOpen, Loader2, Trash2, Download } from "lucide-react"; 
 import * as _React from 'react';
 import {
   AlertDialog,
@@ -29,14 +29,14 @@ import { useLoader } from "@/contexts/LoaderContext";
 export interface RoomCardProps {
   room: Room;
   homeId: string;
-  homeName?: string; // To include in PDF title
+  homeName?: string; 
   onRoomAction: () => void;
 }
 
 export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps) {
   const { toast } = useToast();
   const [_isDownloading, setIsDownloading] = _React.useState(false);
-  const { showLoader, hideLoader } = useLoader(); // Using global loader
+  const { showLoader, hideLoader } = useLoader(); 
 
   const handleDelete = async () => {
     showLoader();
@@ -62,7 +62,7 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
   };
 
   const handleDownloadRoomPdf = async () => {
-    if (!room.objectNames || room.objectNames.length === 0) {
+    if (!room.analyzedObjects || room.analyzedObjects.length === 0) {
       toast({
         title: "No Analysis Data",
         description: "This room has no analyzed objects to download.",
@@ -70,8 +70,8 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
       });
       return;
     }
-    setIsDownloading(true); // Local state for button's disabled status
-    showLoader(); // Use global loader for the operation
+    setIsDownloading(true); 
+    showLoader(); 
     try {
       const doc = new jsPDF();
       const roomTitle = `${homeName ? homeName + " - " : ""}${room.name}`;
@@ -88,7 +88,7 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
 
       let yPos = 55;
       doc.setFontSize(10);
-      room.objectNames.forEach((name, index) => {
+      room.analyzedObjects.forEach((item, index) => {
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
@@ -100,7 +100,7 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
           yPos += 10;
           doc.setFontSize(10);
         }
-        doc.text(`${index + 1}. ${name}`, 14, yPos);
+        doc.text(`${index + 1}. ${item.name} (Count: ${item.count})`, 14, yPos);
         yPos += 8;
       });
 
@@ -116,7 +116,7 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
     }
   };
 
-  const canDownload = room.objectNames && room.objectNames.length > 0 && !room.isAnalyzing;
+  const canDownload = room.analyzedObjects && room.analyzedObjects.length > 0 && !room.isAnalyzing;
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-out hover:shadow-2xl hover:shadow-primary/40 hover:scale-105 rounded-lg overflow-hidden bg-card">
@@ -152,9 +152,9 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
           </div>
-        ) : room.objectNames && room.objectNames.length > 0 ? (
+        ) : room.analyzedObjects && room.analyzedObjects.length > 0 ? (
           <p className="text-sm text-muted-foreground line-clamp-3">
-            <span className="font-medium text-foreground">Last analysis:</span> {room.objectNames.join(', ').substring(0, 100)}{room.objectNames.join(', ').length > 100 ? '...' : ''}
+            <span className="font-medium text-foreground">Last analysis:</span> {room.analyzedObjects.map(obj => `${obj.name} (x${obj.count})`).join(', ').substring(0, 100)}{room.analyzedObjects.map(obj => `${obj.name} (x${obj.count})`).join(', ').length > 100 ? '...' : ''}
           </p>
         ) : (
           <p className="text-sm text-muted-foreground italic text-center py-2">No objects analyzed yet.</p>
@@ -196,3 +196,4 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
     </Card>
   );
 }
+

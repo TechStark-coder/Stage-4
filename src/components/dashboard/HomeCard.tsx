@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2 } from "lucide-react"; // Added MapPin
 import { format } from "date-fns";
 import Image from "next/image";
 import {
@@ -58,7 +58,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
     <Card className="flex flex-col transition-all duration-300 ease-out hover:shadow-2xl hover:shadow-primary/40 hover:scale-105 rounded-lg overflow-hidden bg-card">
       <CardHeader className="p-0">
         {home.coverImageUrl ? (
-          <div className="relative w-full h-52 mb-4 overflow-hidden"> {/* Increased height */}
+          <div className="relative w-full h-52 mb-4 overflow-hidden">
             <Image
               src={home.coverImageUrl}
               alt={`${home.name} cover image`}
@@ -69,7 +69,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full h-52 mb-4 bg-muted/50 rounded-t-lg"> {/* Increased height */}
+          <div className="flex items-center justify-center w-full h-52 mb-4 bg-muted/50 rounded-t-lg">
             <ImageOff className="h-20 w-20 text-muted-foreground/50" />
           </div>
         )}
@@ -87,13 +87,14 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
         </div>
       </CardHeader>
       <CardContent className="flex-grow pt-2 p-4">
-        {home.description ? (
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {home.description}
-          </p>
+        {home.address ? (
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+            <p className="line-clamp-3">{home.address}</p>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground italic">
-            No description provided.
+            No address provided.
           </p>
         )}
       </CardContent>

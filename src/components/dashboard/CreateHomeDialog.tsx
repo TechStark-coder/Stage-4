@@ -35,10 +35,10 @@ import type { CreateHomeData } from "@/types";
 import { updateProfile } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { useLoader } from "@/contexts/LoaderContext";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 
 interface CreateHomeDialogProps {
-  onHomeCreated: () => void; // This can still be used for other purposes like refetching if needed elsewhere
+  onHomeCreated: () => void; 
 }
 
 export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
@@ -47,14 +47,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   const { user } = useAuthContext();
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter(); 
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: "",
       ownerDisplayName:  "",
-      address: "", // Updated from description
+      address: "", // Default for address
       coverImage: undefined,
     },
   });
@@ -62,6 +62,10 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   useEffect(() => {
     if (user && open) {
       form.setValue("ownerDisplayName", user.displayName || "");
+      form.setValue("name", ""); // Clear name on open
+      form.setValue("address", ""); // Clear address on open
+      form.setValue("coverImage", undefined); // Clear cover image on open
+      setImagePreview(null); // Clear preview
     }
   }, [open, user, form]);
 
@@ -94,18 +98,18 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
 
       const homeDataToSubmit: CreateHomeData = { 
         name: data.name,
-        address: data.address || "", // Updated from description
+        address: data.address || "", 
       };
       const coverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
       
-      const newHomeId = await addHome(user.uid, homeDataToSubmit, coverImageFile); // Capture newHomeId
+      const newHomeId = await addHome(user.uid, homeDataToSubmit, coverImageFile);
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
       form.reset({ name: "", ownerDisplayName: data.ownerDisplayName || user.displayName || "", address: "", coverImage: undefined });
       setImagePreview(null);
-      onHomeCreated(); // Call original callback if needed
+      onHomeCreated(); 
       setOpen(false);
-      router.push(`/homes/${newHomeId}`); // Redirect to the new home's page
+      router.push(`/homes/${newHomeId}`); 
     } catch (error: any) {
       console.error("Failed to create home:", error);
       const errorMessage = error.message || "An unexpected error occurred.";
@@ -116,6 +120,10 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
           variant: "destructive",
           duration: 7000,
         });
+         // If image fails but home details are okay, still try to create home and redirect
+        // Assuming addHome can handle coverImageFile being null if quota error occurred during its processing phase
+        // This part might need addHome to return the ID even if image upload partially fails
+        // For now, we assume addHome throws before returning ID if image is the sole issue.
       } else {
         toast({ title: "Failed to Create Home", description: errorMessage, variant: "destructive" });
       }
@@ -132,6 +140,10 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
         setImagePreview(null);
       } else if (user) {
         form.setValue("ownerDisplayName", user.displayName || "");
+        form.setValue("name", "");
+        form.setValue("address", "");
+        form.setValue("coverImage", undefined);
+        setImagePreview(null);
       }
     }}>
       <DialogTrigger asChild>
@@ -165,7 +177,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             />
              <FormField
               control={form.control}
-              name="address" // Updated from description
+              name="address" 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Address (Optional)</FormLabel>
