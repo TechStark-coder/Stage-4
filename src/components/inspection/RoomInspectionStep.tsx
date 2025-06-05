@@ -4,7 +4,7 @@
 import * as React from 'react';
 import type { Room, RoomInspectionReportData, InspectionDiscrepancy } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Ensure Input is imported
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, CheckCircle, AlertTriangle, UploadCloud, Sparkles, ImagePlus, XCircle, RefreshCw } from 'lucide-react';
@@ -202,26 +202,48 @@ export function RoomInspectionStep({
     setError(null);
     setAnalysisResult(null);
 
+    let tenantPhotoDataUriForAI = "";
+    let uploadedPhotoUrlsForReport: string[] = [];
+
     try {
+      // 1. Convert the first photo to Data URI for AI analysis (critical step)
+      const firstPhotoFile = photos[0];
+      tenantPhotoDataUriForAI = await fileToDataUri(firstPhotoFile);
       toast({ title: "Processing Photos...", description: `Preparing ${photos.length} photo(s) for ${room.name}.`, duration: 2000 });
       
-      // 1. Convert the first photo to Data URI for AI analysis
-      const firstPhotoFile = photos[0];
-      const tenantPhotoDataUriForAI = await fileToDataUri(firstPhotoFile);
-
-      // 2. Upload all photos to Firebase Storage for record-keeping
-      const uploadedPhotoUrlsForReport: string[] = [];
-      for (const photo of photos) {
-        const uniqueFileName = `inspection_${homeId}_${room.id}_${Date.now()}_${photo.name.replace(/\s+/g, '_')}`;
-        const photoPath = `inspectionPhotos/${homeId}/${room.id}/${uniqueFileName}`;
-        const sRef = storageRef(storage, photoPath);
-        await uploadBytes(sRef, photo);
-        const downloadURL = await getDownloadURL(sRef);
-        uploadedPhotoUrlsForReport.push(downloadURL);
+      // 2. Attempt to upload all photos to Firebase Storage for record-keeping.
+      // This part might fail due to permissions for unauthenticated users.
+      try {
+        toast({ title: "Saving Photos for Report...", description: `Attempting to save ${photos.length} photo(s) for the inspection record. This may fail if permissions are restrictive.`, duration: 3000 });
+        for (const photo of photos) {
+          const uniqueFileName = `inspection_${homeId}_${room.id}_${Date.now()}_${photo.name.replace(/\s+/g, '_')}`;
+          const photoPath = `inspectionPhotos/${homeId}/${room.id}/${uniqueFileName}`;
+          const sRef = storageRef(storage, photoPath);
+          await uploadBytes(sRef, photo); // This is the line that might fail
+          const downloadURL = await getDownloadURL(sRef);
+          uploadedPhotoUrlsForReport.push(downloadURL);
+        }
+        if (photos.length > 0 && uploadedPhotoUrlsForReport.length === photos.length) {
+          toast({ title: "Report Photos Saved", description: "Tenant photos saved successfully for the record.", duration: 2000 });
+        } else if (photos.length > 0 && uploadedPhotoUrlsForReport.length < photos.length) {
+           toast({ title: "Partial Report Photo Save", description: "Some tenant photos could not be saved for the record due to an issue.", variant: "default", duration: 5000 });
+        }
+      } catch (uploadError: any) {
+        console.warn(`Tenant photo upload failed for room ${room.name}:`, uploadError);
+        // Do not setError for the main flow here, just inform the user about upload failure.
+        // The AI analysis will proceed with the data URI.
+        setError(`Failed to save tenant photos for ${room.name} to the report: ${uploadError.message}. AI analysis will proceed.`); // Set error for display
+        toast({
+          title: "Report Photo Save Issue",
+          description: `Could not save tenant photos for the report due to a permission error (${uploadError.code || 'unknown error'}). The AI analysis will still proceed using the first photo.`,
+          variant: "default", // Changed from destructive to default, as AI can still proceed
+          duration: 8000,
+        });
+        // uploadedPhotoUrlsForReport will remain empty or partially filled, AI will use data URI.
       }
-      toast({ title: "Upload Complete!", description: "Analyzing photos with AI...", duration: 2000 });
 
       // 3. Call AI with the Data URI of the first photo
+      toast({ title: "AI Analysis Started", description: "Sending image to AI for discrepancy detection...", duration: 2000 });
       const aiInput: IdentifyDiscrepanciesInput = {
         tenantPhotoDataUri: tenantPhotoDataUriForAI,
         expectedItems: room.analyzedObjects || [], 
@@ -232,7 +254,7 @@ export function RoomInspectionStep({
       const reportData: RoomInspectionReportData = {
         roomId: room.id,
         roomName: room.name,
-        tenantPhotoUrls: uploadedPhotoUrlsForReport, // Store all uploaded URLs
+        tenantPhotoUrls: uploadedPhotoUrlsForReport, // Store successfully uploaded URLs
         discrepancies: result.discrepancies,
         missingItemSuggestionForRoom: result.missingItemSuggestion,
       };
@@ -240,23 +262,16 @@ export function RoomInspectionStep({
       setStepCompleted(true);
       toast({ title: `Analysis for ${room.name} Complete!`, description: "Results below. Proceed to the next room or submit.", duration: 4000 });
 
-    } catch (err: any) {
-      console.error(`Error during analysis for room ${room.name}:`, err);
-      let errorMessage = "An unexpected error occurred.";
+    } catch (err: any) { // This catch block is for errors in data URI conversion or AI call itself
+      console.error(`Critical error during analysis for room ${room.name}:`, err);
+      let errorMessage = "An unexpected error occurred during AI analysis.";
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === 'string') {
         errorMessage = err;
       }
-      
-      // Check for specific Genkit/AI related errors vs. upload errors
-      if (errorMessage.includes("storage/")) {
-         setError(`Failed to upload photos for ${room.name}. ${errorMessage}. Please check network and try again.`);
-         toast({ title: `Upload Failed for ${room.name}`, description: errorMessage, variant: "destructive" });
-      } else {
-        setError(`Failed to analyze photos for ${room.name}. ${errorMessage}. Please try again.`);
-        toast({ title: `Analysis Failed for ${room.name}`, description: errorMessage, variant: "destructive" });
-      }
+      setError(`Failed to analyze photos for ${room.name}. ${errorMessage}. Please try again.`);
+      toast({ title: `Analysis Failed for ${room.name}`, description: errorMessage, variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
     }
@@ -369,11 +384,11 @@ export function RoomInspectionStep({
         </CardContent>
       )}
 
-      {error && !isAnalyzing && (
+      {error && !isAnalyzing && !stepCompleted && ( // Only show main error if step not completed
         <CardContent>
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Analysis Error</AlertTitle>
+            <AlertTitle>Analysis Process Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
            <Button onClick={handleRetry} variant="outline" className="w-full mt-4">
@@ -381,6 +396,20 @@ export function RoomInspectionStep({
            </Button>
         </CardContent>
       )}
+      
+      {/* Display this error specifically if it's related to upload but analysis might have proceeded */}
+      {error && analysisResult && !isAnalyzing && error.startsWith("Failed to save tenant photos") && (
+         <CardContent className="pt-0">
+            <Alert variant="default" className="bg-amber-500/10 border-amber-500/50">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-700">Photo Saving Issue</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                {error} {/* Show the specific photo saving error message */}
+                </AlertDescription>
+            </Alert>
+         </CardContent>
+      )}
+
 
       {analysisResult && !isAnalyzing && (
         <CardContent className="space-y-3 pt-4">
@@ -409,7 +438,7 @@ export function RoomInspectionStep({
              !analysisResult.missingItemSuggestion.toLowerCase().includes("missing") && 
             <p className="text-sm text-green-600">No major discrepancies found based on the primary photo analysis.</p>
           )}
-           {stepCompleted && !error &&
+           {stepCompleted && !error && // If step completed and no critical error blocking completion
             <Button onClick={handleRetry} variant="outline" className="w-full mt-4">
                 <RefreshCw className="mr-2 h-4 w-4" /> Re-inspect {room.name} (clears current photos)
             </Button>
@@ -426,5 +455,4 @@ export function RoomInspectionStep({
     </Card>
   );
 }
-
     
