@@ -87,7 +87,7 @@ export function RoomInspectionStep({
         setTenantPhotos(prev => [...prev, ...filesToActuallyAdd]);
       }
     } else if (filteredNewFiles.length > 0) {
-       setTenantPhotos(prev => [...prev, ...filesToActuallyAdd]);
+       setTenantPhotos(prev => [...prev, ...filteredNewFiles]); // Corrected: use filteredNewFiles
     }
   };
 
@@ -172,8 +172,8 @@ export function RoomInspectionStep({
     showAiLoader();
     setIsLoading(true);
     setAnalysisResult(null);
-    setAnalysisAttempted(true);
-    setShowOwnerExpectedItems(true); 
+    setAnalysisAttempted(true); // Set this early so expected items show
+    setShowOwnerExpectedItems(true);
 
     let tenantPhotoDataUri = "";
     try {
@@ -384,5 +384,3 @@ export function RoomInspectionStep({
     </Card>
   );
 }
-
-    
