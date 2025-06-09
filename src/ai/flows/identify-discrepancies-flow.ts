@@ -67,21 +67,28 @@ You will be given:
 2. A new 'tenantPhoto' of the same room, taken by a tenant or inspector.
 
 Your task is to:
-A. Meticulously analyze the 'tenantPhoto' to identify all distinct objects and their counts. Be very specific with names. Exclude common structural elements like walls, floors, ceilings, windows, and doors unless they have distinct decorative features.
-B. Compare the objects you found in 'tenantPhoto' against the 'expectedItems' list.
-C. Create a list of 'discrepancies'. For each item in 'expectedItems' that is either entirely missing from 'tenantPhoto' or present in a lesser quantity than expected, list it as a discrepancy. Include its name, the original expectedCount, the actualCount you found in 'tenantPhoto', and a brief 'note' (e.g., "Completely missing", "1 of 3 found", "2 less than expected"). If an expected item is found with the correct or higher count, do NOT list it as a discrepancy.
-D. If there are discrepancies, especially if an item is completely missing or its count is significantly lower, formulate a single, polite 'missingItemSuggestion' string. This suggestion should prompt the user to re-check for ONE SPECIFIC, clearly named item that seems to be missing or significantly undercounted. For example: "The 'vintage wooden clock' seems to be missing. Could you please take another picture focusing on where it should be?" If multiple items are problematic, choose one prominent or high-value sounding item for the suggestion. If all items match the expected counts or if discrepancies are very minor (e.g., many items and only one is off by a small count), this 'missingItemSuggestion' can be an empty string or a very mild, general prompt like "Looks mostly good, but you might want to double-check the smaller items."
+A. **VERY IMPORTANT FIRST STEP: Meticulously analyze ONLY the 'tenantPhoto' to create a detailed, independent inventory of all distinct objects and their counts visible in it.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV", "Funko Pop Batman figure"). Exclude common structural elements like walls, floors, ceilings, windows, and doors unless they have distinct decorative features (e.g., 'ornate wooden doorframe'). Perform this inventory BEFORE looking at the 'expectedItems' list.
 
-Expected Items:
+B. **Compare your detailed inventory from 'tenantPhoto' (from step A) against the provided 'expectedItems' list.**
+
+C. **Create a list of 'discrepancies'.** For each item in 'expectedItems' that is either:
+    - Entirely missing from your inventory of 'tenantPhoto'.
+    - Present in a lesser quantity in your inventory of 'tenantPhoto' than expected.
+    List it as a discrepancy. Include its name, the original expectedCount, the actualCount you found in 'tenantPhoto', and a brief 'note' (e.g., "Completely missing", "1 of 3 found", "2 less than expected").
+    If an expected item is found with the correct or higher count in your 'tenantPhoto' inventory, do NOT list it as a discrepancy.
+
+D. **If there are discrepancies, especially if an item is completely missing or its count is significantly lower, formulate a single, polite 'missingItemSuggestion' string.** This suggestion should prompt the user to re-check for ONE SPECIFIC, clearly named item that seems to be missing or significantly undercounted from the 'expectedItems' list. For example: "The 'vintage wooden clock' seems to be missing. Could you please take another picture focusing on where it should be?" If multiple items are problematic, choose one prominent or high-value sounding item for the suggestion. If all items match the expected counts or if discrepancies are very minor (e.g., many items and only one is off by a small count), this 'missingItemSuggestion' can be an empty string or a very mild, general prompt like "Looks mostly good, but you might want to double-check the smaller items."
+
+Expected Items (provided by owner):
 {{#if expectedItems.length}}
 {{#each expectedItems}}
 - "{{name}}" (Expected count: {{count}})
 {{/each}}
 {{else}}
-- No specific items were pre-listed as expected by the owner for this room. Please identify all objects you see.
+- No specific items were pre-listed as expected by the owner for this room. In this case, for step C, the 'discrepancies' list will be empty, and for step D, the 'missingItemSuggestion' should be a general statement like "No owner list to compare against. Please review the items you see." Your primary task is then to list what you see based on the tenant photo.
 {{/if}}
 
-Tenant Photo:
+Tenant Photo to analyze:
 {{media url=tenantPhotoDataUri}}
 
 Respond ONLY with a JSON object structured exactly according to the output schema. Ensure 'actualCount' reflects what you found in the tenant's photo.
@@ -95,16 +102,8 @@ const identifyDiscrepanciesFlow = ai.defineFlow(
     outputSchema: IdentifyDiscrepanciesOutputSchema,
   },
   async (input) => {
-    // If no expected items were provided by the owner, the AI's primary job is just to list what it sees.
-    // In this scenario, discrepancies and suggestions might be minimal unless the prompt handles it.
-    // The current prompt handles this by asking the AI to just list items if expectedItems is empty.
-    // For the output schema, we might return empty discrepancies and suggestion in such a case post-AI call, or let AI do its best.
-    // For now, let the AI attempt to populate based on the prompt's conditional logic.
-
     const {output} = await prompt(input);
     if (!output) {
-      // This case should ideally be handled by Genkit if the schema isn't met,
-      // but as a fallback:
       return {
         discrepancies: [],
         missingItemSuggestion: "Could not analyze the image properly. Please try again.",
@@ -116,4 +115,3 @@ const identifyDiscrepanciesFlow = ai.defineFlow(
 
 // Add this flow to dev.ts
 // import '@/ai/flows/identify-discrepancies-flow.ts';
-

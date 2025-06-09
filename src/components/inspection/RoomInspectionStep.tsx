@@ -1,10 +1,11 @@
+
 "use client";
 
 import * as React from 'react';
 import type { Room, RoomInspectionReportData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+// Removed Textarea import as it's no longer used
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, FileImage, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
@@ -18,7 +19,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { IdentifyDiscrepanciesInput, IdentifyDiscrepanciesOutput } from '@/ai/flows/identify-discrepancies-flow';
-import type { FirebaseStorage } from 'firebase/storage';
+// FirebaseStorage import is no longer needed as we removed upload attempts
+// import type { FirebaseStorage } from 'firebase/storage';
 
 
 const MAX_PHOTOS_PER_ROOM = 5;
@@ -27,24 +29,23 @@ interface RoomInspectionStepProps {
   homeId: string;
   room: Room;
   onInspectionStepComplete: (reportData: RoomInspectionReportData) => void;
-  storage: FirebaseStorage;
+  // storage prop is no longer needed
   aiIdentifyDiscrepancies: (input: IdentifyDiscrepanciesInput) => Promise<IdentifyDiscrepanciesOutput>;
-  toast: (options: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
+  toast: (options: { title: string; description?: string; variant?: "default" | "destructive"; duration?: number }) => void;
 }
 
 export function RoomInspectionStep({
   homeId,
   room,
   onInspectionStepComplete,
-  storage,
   aiIdentifyDiscrepancies,
   toast,
 }: RoomInspectionStepProps) {
   const [tenantPhotos, setTenantPhotos] = React.useState<File[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [analysisResult, setAnalysisResult] = React.useState<IdentifyDiscrepanciesOutput | null>(null);
-  const [generalRoomNotes, setGeneralRoomNotes] = React.useState('');
   const [analysisAttempted, setAnalysisAttempted] = React.useState(false);
+  const [showOwnerExpectedItems, setShowOwnerExpectedItems] = React.useState(false); // New state
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showCameraDialog, setShowCameraDialog] = React.useState(false);
@@ -155,17 +156,19 @@ export function RoomInspectionStep({
     if (!room.analyzedObjects || room.analyzedObjects.length === 0) {
       toast({ title: "Owner Data Missing", description: "No initial items list from owner for comparison. Cannot perform discrepancy check.", variant: "destructive" });
       setAnalysisAttempted(true);
+      setShowOwnerExpectedItems(true); // Show owner items even if analysis can't proceed
       return;
     }
 
     setIsLoading(true);
     setAnalysisResult(null);
     setAnalysisAttempted(true);
+    setShowOwnerExpectedItems(false); // Hide owner items until analysis is complete
 
     let tenantPhotoDataUri = "";
     try {
       const reader = new FileReader();
-      reader.readAsDataURL(tenantPhotos[0]);
+      reader.readAsDataURL(tenantPhotos[0]); // Use the first photo for AI analysis
       await new Promise<void>((resolve, reject) => {
         reader.onload = () => {
           tenantPhotoDataUri = reader.result as string;
@@ -185,19 +188,23 @@ export function RoomInspectionStep({
         tenantPhotoDataUri,
         expectedItems: room.analyzedObjects.map(obj => ({ name: obj.name, count: obj.count })),
       };
-
+      
+      toast({ title: "AI Analysis Started", description: "HomieStan AI is checking the room...", duration: 3000 });
       const result = await aiIdentifyDiscrepancies(aiInput);
       setAnalysisResult(result);
+      setShowOwnerExpectedItems(true); // Show owner items after analysis
       toast({ title: "AI Analysis Complete", description: "Review the discrepancies below." });
 
-    } catch (error: any) {
+    } catch (error: any)
+     {
       console.error("Error during AI Analysis:", error);
       toast({
         title: "AI Analysis Error",
         description: error.message || "Could not get AI discrepancy report.",
         variant: "destructive",
       });
-      setAnalysisResult(null);
+      setAnalysisResult(null); // Ensure result is cleared on error
+      setShowOwnerExpectedItems(true); // Still show owner's list even if AI fails
     } finally {
       setIsLoading(false);
     }
@@ -207,9 +214,9 @@ export function RoomInspectionStep({
     const reportData: RoomInspectionReportData = {
       roomId: room.id,
       roomName: room.name,
-      tenantPhotoUrls: [], // Tenant photos are not saved
+      tenantPhotoUrls: [], // Tenant photos are not saved to Firestore storage
       discrepancies: analysisResult?.discrepancies || [],
-      missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || generalRoomNotes || "No specific notes added by inspector.",
+      missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "No specific notes from owner.", // Default if AI provides no suggestion
     };
     onInspectionStepComplete(reportData);
   };
@@ -227,14 +234,16 @@ export function RoomInspectionStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Owner's Expected Items:</h3>
-          <p className="text-xs p-2 bg-muted/50 rounded-md border">{ownerExpectedItemsList}</p>
-        </div>
+        {showOwnerExpectedItems && ( // Conditionally render owner's expected items
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">Owner's Expected Items:</h3>
+            <p className="text-xs p-2 bg-muted/50 rounded-md border">{ownerExpectedItemsList}</p>
+          </div>
+        )}
 
         <div className="space-y-3">
           <label className="block text-sm font-medium text-muted-foreground">
-            Tenant's Photos ({tenantPhotos.length}/{MAX_PHOTOS_PER_ROOM}):
+            Your Photos for {room.name} ({tenantPhotos.length}/{MAX_PHOTOS_PER_ROOM}):
           </label>
           <div className="flex flex-wrap gap-2">
             {tenantPhotos.map((file, index) => (
@@ -306,14 +315,14 @@ export function RoomInspectionStep({
            {tenantPhotos.length > 0 && (
               <Button onClick={handleAnalyze} disabled={isLoading || !room.analyzedObjects || room.analyzedObjects.length === 0}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                {isLoading ? "Analyzing..." : "Analyze Tenant's Photos"}
+                {isLoading ? "Analyzing..." : "Analyze My Photos"}
               </Button>
             )}
         </div>
 
         {analysisAttempted && (
           <div className="space-y-4 pt-4 border-t mt-4">
-            <h3 className="text-lg font-semibold">Inspection Notes & Results</h3>
+            <h3 className="text-lg font-semibold">Inspection Results</h3>
             {isLoading && (
               <div className="flex items-center text-primary">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading AI Analysis...
@@ -347,35 +356,19 @@ export function RoomInspectionStep({
                  {analysisResult.missingItemSuggestion && (
                   <Alert className="mt-3">
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Message from Owner</AlertTitle>
+                    <AlertTitle>Message from Owner</AlertTitle> 
                     <AlertDescription>{analysisResult.missingItemSuggestion}</AlertDescription>
                   </Alert>
                 )}
               </>
             )}
             {!analysisResult && !isLoading && analysisAttempted && tenantPhotos.length > 0 && room.analyzedObjects && room.analyzedObjects.length > 0 && (
-                 <p className="text-sm text-muted-foreground">AI analysis could not be completed or returned no results. You can still add general notes.</p>
+                 <p className="text-sm text-muted-foreground">AI analysis could not be completed or returned no results.</p>
             )}
              {!analysisResult && !isLoading && analysisAttempted && (!room.analyzedObjects || room.analyzedObjects.length === 0) && (
-                 <p className="text-sm text-muted-foreground">Owner's list was empty, AI discrepancy check skipped. Add any general notes below.</p>
+                 <p className="text-sm text-muted-foreground">Owner's list was empty, AI discrepancy check skipped.</p>
             )}
-
-            <div>
-              <label htmlFor={`notes-${room.id}`} className="block text-sm font-medium text-muted-foreground">
-                Additional Notes for this Room (Optional):
-              </label>
-              <Textarea
-                id={`notes-${room.id}`}
-                value={generalRoomNotes}
-                onChange={(e) => setGeneralRoomNotes(e.target.value)}
-                placeholder="e.g., Overall condition is good, some wear and tear on the sofa."
-                className="mt-1"
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                This will be included in the report. If AI provided a suggestion, it will be shown as "Message from Owner".
-              </p>
-            </div>
+            {/* Removed Additional Notes Section */}
           </div>
         )}
       </CardContent>
@@ -389,4 +382,3 @@ export function RoomInspectionStep({
   );
 }
 
-    
