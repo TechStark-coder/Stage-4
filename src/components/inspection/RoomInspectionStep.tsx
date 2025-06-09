@@ -5,7 +5,6 @@ import * as React from 'react';
 import type { Room, RoomInspectionReportData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// Removed Textarea import as it's no longer used
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, FileImage, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
@@ -13,40 +12,37 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter as DialogModalFooter,
+  DialogFooter as DialogModalFooter, // Aliased to avoid conflict if CardFooter was ever an issue
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { IdentifyDiscrepanciesInput, IdentifyDiscrepanciesOutput } from '@/ai/flows/identify-discrepancies-flow';
-// FirebaseStorage import is no longer needed as we removed upload attempts
-// import type { FirebaseStorage } from 'firebase/storage';
+import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 
-
-const MAX_PHOTOS_PER_ROOM = 5;
+const MAX_PHOTOS_PER_ROOM = 5; // Max photos tenant can provide for analysis
 
 interface RoomInspectionStepProps {
-  homeId: string;
+  homeId: string; // Not directly used in this simplified version, but kept for structure
   room: Room;
   onInspectionStepComplete: (reportData: RoomInspectionReportData) => void;
-  // storage prop is no longer needed
   aiIdentifyDiscrepancies: (input: IdentifyDiscrepanciesInput) => Promise<IdentifyDiscrepanciesOutput>;
   toast: (options: { title: string; description?: string; variant?: "default" | "destructive"; duration?: number }) => void;
 }
 
 export function RoomInspectionStep({
-  homeId,
   room,
   onInspectionStepComplete,
   aiIdentifyDiscrepancies,
   toast,
 }: RoomInspectionStepProps) {
   const [tenantPhotos, setTenantPhotos] = React.useState<File[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false); // Local loading for the analyze button
   const [analysisResult, setAnalysisResult] = React.useState<IdentifyDiscrepanciesOutput | null>(null);
   const [analysisAttempted, setAnalysisAttempted] = React.useState(false);
-  const [showOwnerExpectedItems, setShowOwnerExpectedItems] = React.useState(false); // New state
+  const [showOwnerExpectedItems, setShowOwnerExpectedItems] = React.useState(false);
 
+  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showCameraDialog, setShowCameraDialog] = React.useState(false);
   const [cameraStream, setCameraStream] = React.useState<MediaStream | null>(null);
@@ -54,7 +50,6 @@ export function RoomInspectionStep({
   const [cameraError, setCameraError] = React.useState<string | null>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-
 
   const addNewFiles = (newFilesArray: File[]) => {
     const validImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -77,7 +72,7 @@ export function RoomInspectionStep({
       });
       const remainingSlots = MAX_PHOTOS_PER_ROOM - tenantPhotos.length;
       const filesToActuallyAdd = filteredNewFiles.slice(0, remainingSlots);
-       if (filesToActuallyAdd.length > 0) {
+      if (filesToActuallyAdd.length > 0) {
         setTenantPhotos(prev => [...prev, ...filesToActuallyAdd]);
       }
     } else if (filteredNewFiles.length > 0) {
@@ -89,7 +84,7 @@ export function RoomInspectionStep({
     const files = event.target.files;
     if (files) {
       addNewFiles(Array.from(files));
-      if (event.target) event.target.value = "";
+      if (event.target) event.target.value = ""; // Reset file input
     }
   };
 
@@ -156,14 +151,19 @@ export function RoomInspectionStep({
     if (!room.analyzedObjects || room.analyzedObjects.length === 0) {
       toast({ title: "Owner Data Missing", description: "No initial items list from owner for comparison. Cannot perform discrepancy check.", variant: "destructive" });
       setAnalysisAttempted(true);
-      setShowOwnerExpectedItems(true); // Show owner items even if analysis can't proceed
+      setShowOwnerExpectedItems(true);
       return;
     }
 
-    setIsLoading(true);
+    console.log("ROOM INSPECTION: Attempting to show AI Loader in handleAnalyze");
+    setIsLoading(true); // Local button state
+    showAiLoader();
+    toast({ title: "AI Loader Status", description: "Attempting to show AI Loader now.", duration: 2000 });
+
+
     setAnalysisResult(null);
     setAnalysisAttempted(true);
-    setShowOwnerExpectedItems(false); // Hide owner items until analysis is complete
+    // setShowOwnerExpectedItems will be set to true in finally or on error
 
     let tenantPhotoDataUri = "";
     try {
@@ -192,21 +192,21 @@ export function RoomInspectionStep({
       toast({ title: "AI Analysis Started", description: "HomieStan AI is checking the room...", duration: 3000 });
       const result = await aiIdentifyDiscrepancies(aiInput);
       setAnalysisResult(result);
-      setShowOwnerExpectedItems(true); // Show owner items after analysis
       toast({ title: "AI Analysis Complete", description: "Review the discrepancies below." });
 
-    } catch (error: any)
-     {
+    } catch (error: any) {
       console.error("Error during AI Analysis:", error);
       toast({
         title: "AI Analysis Error",
         description: error.message || "Could not get AI discrepancy report.",
         variant: "destructive",
       });
-      setAnalysisResult(null); // Ensure result is cleared on error
-      setShowOwnerExpectedItems(true); // Still show owner's list even if AI fails
+      setAnalysisResult(null);
     } finally {
-      setIsLoading(false);
+      console.log("ROOM INSPECTION: Attempting to hide AI Loader in finally block");
+      setIsLoading(false); // Local button state
+      hideAiLoader();
+      setShowOwnerExpectedItems(true); // Show owner's list after analysis attempt (success or fail)
     }
   };
 
@@ -214,9 +214,9 @@ export function RoomInspectionStep({
     const reportData: RoomInspectionReportData = {
       roomId: room.id,
       roomName: room.name,
-      tenantPhotoUrls: [], // Tenant photos are not saved to Firestore storage
+      tenantPhotoUrls: [], // Not uploading tenant photos to storage in this version
       discrepancies: analysisResult?.discrepancies || [],
-      missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "No specific notes from owner.", // Default if AI provides no suggestion
+      missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "No specific notes from owner.",
     };
     onInspectionStepComplete(reportData);
   };
@@ -234,7 +234,7 @@ export function RoomInspectionStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {showOwnerExpectedItems && ( // Conditionally render owner's expected items
+        {showOwnerExpectedItems && (
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Owner's Expected Items:</h3>
             <p className="text-xs p-2 bg-muted/50 rounded-md border">{ownerExpectedItemsList}</p>
@@ -278,57 +278,57 @@ export function RoomInspectionStep({
             <Button type="button" variant="outline" onClick={triggerFileInput} disabled={tenantPhotos.length >= MAX_PHOTOS_PER_ROOM || isLoading}>
               <FileImage className="mr-2 h-4 w-4" /> Add File(s)
             </Button>
-             <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
-                <DialogTrigger asChild>
-                    <Button type="button" variant="outline" disabled={tenantPhotos.length >= MAX_PHOTOS_PER_ROOM || isLoading}>
-                        <Camera className="mr-2 h-4 w-4" /> Use Camera
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
+            <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="outline" disabled={tenantPhotos.length >= MAX_PHOTOS_PER_ROOM || isLoading}>
+                  <Camera className="mr-2 h-4 w-4" /> Use Camera
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                    <DialogTitle>Capture Image</DialogTitle>
-                    <DialogDescription>Position the camera and click "Snap Photo".</DialogDescription>
+                  <DialogTitle>Capture Image</DialogTitle>
+                  <DialogDescription>Position the camera and click "Snap Photo".</DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <video ref={videoRef} autoPlay muted playsInline className="w-full aspect-video rounded-md bg-black" />
-                    <canvas ref={canvasRef} className="hidden"></canvas>
-                    {hasCameraPermission === false && cameraError && (
+                  <video ref={videoRef} autoPlay muted playsInline className="w-full aspect-video rounded-md bg-black" />
+                  <canvas ref={canvasRef} className="hidden"></canvas>
+                  {hasCameraPermission === false && cameraError && (
                     <Alert variant="destructive">
-                        <Camera className="h-4 w-4" />
-                        <AlertTitle>Camera Access Error</AlertTitle>
-                        <AlertDescription>{cameraError}</AlertDescription>
+                      <Camera className="h-4 w-4" />
+                      <AlertTitle>Camera Access Error</AlertTitle>
+                      <AlertDescription>{cameraError}</AlertDescription>
                     </Alert>
-                    )}
-                    {hasCameraPermission === null && !cameraError && (
-                        <div className="flex items-center justify-center text-muted-foreground">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting camera access...
-                        </div>
-                    )}
+                  )}
+                  {hasCameraPermission === null && !cameraError && (
+                    <div className="flex items-center justify-center text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting camera access...
+                    </div>
+                  )}
                 </div>
                 <DialogModalFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                    <Button variant="outline" onClick={closeCamera}>Cancel</Button>
-                    <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>Snap Photo</Button>
+                  <Button variant="outline" onClick={closeCamera}>Cancel</Button>
+                  <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>Snap Photo</Button>
                 </DialogModalFooter>
-                </DialogContent>
+              </DialogContent>
             </Dialog>
           </div>
-           {tenantPhotos.length > 0 && (
-              <Button onClick={handleAnalyze} disabled={isLoading || !room.analyzedObjects || room.analyzedObjects.length === 0}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                {isLoading ? "Analyzing..." : "Analyze My Photos"}
-              </Button>
-            )}
+          {tenantPhotos.length > 0 && (
+            <Button onClick={handleAnalyze} disabled={isLoading || !room.analyzedObjects || room.analyzedObjects.length === 0}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+              {isLoading ? "Analyzing..." : "Analyze My Photos"}
+            </Button>
+          )}
         </div>
 
         {analysisAttempted && (
           <div className="space-y-4 pt-4 border-t mt-4">
             <h3 className="text-lg font-semibold">Inspection Results</h3>
-            {isLoading && (
+            {isLoading && !analysisResult && ( // Show this only if local isLoading is true AND global AI loader is also active (implied by no analysisResult yet)
               <div className="flex items-center text-primary">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading AI Analysis...
               </div>
             )}
-            {analysisResult && !isLoading && (
+            {analysisResult && !isLoading && ( // Ensure local isLoading is false before showing results
               <>
                 {analysisResult.discrepancies.length > 0 ? (
                   <Alert variant="destructive">
@@ -353,22 +353,21 @@ export function RoomInspectionStep({
                     </AlertDescription>
                   </Alert>
                 )}
-                 {analysisResult.missingItemSuggestion && (
+                {analysisResult.missingItemSuggestion && (
                   <Alert className="mt-3">
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Message from Owner</AlertTitle> 
+                    <AlertTitle>Message from Owner</AlertTitle>
                     <AlertDescription>{analysisResult.missingItemSuggestion}</AlertDescription>
                   </Alert>
                 )}
               </>
             )}
             {!analysisResult && !isLoading && analysisAttempted && tenantPhotos.length > 0 && room.analyzedObjects && room.analyzedObjects.length > 0 && (
-                 <p className="text-sm text-muted-foreground">AI analysis could not be completed or returned no results.</p>
+              <p className="text-sm text-muted-foreground">AI analysis could not be completed or returned no results.</p>
             )}
-             {!analysisResult && !isLoading && analysisAttempted && (!room.analyzedObjects || room.analyzedObjects.length === 0) && (
-                 <p className="text-sm text-muted-foreground">Owner's list was empty, AI discrepancy check skipped.</p>
+            {!analysisResult && !isLoading && analysisAttempted && (!room.analyzedObjects || room.analyzedObjects.length === 0) && (
+              <p className="text-sm text-muted-foreground">Owner's list was empty, AI discrepancy check skipped.</p>
             )}
-            {/* Removed Additional Notes Section */}
           </div>
         )}
       </CardContent>
@@ -381,4 +380,3 @@ export function RoomInspectionStep({
     </Card>
   );
 }
-
