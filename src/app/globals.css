@@ -344,8 +344,9 @@ main {
 }
 .banter-loader__box:nth-child(9) { animation: moveBox-9 4s infinite; }
 
-/* AI Analysis Loader (Waving Gradient) Styles */
-.ai-analysis-loader-overlay {
+
+/* Custom AI SVG Loader Styles */
+.custom-ai-loader-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -356,61 +357,113 @@ main {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Prevent scrollbars if content is too large */
+  background-color: hsla(var(--background-hsl-values), 0.75); /* Semi-transparent background */
+  backdrop-filter: blur(4px); /* Blur effect */
+  overflow: hidden;
 }
 
-.ai-waving-gradient-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #a7d7f9, #fdfd96, #a7d7f9, #fdfd96); /* Light Blue & Yellow */
-  background-size: 400% 400%;
-  animation: waveAnimation 10s ease infinite;
-  opacity: 0.85; /* Slightly transparent to see page behind if needed, adjust as desired */
+#svg-global {
+  zoom: 1.2;
+  overflow: visible;
 }
 
-@keyframes waveAnimation {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@keyframes fade-particles {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.ai-analysis-loader-content {
-  position: relative; /* To ensure it's above the gradient background */
-  z-index: 1; /* Above the gradient */
-  text-align: center;
-  padding: 20px;
-  background-color: hsla(var(--card-hsl-values), 0.5); /* Semi-transparent card background */
-  border-radius: var(--radius);
-  box-shadow: 0 4px 15px hsla(var(--foreground-hsl-values), 0.2);
+@keyframes floatUp {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
 }
 
-.ai-analysis-loader-content h3 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: hsl(var(--foreground)); /* Ensure text is readable on gradient */
-  margin-bottom: 0.75rem;
-  text-shadow: 1px 1px 2px hsla(var(--background-hsl-values), 0.5);
+#particles {
+  animation: fade-particles 5s infinite alternate;
+}
+.particle {
+  animation: floatUp linear infinite;
 }
 
-.ai-analysis-loader-content p {
-  font-size: 1rem;
-  color: hsl(var(--muted-foreground));
-  text-shadow: 1px 1px 1px hsla(var(--background-hsl-values), 0.3);
+.p1 {
+  animation-duration: 2.2s;
+  animation-delay: 0s;
+}
+.p2 {
+  animation-duration: 2.5s;
+  animation-delay: 0.3s;
+}
+.p3 {
+  animation-duration: 2s;
+  animation-delay: 0.6s;
+}
+.p4 {
+  animation-duration: 2.8s;
+  animation-delay: 0.2s;
+}
+.p5 {
+  animation-duration: 2.3s;
+  animation-delay: 0.4s;
+}
+.p6 {
+  animation-duration: 3s;
+  animation-delay: 0.1s;
+}
+.p7 {
+  animation-duration: 2.1s;
+  animation-delay: 0.5s;
+}
+.p8 {
+  animation-duration: 2.6s;
+  animation-delay: 0.2s;
+}
+.p9 {
+  animation-duration: 2.4s;
+  animation-delay: 0.3s;
 }
 
-/* Optional: Add a subtle pulse to the text for more dynamism */
-.ai-analysis-loader-content h3,
-.ai-analysis-loader-content p {
-  animation: pulseText 2s infinite ease-in-out;
+@keyframes bounce-lines {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
-@keyframes pulseText {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
+#line-v1,
+#line-v2,
+#node-server,
+#panel-rigth,
+#reflectores,
+#particles {
+  animation: bounce-lines 3s ease-in-out infinite alternate;
 }
+#line-v2 {
+  animation-delay: 0.2s;
+}
+
+#node-server,
+#panel-rigth,
+#reflectores,
+#particles {
+  animation-delay: 0.4s;
+}
+/* End Custom AI SVG Loader Styles */
 
 
 /* Codepen Button (Download PDF in ObjectAnalysisCard) */
@@ -793,3 +846,5 @@ main {
   }
 }
 /* End of globals.css content */
+
+    
