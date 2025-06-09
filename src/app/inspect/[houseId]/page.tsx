@@ -4,7 +4,7 @@
 import type { NextPage } from 'next';
 import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
-import { getHome, getRooms, saveInspectionReport } from '@/lib/firestore';
+import { getHome, getRooms, saveInspectionReport, getUserEmail } from '@/lib/firestore';
 import type { Home, Room, InspectionReport, RoomInspectionReportData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, ArrowLeft, Info, Download, Send, XCircle } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
-// Firebase storage direct imports removed
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
 import Image from "next/image";
 import jsPDF from 'jspdf';
@@ -137,19 +136,22 @@ const PublicInspectionPage: NextPage = () => {
       yPos += lineHeight;
 
       if (room.missingItemSuggestionForRoom) {
-        checkAndAddPage(lineHeight); 
+        checkAndAddPage(lineHeight * 2); 
         doc.setFontSize(10);
         doc.setFont(undefined, 'italic');
-        doc.text(`Owner's Note/Suggestion for Room:`, margin + 5, yPos);
+        const ownerMessagePrefix = "Owner's Message/Suggestion for Room:";
+        doc.text(ownerMessagePrefix, margin + 5, yPos);
         yPos += lineHeight * 0.8;
+        
         doc.setFont(undefined, 'normal');
         const suggestionLines = doc.splitTextToSize(`  ${room.missingItemSuggestionForRoom}`, maxLineWidth - 10);
+        checkAndAddPage(suggestionLines.length * (lineHeight * 0.8));
         doc.text(suggestionLines, margin + 5, yPos);
         yPos += suggestionLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
 
       if (room.discrepancies.length > 0) {
-        checkAndAddPage(lineHeight);
+        checkAndAddPage(lineHeight * 2);
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
         doc.text("Discrepancies Found:", margin + 5, yPos);
@@ -163,7 +165,7 @@ const PublicInspectionPage: NextPage = () => {
           doc.text(discrepancyLines, margin + 10, yPos);
           yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
-      } else if (!room.missingItemSuggestionForRoom) {
+      } else if (!room.missingItemSuggestionForRoom) { // Only show "no discrepancies" if there wasn't an owner message either
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.text("No discrepancies noted by AI for this room.", margin + 5, yPos);
@@ -221,13 +223,13 @@ const PublicInspectionPage: NextPage = () => {
       setGeneratedReport(fullReportForPdf); 
       
       const pdfDoc = generatePdfDocument(fullReportForPdf);
-      setGeneratedPdfForEmail(pdfDoc); // Save for email sending
-      downloadPdfReport(pdfDoc, fullReportForPdf); // Initial download
+      setGeneratedPdfForEmail(pdfDoc); 
+      downloadPdfReport(pdfDoc, fullReportForPdf); 
 
       setInspectionComplete(true);
       toast({
-        title: "Inspection Submitted!",
-        description: "Thank you! The report has been saved and downloaded.",
+        title: "Inspection Completed!",
+        description: "Report has been generated and downloaded. You can now send it to the owner.",
         duration: 7000,
       });
 
@@ -253,7 +255,6 @@ const PublicInspectionPage: NextPage = () => {
     showAiLoader();
 
     try {
-      // Get PDF as base64 string
       const pdfBase64 = generatedPdfForEmail.output('datauristring').split(',')[1];
       
       const response = await fetch('/api/send-inspection-report', {
@@ -314,10 +315,9 @@ const PublicInspectionPage: NextPage = () => {
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
                 <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Inspection Submitted!</CardTitle>
+            <CardTitle className="text-2xl">Inspection Completed!</CardTitle>
             <CardDescription>
-              Thank you, <strong>{inspectorName || "Inspector"}</strong>, for completing the inspection for <strong>{home?.name}</strong>.
-              The report has been saved and initially downloaded.
+              Thank you, <strong>{inspectorName || "Inspector"}</strong>. The report for <strong>{home?.name}</strong> has been generated.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -464,7 +464,7 @@ const PublicInspectionPage: NextPage = () => {
                   ) : (
                     <CheckCircle className="mr-2 h-4 w-4" />
                   )}
-                  {isSubmittingReport ? "Submitting..." : "Complete & Submit Inspection"}
+                  {isSubmittingReport ? "Completing..." : "Complete inspection"}
                 </Button>
               )}
             </div>
@@ -476,4 +476,6 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
+    
+
     

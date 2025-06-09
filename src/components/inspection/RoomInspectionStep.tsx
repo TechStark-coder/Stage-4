@@ -57,8 +57,8 @@ export function RoomInspectionStep({
     setAnalysisResult(null);
     setAnalysisAttempted(false);
     setShowOwnerExpectedItems(false);
-    setIsLoading(false); // Ensure loading state is also reset
-    console.log(`Switched to room: ${room.name}`);
+    setIsLoading(false);
+    console.log(`RoomInspectionStep: Switched to room: ${room.name} (ID: ${room.id})`);
   }, [room]);
 
 
@@ -87,7 +87,7 @@ export function RoomInspectionStep({
         setTenantPhotos(prev => [...prev, ...filesToActuallyAdd]);
       }
     } else if (filteredNewFiles.length > 0) {
-       setTenantPhotos(prev => [...prev, ...filteredNewFiles]);
+       setTenantPhotos(prev => [...prev, ...filesToActuallyAdd]);
     }
   };
 
@@ -173,12 +173,12 @@ export function RoomInspectionStep({
     setIsLoading(true);
     setAnalysisResult(null);
     setAnalysisAttempted(true);
-    setShowOwnerExpectedItems(true); // Show owner's list once analysis is attempted
+    setShowOwnerExpectedItems(true); 
 
     let tenantPhotoDataUri = "";
     try {
       const reader = new FileReader();
-      reader.readAsDataURL(tenantPhotos[0]); // Use the first photo for AI analysis
+      reader.readAsDataURL(tenantPhotos[0]); 
       await new Promise<void>((resolve, reject) => {
         reader.onload = () => {
           tenantPhotoDataUri = reader.result as string;
@@ -211,7 +211,7 @@ export function RoomInspectionStep({
         description: error.message || "Could not get AI discrepancy report.",
         variant: "destructive",
       });
-      setAnalysisResult(null); // Clear previous results on error
+      setAnalysisResult(null); 
     } finally {
       setIsLoading(false);
       console.log("ROOM INSPECTION: Attempting to hide AI Loader...");
@@ -223,7 +223,7 @@ export function RoomInspectionStep({
     const reportData: RoomInspectionReportData = {
       roomId: room.id,
       roomName: room.name,
-      tenantPhotoUrls: [], // Not saving tenant photos to storage per latest requirement
+      tenantPhotoUrls: [], 
       discrepancies: analysisResult?.discrepancies || [],
       missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "",
     };
@@ -244,7 +244,7 @@ export function RoomInspectionStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {showOwnerExpectedItems && (
+        {analysisAttempted && showOwnerExpectedItems && (
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Owner's Expected Items:</h3>
             <p className="text-xs p-2 bg-muted/50 rounded-md border">{ownerExpectedItemsList}</p>
@@ -347,19 +347,17 @@ export function RoomInspectionStep({
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>Discrepancies Noted</AlertTitle>
                       <AlertDescription>
-                        Discrepancies were found compared to the owner's list. Please review the PDF report for details.
+                        Discrepancies were found. Please review the PDF report for details.
                       </AlertDescription>
                     </Alert>
                   )
                 ) : analysisResult.missingItemSuggestion ? (
-                  // No discrepancies, but there is a suggestion (e.g. "Looks good but...")
                   <Alert variant="default">
                     <Info className="h-4 w-4" />
                     <AlertTitle>Message from Owner</AlertTitle>
                     <AlertDescription>{analysisResult.missingItemSuggestion}</AlertDescription>
                   </Alert>
                 ) : (
-                  // No discrepancies, no suggestion
                   <Alert variant="default" className="border-green-500 bg-green-500/10">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertTitle className="text-green-700">All Clear!</AlertTitle>
@@ -370,7 +368,6 @@ export function RoomInspectionStep({
                 )}
               </>
             ) : (
-              // analysisResult is null, but analysis was attempted (e.g., AI error or owner list was empty and check skipped)
               <p className="text-sm text-muted-foreground">
                 AI analysis could not be completed, or the owner's initial list for this room was empty.
               </p>
