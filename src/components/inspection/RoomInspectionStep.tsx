@@ -5,14 +5,14 @@ import * as React from 'react';
 import type { Room, RoomInspectionReportData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'; // Added CardFooter
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, FileImage, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter as DialogModalFooter, // Aliased to avoid conflict if CardFooter was ever an issue
+  DialogFooter as DialogModalFooter, 
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,10 +20,10 @@ import {
 import type { IdentifyDiscrepanciesInput, IdentifyDiscrepanciesOutput } from '@/ai/flows/identify-discrepancies-flow';
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 
-const MAX_PHOTOS_PER_ROOM = 5; // Max photos tenant can provide for analysis
+const MAX_PHOTOS_PER_ROOM = 5; 
 
 interface RoomInspectionStepProps {
-  homeId: string; // Not directly used in this simplified version, but kept for structure
+  homeId: string; 
   room: Room;
   onInspectionStepComplete: (reportData: RoomInspectionReportData) => void;
   aiIdentifyDiscrepancies: (input: IdentifyDiscrepanciesInput) => Promise<IdentifyDiscrepanciesOutput>;
@@ -37,7 +37,7 @@ export function RoomInspectionStep({
   toast,
 }: RoomInspectionStepProps) {
   const [tenantPhotos, setTenantPhotos] = React.useState<File[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false); // Local loading for the analyze button
+  const [isLoading, setIsLoading] = React.useState(false); 
   const [analysisResult, setAnalysisResult] = React.useState<IdentifyDiscrepanciesOutput | null>(null);
   const [analysisAttempted, setAnalysisAttempted] = React.useState(false);
   const [showOwnerExpectedItems, setShowOwnerExpectedItems] = React.useState(false);
@@ -84,7 +84,7 @@ export function RoomInspectionStep({
     const files = event.target.files;
     if (files) {
       addNewFiles(Array.from(files));
-      if (event.target) event.target.value = ""; // Reset file input
+      if (event.target) event.target.value = ""; 
     }
   };
 
@@ -151,24 +151,19 @@ export function RoomInspectionStep({
     if (!room.analyzedObjects || room.analyzedObjects.length === 0) {
       toast({ title: "Owner Data Missing", description: "No initial items list from owner for comparison. Cannot perform discrepancy check.", variant: "destructive" });
       setAnalysisAttempted(true);
-      setShowOwnerExpectedItems(true);
+      setShowOwnerExpectedItems(true); // Show owner's list if it's missing for comparison
       return;
     }
 
-    console.log("ROOM INSPECTION: Attempting to show AI Loader in handleAnalyze");
-    setIsLoading(true); // Local button state
+    setIsLoading(true);
     showAiLoader();
-    toast({ title: "AI Loader Status", description: "Attempting to show AI Loader now.", duration: 2000 });
-
-
     setAnalysisResult(null);
-    setAnalysisAttempted(true);
-    // setShowOwnerExpectedItems will be set to true in finally or on error
+    setAnalysisAttempted(true); // Mark that analysis was attempted
 
     let tenantPhotoDataUri = "";
     try {
       const reader = new FileReader();
-      reader.readAsDataURL(tenantPhotos[0]); // Use the first photo for AI analysis
+      reader.readAsDataURL(tenantPhotos[0]);
       await new Promise<void>((resolve, reject) => {
         reader.onload = () => {
           tenantPhotoDataUri = reader.result as string;
@@ -193,7 +188,7 @@ export function RoomInspectionStep({
       const result = await aiIdentifyDiscrepancies(aiInput);
       setAnalysisResult(result);
       toast({ title: "AI Analysis Complete", description: "Review the discrepancies below." });
-
+      setShowOwnerExpectedItems(true); // Show owner's list after successful analysis
     } catch (error: any) {
       console.error("Error during AI Analysis:", error);
       toast({
@@ -202,11 +197,10 @@ export function RoomInspectionStep({
         variant: "destructive",
       });
       setAnalysisResult(null);
+      setShowOwnerExpectedItems(true); // Also show owner's list on error
     } finally {
-      console.log("ROOM INSPECTION: Attempting to hide AI Loader in finally block");
-      setIsLoading(false); // Local button state
+      setIsLoading(false);
       hideAiLoader();
-      setShowOwnerExpectedItems(true); // Show owner's list after analysis attempt (success or fail)
     }
   };
 
@@ -214,9 +208,9 @@ export function RoomInspectionStep({
     const reportData: RoomInspectionReportData = {
       roomId: room.id,
       roomName: room.name,
-      tenantPhotoUrls: [], // Not uploading tenant photos to storage in this version
+      tenantPhotoUrls: [], // Tenant photos are not uploaded to storage
       discrepancies: analysisResult?.discrepancies || [],
-      missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "No specific notes from owner.",
+      missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "", // Ensure it's an empty string if null/undefined
     };
     onInspectionStepComplete(reportData);
   };
@@ -234,7 +228,7 @@ export function RoomInspectionStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {showOwnerExpectedItems && (
+        {analysisAttempted && showOwnerExpectedItems && ( // Show owner's list only after analysis attempt
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Owner's Expected Items:</h3>
             <p className="text-xs p-2 bg-muted/50 rounded-md border">{ownerExpectedItemsList}</p>
@@ -323,12 +317,12 @@ export function RoomInspectionStep({
         {analysisAttempted && (
           <div className="space-y-4 pt-4 border-t mt-4">
             <h3 className="text-lg font-semibold">Inspection Results</h3>
-            {isLoading && !analysisResult && ( // Show this only if local isLoading is true AND global AI loader is also active (implied by no analysisResult yet)
+            {isLoading && !analysisResult && ( 
               <div className="flex items-center text-primary">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading AI Analysis...
               </div>
             )}
-            {analysisResult && !isLoading && ( // Ensure local isLoading is false before showing results
+            {analysisResult && !isLoading && ( 
               <>
                 {analysisResult.discrepancies.length > 0 ? (
                   <Alert variant="destructive">
@@ -380,3 +374,5 @@ export function RoomInspectionStep({
     </Card>
   );
 }
+
+    
