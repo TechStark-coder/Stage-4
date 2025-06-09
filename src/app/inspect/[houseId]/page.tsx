@@ -58,8 +58,14 @@ const PublicInspectionPage: NextPage = () => {
             setError("This home has no rooms configured for inspection.");
           }
           setRooms(fetchedRooms);
+          // Reset state for a new inspection session if houseId changes or on initial load
           setCurrentRoomIndex(0);
           setRoomReports([]);
+          setInspectorName('');
+          setInspectionComplete(false);
+          setGeneratedReport(null);
+          setGeneratedPdfForEmail(null);
+
 
         } catch (err) {
           console.error("Error fetching inspection data:", err);
@@ -135,11 +141,12 @@ const PublicInspectionPage: NextPage = () => {
       doc.setFont(undefined, 'normal');
       yPos += lineHeight;
 
+      // Display "Message from Owner" for the room (AI's specific suggestion)
       if (room.missingItemSuggestionForRoom) {
         checkAndAddPage(lineHeight * 2); 
         doc.setFontSize(10);
         doc.setFont(undefined, 'italic');
-        const ownerMessagePrefix = "Owner's Message/Suggestion for Room:";
+        const ownerMessagePrefix = "Note for Room:"; // Changed label for PDF
         doc.text(ownerMessagePrefix, margin + 5, yPos);
         yPos += lineHeight * 0.8;
         
@@ -165,7 +172,7 @@ const PublicInspectionPage: NextPage = () => {
           doc.text(discrepancyLines, margin + 10, yPos);
           yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
-      } else if (!room.missingItemSuggestionForRoom) { // Only show "no discrepancies" if there wasn't an owner message either
+      } else if (!room.missingItemSuggestionForRoom) { 
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.text("No discrepancies noted by AI for this room.", margin + 5, yPos);
@@ -176,7 +183,11 @@ const PublicInspectionPage: NextPage = () => {
     return doc;
   };
 
-  const downloadPdfReport = (pdfDoc: jsPDF, reportDetails: InspectionReport) => {
+  const triggerPdfDownload = (pdfDoc: jsPDF | null, reportDetails: InspectionReport | null) => {
+    if (!pdfDoc || !reportDetails) {
+        toast({ title: "Error", description: "Report data not available for download.", variant: "destructive"});
+        return;
+    }
     const pdfFileName = `Inspection_Report_${reportDetails.homeName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
     pdfDoc.save(pdfFileName);
     toast({ title: "Report Downloaded", description: `PDF report ${pdfFileName} generated.` });
@@ -224,12 +235,13 @@ const PublicInspectionPage: NextPage = () => {
       
       const pdfDoc = generatePdfDocument(fullReportForPdf);
       setGeneratedPdfForEmail(pdfDoc); 
-      downloadPdfReport(pdfDoc, fullReportForPdf); 
+      // Do NOT automatically download:
+      // triggerPdfDownload(pdfDoc, fullReportForPdf); 
 
       setInspectionComplete(true);
       toast({
         title: "Inspection Completed!",
-        description: "Report has been generated and downloaded. You can now send it to the owner.",
+        description: "Report has been generated. You can now send it to the owner or download it.",
         duration: 7000,
       });
 
@@ -322,7 +334,7 @@ const PublicInspectionPage: NextPage = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
-                onClick={() => generatedPdfForEmail && downloadPdfReport(generatedPdfForEmail, generatedReport)} 
+                onClick={() => triggerPdfDownload(generatedPdfForEmail, generatedReport)} 
                 className="w-full"
                 disabled={!generatedPdfForEmail || isSendingEmail}
             >
@@ -411,7 +423,16 @@ const PublicInspectionPage: NextPage = () => {
             </>
           )}
           
-          {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && (
+          {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && inspectorName.trim() && (
+             <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Ready to Start Inspection</AlertTitle>
+                <AlertDescription>
+                  Press "Next Room" to begin inspecting <strong>{rooms[0]?.name}</strong>, or proceed if you've already started.
+                </AlertDescription>
+              </Alert>
+          )}
+           {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && !inspectorName.trim() && (
              <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>Ready to Start?</AlertTitle>
@@ -476,6 +497,5 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
-    
 
     
