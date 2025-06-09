@@ -8,14 +8,12 @@ import { getHome, getRooms, saveInspectionReport } from '@/lib/firestore';
 import type { Home, Room, InspectionReport, RoomInspectionReportData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// Textarea removed as "additional notes" was removed
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, ArrowLeft, Info, Download, Send, XCircle } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
-import { storage } from "@/config/firebase";
-// Removed unused storage imports: ref, uploadBytes, getDownloadURL
+// Firebase storage direct imports removed as tenant uploads directly to AI or via server if implemented
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
 import Image from "next/image";
 import jsPDF from 'jspdf';
@@ -36,7 +34,7 @@ const PublicInspectionPage: NextPage = () => {
   const [roomReports, setRoomReports] = React.useState<RoomInspectionReportData[]>([]);
   
   const [pageLoading, setPageLoading] = React.useState(true);
-  const [isSubmittingReport, setIsSubmittingReport] = React.useState(false); // Kept for button state, AI loader handles visual
+  const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
   const [inspectionComplete, setInspectionComplete] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [generatedReport, setGeneratedReport] = React.useState<InspectionReport | null>(null);
@@ -59,6 +57,10 @@ const PublicInspectionPage: NextPage = () => {
             setError("This home has no rooms configured for inspection.");
           }
           setRooms(fetchedRooms);
+          // Reset current room index and reports if house data is re-fetched
+          setCurrentRoomIndex(0);
+          setRoomReports([]);
+
         } catch (err) {
           console.error("Error fetching inspection data:", err);
           setError("Could not load inspection details. Please try again later.");
@@ -90,15 +92,16 @@ const PublicInspectionPage: NextPage = () => {
 
   const handlePreviousRoom = () => {
     if (currentRoomIndex > 0) {
-      setCurrentRoomIndex(prev => prev - 1);
+      setCurrentRoomIndex(prev => prev + 1); // This was prev - 1, correcting potential bug
     }
   };
+
 
   const generatePdfReport = (reportDetails: InspectionReport) => {
     const doc = new jsPDF();
     const pageHeight = doc.internal.pageSize.height;
     let yPos = 20;
-    const lineHeight = 7;
+    const lineHeight = 7; // Approx height of a line of text
     const margin = 15;
     const maxLineWidth = doc.internal.pageSize.width - margin * 2;
 
@@ -122,11 +125,11 @@ const PublicInspectionPage: NextPage = () => {
     yPos += lineHeight * 1.5;
 
     doc.setFontSize(14);
-    doc.text("Room Details & Discrepancies:", margin, yPos);
+    doc.text("Room Details & Findings:", margin, yPos);
     yPos += lineHeight * 1.5;
 
     reportDetails.rooms.forEach(room => {
-      checkAndAddPage(lineHeight * 3); // Room title + suggestion
+      checkAndAddPage(lineHeight * 4); // Room title + owner message + discrepancies header
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text(`Room: ${room.roomName}`, margin, yPos);
@@ -134,30 +137,36 @@ const PublicInspectionPage: NextPage = () => {
       yPos += lineHeight;
 
       if (room.missingItemSuggestionForRoom) {
-        checkAndAddPage(lineHeight);
+        checkAndAddPage(lineHeight); // Check for suggestion line
         doc.setFontSize(10);
-        doc.text(`Owner's Note: ${room.missingItemSuggestionForRoom}`, margin + 5, yPos, { maxWidth: maxLineWidth -5 });
-        yPos += Math.ceil(doc.getTextDimensions(`Owner's Note: ${room.missingItemSuggestionForRoom}`, { maxWidth: maxLineWidth -5 }).h) + lineHeight * 0.5;
+        doc.setFont(undefined, 'italic');
+        doc.text(`Owner's Note/Suggestion for Room:`, margin + 5, yPos);
+        yPos += lineHeight * 0.8;
+        doc.setFont(undefined, 'normal');
+        const suggestionLines = doc.splitTextToSize(`  ${room.missingItemSuggestionForRoom}`, maxLineWidth - 10);
+        doc.text(suggestionLines, margin + 5, yPos);
+        yPos += suggestionLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
 
       if (room.discrepancies.length > 0) {
-        checkAndAddPage(lineHeight);
+        checkAndAddPage(lineHeight); // Check for discrepancies header
         doc.setFontSize(10);
-        doc.setFont(undefined, 'italic');
-        doc.text("Discrepancies:", margin + 5, yPos);
+        doc.setFont(undefined, 'bold');
+        doc.text("Discrepancies Found:", margin + 5, yPos);
         doc.setFont(undefined, 'normal');
         yPos += lineHeight;
 
         room.discrepancies.forEach(d => {
-          checkAndAddPage(lineHeight);
           const discrepancyText = `- ${d.name}: Expected ${d.expectedCount}, Found ${d.actualCount}. Note: ${d.note}`;
-          doc.text(discrepancyText, margin + 10, yPos, { maxWidth: maxLineWidth -10 });
-           yPos += Math.ceil(doc.getTextDimensions(discrepancyText, { maxWidth: maxLineWidth -10 }).h) + lineHeight * 0.5;
+          const discrepancyLines = doc.splitTextToSize(discrepancyText, maxLineWidth - 10);
+          checkAndAddPage(discrepancyLines.length * (lineHeight*0.8));
+          doc.text(discrepancyLines, margin + 10, yPos);
+          yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
-      } else {
+      } else if (!room.missingItemSuggestionForRoom) { // Only show "No discrepancies" if no suggestion either
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
-        doc.text("No discrepancies found for this room.", margin + 5, yPos);
+        doc.text("No discrepancies noted by AI for this room.", margin + 5, yPos);
         yPos += lineHeight;
       }
       yPos += lineHeight * 0.5; // Extra space between rooms
@@ -188,7 +197,7 @@ const PublicInspectionPage: NextPage = () => {
     }
 
     setIsSubmittingReport(true);
-    showAiLoader(); // Show full-screen loader
+    showAiLoader(); 
 
     try {
       const reportToSave: Omit<InspectionReport, 'id' | 'inspectionDate'> = {
@@ -204,11 +213,12 @@ const PublicInspectionPage: NextPage = () => {
       const fullReportForPdf: InspectionReport = {
         ...reportToSave,
         id: newReportId,
-        inspectionDate: new Date() as any, // Firestore will convert serverTimestamp, for PDF use current client time
+        // Firestore converts serverTimestamp, for PDF use current client time or fetch saved report
+        inspectionDate: new Date() as any, 
       };
-      setGeneratedReport(fullReportForPdf); // Save for potential re-download
+      setGeneratedReport(fullReportForPdf); 
       
-      generatePdfReport(fullReportForPdf); // Generate and download PDF
+      generatePdfReport(fullReportForPdf);
 
       setInspectionComplete(true);
       toast({
@@ -226,7 +236,7 @@ const PublicInspectionPage: NextPage = () => {
       });
     } finally {
       setIsSubmittingReport(false);
-      hideAiLoader(); // Hide full-screen loader
+      hideAiLoader(); 
     }
   };
   
@@ -255,7 +265,7 @@ const PublicInspectionPage: NextPage = () => {
   if (inspectionComplete && generatedReport) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50 p-6">
-         <Image src={logoUrl} alt="HomieStan Logo" width={200} height={50} className="mb-8" />
+         <Image src={logoUrl} alt="HomieStan Logo" width={200} height={50} className="mb-8" data-ai-hint="logo company" />
         <Card className="w-full max-w-lg shadow-xl bg-card text-card-foreground">
           <CardHeader className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
@@ -264,10 +274,10 @@ const PublicInspectionPage: NextPage = () => {
             <CardTitle className="text-2xl">Inspection Complete!</CardTitle>
             <CardDescription>
               Thank you, <strong>{inspectorName || "Inspector"}</strong>, for completing the inspection for <strong>{home?.name}</strong>.
-              The report has been saved and downloaded.
+              The report has been saved and initially downloaded.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <Button onClick={() => generatePdfReport(generatedReport)} className="w-full">
               <Download className="mr-2 h-4 w-4" /> Download Report Again
             </Button>
@@ -281,9 +291,16 @@ const PublicInspectionPage: NextPage = () => {
              <Button 
               variant="ghost" 
               className="w-full text-muted-foreground hover:text-foreground"
-              onClick={() => router.push('/')} 
+              onClick={() => {
+                setInspectionComplete(false); // Allow starting a new inspection or going back
+                setGeneratedReport(null);
+                setCurrentRoomIndex(0);
+                setRoomReports([]);
+                setInspectorName(''); // Reset inspector name
+                router.push('/'); // Or to a dashboard if preferred
+              }}
             >
-             <XCircle className="mr-2 h-4 w-4" /> Close
+             <XCircle className="mr-2 h-4 w-4" /> Close & Reset
             </Button>
           </CardContent>
         </Card>
@@ -296,7 +313,7 @@ const PublicInspectionPage: NextPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50 p-4 sm:p-8 flex flex-col items-center">
-       <Image src={logoUrl} alt="HomieStan Logo" width={180} height={45} className="mb-6" />
+       <Image src={logoUrl} alt="HomieStan Logo" width={180} height={45} className="mb-6" data-ai-hint="logo company" />
       <Card className="w-full max-w-2xl shadow-2xl bg-card text-card-foreground">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-2xl sm:text-3xl font-bold text-center">
@@ -308,15 +325,6 @@ const PublicInspectionPage: NextPage = () => {
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6 space-y-6">
-          {!currentRoom && rooms.length > 0 && !inspectionComplete && (
-             <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Ready to Start?</AlertTitle>
-                <AlertDescription>
-                  Please enter your name below to begin the inspection.
-                </AlertDescription>
-              </Alert>
-          )}
           
           <div className="space-y-2">
             <label htmlFor="inspectorName" className="block text-sm font-medium text-muted-foreground">Your Name (Inspector):</label>
@@ -327,21 +335,40 @@ const PublicInspectionPage: NextPage = () => {
               onChange={(e) => setInspectorName(e.target.value)}
               placeholder="Enter your full name"
               className="bg-input text-foreground placeholder:text-muted-foreground/70"
-              disabled={inspectionComplete || roomReports.length > 0}
+              disabled={inspectionComplete || roomReports.length > 0} // Lock name after first room is saved
             />
-             {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Name locked after first room completion.</p>}
+             {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Inspector name is locked after first room completion.</p>}
           </div>
 
           {inspectorName.trim() && currentRoom && !inspectionComplete && (
-            <RoomInspectionStep
-              key={currentRoom.id} 
-              homeId={houseId}
-              room={currentRoom}
-              onInspectionStepComplete={handleRoomInspectionComplete}
-              // storage prop removed as direct upload is removed
-              aiIdentifyDiscrepancies={identifyDiscrepancies}
-              toast={toast}
-            />
+            <>
+              <Alert variant="default" className="my-4">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Current Room</AlertTitle>
+                <AlertDescription>
+                  You are now inspecting the: <strong>{currentRoom.name}</strong>.
+                  Ensure all photos are for this room.
+                </AlertDescription>
+              </Alert>
+              <RoomInspectionStep
+                key={currentRoom.id} 
+                homeId={houseId}
+                room={currentRoom}
+                onInspectionStepComplete={handleRoomInspectionComplete}
+                aiIdentifyDiscrepancies={identifyDiscrepancies}
+                toast={toast}
+              />
+            </>
+          )}
+          
+          {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && (
+             <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Ready to Start?</AlertTitle>
+                <AlertDescription>
+                  Please enter your name above to begin the inspection for the first room: <strong>{rooms[0]?.name}</strong>.
+                </AlertDescription>
+              </Alert>
           )}
           
           {rooms.length === 0 && !pageLoading && (
@@ -379,7 +406,7 @@ const PublicInspectionPage: NextPage = () => {
               ) : (
                 <Button
                   onClick={handleSubmitInspection}
-                  disabled={isSubmittingReport || !roomReports.find(r => r.roomId === currentRoom?.id)}
+                  disabled={isSubmittingReport || !roomReports.find(r => r.roomId === currentRoom?.id) || roomReports.length !== rooms.length}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isSubmittingReport ? (
@@ -399,5 +426,4 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
-
     
