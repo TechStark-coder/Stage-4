@@ -290,6 +290,19 @@ export async function deleteRoom(homeId: string, roomId: string): Promise<void> 
   await deleteDoc(roomDocRef);
 }
 
+// Users
+export async function getUserEmail(userId: string): Promise<string | null> {
+  const userDocRef = doc(db, "users", userId);
+  const docSnap = await getDoc(userDocRef);
+  if (docSnap.exists()) {
+    const userData = docSnap.data();
+    return userData?.email || null;
+  }
+  console.warn(`User document not found for ID: ${userId} when trying to get email.`);
+  return null;
+}
+
+
 // Inspection Reports
 export async function saveInspectionReport(reportData: Omit<InspectionReport, 'id' | 'inspectionDate'>): Promise<string> {
   const inspectionsCollectionRef = collection(db, "inspections");

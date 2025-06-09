@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, ArrowLeft, Info, Download, Send, XCircle } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
-// Firebase storage direct imports removed as tenant uploads directly to AI or via server if implemented
+// Firebase storage direct imports removed
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
 import Image from "next/image";
 import jsPDF from 'jspdf';
@@ -35,9 +35,11 @@ const PublicInspectionPage: NextPage = () => {
   
   const [pageLoading, setPageLoading] = React.useState(true);
   const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
   const [inspectionComplete, setInspectionComplete] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [generatedReport, setGeneratedReport] = React.useState<InspectionReport | null>(null);
+  const [generatedPdfForEmail, setGeneratedPdfForEmail] = React.useState<jsPDF | null>(null);
 
   React.useEffect(() => {
     if (houseId) {
@@ -57,7 +59,6 @@ const PublicInspectionPage: NextPage = () => {
             setError("This home has no rooms configured for inspection.");
           }
           setRooms(fetchedRooms);
-          // Reset current room index and reports if house data is re-fetched
           setCurrentRoomIndex(0);
           setRoomReports([]);
 
@@ -92,16 +93,15 @@ const PublicInspectionPage: NextPage = () => {
 
   const handlePreviousRoom = () => {
     if (currentRoomIndex > 0) {
-      setCurrentRoomIndex(prev => prev + 1); // This was prev - 1, correcting potential bug
+      setCurrentRoomIndex(prev => prev - 1); 
     }
   };
 
-
-  const generatePdfReport = (reportDetails: InspectionReport) => {
+  const generatePdfDocument = (reportDetails: InspectionReport): jsPDF => {
     const doc = new jsPDF();
     const pageHeight = doc.internal.pageSize.height;
     let yPos = 20;
-    const lineHeight = 7; // Approx height of a line of text
+    const lineHeight = 7; 
     const margin = 15;
     const maxLineWidth = doc.internal.pageSize.width - margin * 2;
 
@@ -117,11 +117,11 @@ const PublicInspectionPage: NextPage = () => {
     yPos += lineHeight * 2;
 
     doc.setFontSize(12);
-    doc.text(`Owner: ${reportDetails.homeOwnerName}`, margin, yPos);
+    doc.text(`Owner: ${reportDetails.homeOwnerName || 'N/A'}`, margin, yPos);
     yPos += lineHeight;
     doc.text(`Inspected By: ${reportDetails.inspectedBy}`, margin, yPos);
     yPos += lineHeight;
-    doc.text(`Date: ${format(reportDetails.inspectionDate.toDate(), 'PPP p')}`, margin, yPos);
+    doc.text(`Date: ${format(reportDetails.inspectionDate instanceof Date ? reportDetails.inspectionDate : reportDetails.inspectionDate.toDate(), 'PPP p')}`, margin, yPos);
     yPos += lineHeight * 1.5;
 
     doc.setFontSize(14);
@@ -129,7 +129,7 @@ const PublicInspectionPage: NextPage = () => {
     yPos += lineHeight * 1.5;
 
     reportDetails.rooms.forEach(room => {
-      checkAndAddPage(lineHeight * 4); // Room title + owner message + discrepancies header
+      checkAndAddPage(lineHeight * 4); 
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text(`Room: ${room.roomName}`, margin, yPos);
@@ -137,7 +137,7 @@ const PublicInspectionPage: NextPage = () => {
       yPos += lineHeight;
 
       if (room.missingItemSuggestionForRoom) {
-        checkAndAddPage(lineHeight); // Check for suggestion line
+        checkAndAddPage(lineHeight); 
         doc.setFontSize(10);
         doc.setFont(undefined, 'italic');
         doc.text(`Owner's Note/Suggestion for Room:`, margin + 5, yPos);
@@ -149,7 +149,7 @@ const PublicInspectionPage: NextPage = () => {
       }
 
       if (room.discrepancies.length > 0) {
-        checkAndAddPage(lineHeight); // Check for discrepancies header
+        checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
         doc.text("Discrepancies Found:", margin + 5, yPos);
@@ -163,17 +163,20 @@ const PublicInspectionPage: NextPage = () => {
           doc.text(discrepancyLines, margin + 10, yPos);
           yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
-      } else if (!room.missingItemSuggestionForRoom) { // Only show "No discrepancies" if no suggestion either
+      } else if (!room.missingItemSuggestionForRoom) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.text("No discrepancies noted by AI for this room.", margin + 5, yPos);
         yPos += lineHeight;
       }
-      yPos += lineHeight * 0.5; // Extra space between rooms
+      yPos += lineHeight * 0.5; 
     });
-    
+    return doc;
+  };
+
+  const downloadPdfReport = (pdfDoc: jsPDF, reportDetails: InspectionReport) => {
     const pdfFileName = `Inspection_Report_${reportDetails.homeName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
-    doc.save(pdfFileName);
+    pdfDoc.save(pdfFileName);
     toast({ title: "Report Downloaded", description: `PDF report ${pdfFileName} generated.` });
   };
 
@@ -213,12 +216,13 @@ const PublicInspectionPage: NextPage = () => {
       const fullReportForPdf: InspectionReport = {
         ...reportToSave,
         id: newReportId,
-        // Firestore converts serverTimestamp, for PDF use current client time or fetch saved report
         inspectionDate: new Date() as any, 
       };
       setGeneratedReport(fullReportForPdf); 
       
-      generatePdfReport(fullReportForPdf);
+      const pdfDoc = generatePdfDocument(fullReportForPdf);
+      setGeneratedPdfForEmail(pdfDoc); // Save for email sending
+      downloadPdfReport(pdfDoc, fullReportForPdf); // Initial download
 
       setInspectionComplete(true);
       toast({
@@ -237,6 +241,45 @@ const PublicInspectionPage: NextPage = () => {
     } finally {
       setIsSubmittingReport(false);
       hideAiLoader(); 
+    }
+  };
+
+  const handleSendReportToOwner = async () => {
+    if (!generatedReport || !generatedPdfForEmail || !home?.ownerId) {
+      toast({ title: "Error", description: "Report data not available or owner not identified.", variant: "destructive" });
+      return;
+    }
+    setIsSendingEmail(true);
+    showAiLoader();
+
+    try {
+      // Get PDF as base64 string
+      const pdfBase64 = generatedPdfForEmail.output('datauristring').split(',')[1];
+      
+      const response = await fetch('/api/send-inspection-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ownerId: home.ownerId,
+          homeName: generatedReport.homeName,
+          inspectedBy: generatedReport.inspectedBy,
+          pdfBase64: pdfBase64,
+          inspectionDate: generatedReport.inspectionDate.toISOString(), 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to send email (${response.status})`);
+      }
+
+      toast({ title: "Report Sent", description: "The inspection report has been emailed to the owner." });
+    } catch (err: any) {
+      console.error("Error sending report:", err);
+      toast({ title: "Email Sending Failed", description: err.message || "Could not send the report.", variant: "destructive" });
+    } finally {
+      setIsSendingEmail(false);
+      hideAiLoader();
     }
   };
   
@@ -271,33 +314,40 @@ const PublicInspectionPage: NextPage = () => {
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
                 <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Inspection Complete!</CardTitle>
+            <CardTitle className="text-2xl">Inspection Submitted!</CardTitle>
             <CardDescription>
               Thank you, <strong>{inspectorName || "Inspector"}</strong>, for completing the inspection for <strong>{home?.name}</strong>.
               The report has been saved and initially downloaded.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button onClick={() => generatePdfReport(generatedReport)} className="w-full">
+            <Button 
+                onClick={() => generatedPdfForEmail && downloadPdfReport(generatedPdfForEmail, generatedReport)} 
+                className="w-full"
+                disabled={!generatedPdfForEmail || isSendingEmail}
+            >
               <Download className="mr-2 h-4 w-4" /> Download Report Again
             </Button>
             <Button 
-              variant="outline" 
+              variant="default" 
               className="w-full" 
-              onClick={() => toast({title: "Coming Soon!", description: "This feature will be available in a future update."})}
+              onClick={handleSendReportToOwner}
+              disabled={isSendingEmail || !home?.ownerId || !generatedPdfForEmail}
             >
-              <Send className="mr-2 h-4 w-4" /> Send Report to Owner
+              {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {isSendingEmail ? "Sending..." : "Send Report to Owner"}
             </Button>
              <Button 
               variant="ghost" 
               className="w-full text-muted-foreground hover:text-foreground"
               onClick={() => {
-                setInspectionComplete(false); // Allow starting a new inspection or going back
+                setInspectionComplete(false); 
                 setGeneratedReport(null);
+                setGeneratedPdfForEmail(null);
                 setCurrentRoomIndex(0);
                 setRoomReports([]);
-                setInspectorName(''); // Reset inspector name
-                router.push('/'); // Or to a dashboard if preferred
+                setInspectorName(''); 
+                router.push('/'); 
               }}
             >
              <XCircle className="mr-2 h-4 w-4" /> Close & Reset
@@ -335,17 +385,17 @@ const PublicInspectionPage: NextPage = () => {
               onChange={(e) => setInspectorName(e.target.value)}
               placeholder="Enter your full name"
               className="bg-input text-foreground placeholder:text-muted-foreground/70"
-              disabled={inspectionComplete || roomReports.length > 0} // Lock name after first room is saved
+              disabled={inspectionComplete || roomReports.length > 0} 
             />
              {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Inspector name is locked after first room completion.</p>}
           </div>
 
           {inspectorName.trim() && currentRoom && !inspectionComplete && (
             <>
-              <Alert variant="default" className="my-4">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Current Room</AlertTitle>
-                <AlertDescription>
+              <Alert variant="default" className="my-4 bg-primary/10 border-primary/30 text-primary-foreground">
+                <Info className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-primary">Current Room</AlertTitle>
+                <AlertDescription className="text-primary/90">
                   You are now inspecting the: <strong>{currentRoom.name}</strong>.
                   Ensure all photos are for this room.
                 </AlertDescription>

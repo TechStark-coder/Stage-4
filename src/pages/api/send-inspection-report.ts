@@ -1,0 +1,88 @@
+
+import type { NextApiRequest, NextApiResponse } from 'next';
+import Mailjet from 'node-mailjet';
+import { getUserEmail } from '@/lib/firestore'; // Assuming you have this function
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
+  const { ownerId, homeName, inspectedBy, pdfBase64, inspectionDate } = req.body;
+
+  if (!ownerId || !homeName || !inspectedBy || !pdfBase64 || !inspectionDate) {
+    return res.status(400).json({ message: 'Missing required fields for sending report.' });
+  }
+
+  const mailjetApiKey = process.env.MAILJET_API_KEY;
+  const mailjetApiSecret = process.env.MAILJET_API_SECRET;
+  const senderEmail = process.env.MAILJET_SENDER_EMAIL;
+
+  if (!mailjetApiKey || !mailjetApiSecret || !senderEmail) {
+    console.error('Mailjet API Key, Secret, or Sender Email not configured in environment variables.');
+    return res.status(500).json({ message: 'Email service configuration error.' });
+  }
+
+  try {
+    const ownerEmail = await getUserEmail(ownerId);
+    if (!ownerEmail) {
+      console.error(`Could not find email for owner ID: ${ownerId}`);
+      return res.status(404).json({ message: 'Owner email not found.' });
+    }
+
+    const mailjet = new Mailjet({
+      apiKey: mailjetApiKey,
+      apiSecret: mailjetApiSecret,
+    });
+
+    const formattedDate = new Date(inspectionDate).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const emailData = {
+      Messages: [
+        {
+          From: {
+            Email: senderEmail,
+            Name: 'HomieStan Inspections',
+          },
+          To: [
+            {
+              Email: ownerEmail,
+              Name: 'Home Owner', // Or fetch owner's name if available
+            },
+          ],
+          Subject: `Inspection Report for ${homeName} - ${formattedDate}`,
+          TextPart: `Dear Home Owner,\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\nThank you,\nHomieStan Team`,
+          HTMLPart: `<h3>Dear Home Owner,</h3>
+                       <p>Please find attached the inspection report for your property "<strong>${homeName}</strong>", conducted by <strong>${inspectedBy}</strong> on <strong>${formattedDate}</strong>.</p>
+                       <p>Thank you,<br/>HomieStan Team</p>`,
+          Attachments: [
+            {
+              ContentType: 'application/pdf',
+              Filename: `Inspection_Report_${homeName.replace(/\s+/g, '_')}_${new Date(inspectionDate).toISOString().split('T')[0]}.pdf`,
+              Base64Content: pdfBase64,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = await mailjet.post('send', { version: 'v3.1' }).request(emailData);
+    console.log('Mailjet send result:', result.body);
+    return res.status(200).json({ message: 'Report sent successfully!' });
+
+  } catch (error: any) {
+    console.error('Error sending email via Mailjet:', error.statusCode, error.ErrorMessage, error.response?.data);
+    let errorMessage = 'Failed to send inspection report.';
+    if (error.isMailjetError) {
+        errorMessage = error.ErrorMessage || 'Mailjet API error.';
+    } else if (error.response && error.response.data && error.response.data.Messages) {
+        errorMessage = error.response.data.Messages[0]?.Errors?.[0]?.ErrorMessage || errorMessage;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return res.status(500).json({ message: errorMessage });
+  }
+}
