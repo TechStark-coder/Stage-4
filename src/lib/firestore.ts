@@ -15,7 +15,7 @@ import {
   writeBatch,
   setDoc,
   deleteField,
-  increment,
+  increment, // Ensure increment is imported
   runTransaction,
   collectionGroup,
   limit,
@@ -67,6 +67,7 @@ const deleteFolderContents = async (folderPath: string) => {
     console.log(`Successfully deleted contents of folder: ${folderPath}`);
   } catch (error) {
     console.error(`Error deleting contents of folder ${folderPath}:`, error);
+    // Do not re-throw, allow Firestore deletions to proceed if storage deletion fails partially
   }
 };
 
@@ -74,7 +75,7 @@ const deleteFolderContents = async (folderPath: string) => {
 // Homes
 export async function addHome(
   userId: string,
-  data: CreateHomeData, // Now includes ownerEmail
+  data: CreateHomeData,
   coverImageFile?: File | null
 ): Promise<string> {
   const homesCollectionRef = collection(db, "homes");
@@ -92,7 +93,7 @@ export async function addHome(
     name: data.name,
     ownerId: userId,
     ownerDisplayName: data.ownerDisplayName || "Home Owner",
-    ownerEmail: data.ownerEmail, // Save owner's email
+    ownerEmail: data.ownerEmail,
     createdAt: serverTimestamp(),
   };
 
@@ -130,8 +131,6 @@ export async function updateHome(
   if (data.address !== undefined) {
     updateData.address = data.address === null ? deleteField() : data.address;
   }
-  // Note: ownerEmail update is not part of this function's current scope,
-  // but could be added if user profile email changes and needs to sync to homes.
 
   if (newCoverImageFile) {
     if (currentHomeData.coverImageUrl) {
@@ -186,43 +185,54 @@ export async function getHome(homeId: string): Promise<Home | null> {
 export async function deleteHome(homeId: string, userId: string): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
   const homeSnap = await getDoc(homeDocRef);
+  let ownerIdToDelete = userId; // Default to the deleter's ID
 
   if (homeSnap.exists()) {
     const homeData = homeSnap.data() as Home;
     if (homeData.ownerId !== userId) {
-      throw new Error("Permission denied to delete this home.");
+      throw new Error("Permission denied to delete this home. You are not the owner.");
     }
+    ownerIdToDelete = homeData.ownerId; // Use the confirmed ownerId from the document
+
     if (homeData.coverImageUrl) {
       await safeDeleteStorageObject(homeData.coverImageUrl);
     }
-    await deleteFolderContents(`homeCovers/${userId}/${homeId}`);
+    // Delete home cover image folder contents
+    await deleteFolderContents(`homeCovers/${ownerIdToDelete}/${homeId}`);
   } else {
-    throw new Error("Home not found for deletion.");
+    // If home doesn't exist or user can't read it, we might still try to delete related folders if we have an ID.
+    // However, without homeData.ownerId, constructing storage paths is problematic.
+    // This error indicates the initial check failed.
+    throw new Error("Home not found for deletion, or you do not have permission to access its details.");
   }
 
   const batch = writeBatch(db);
 
+  // Delete rooms and their storage
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
   for (const roomDoc of roomsSnapshot.docs) {
-    // Assuming room photos are stored under roomAnalysisPhotos/{OWNER_ID_OF_HOME}/{roomId}
-    await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomDoc.id}`);
+    await deleteFolderContents(`roomAnalysisPhotos/${ownerIdToDelete}/${roomDoc.id}`);
     batch.delete(roomDoc.ref);
   }
 
+  // Delete tenant inspection links
   const linksCollectionRef = collection(db, `homes/${homeId}/tenantInspectionLinks`);
   const linksSnapshot = await getDocs(linksCollectionRef);
   linksSnapshot.forEach(linkDoc => batch.delete(linkDoc.ref));
 
+  // Delete inspection reports
   const inspectionsCollectionRef = collection(db, "inspections");
   const reportsQuery = query(inspectionsCollectionRef, where("houseId", "==", homeId));
   const reportsSnapshot = await getDocs(reportsQuery);
   reportsSnapshot.forEach(reportDoc => batch.delete(reportDoc.ref));
 
+  // Delete the home document itself
   batch.delete(homeDocRef);
 
   await batch.commit();
 }
+
 
 // Rooms
 export async function addRoom(homeId: string, data: CreateRoomData): Promise<string> {
@@ -240,8 +250,9 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
 
 export async function updateRoom(homeId: string, roomId: string, data: UpdateRoomData): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
-  const home = await getHome(homeId);
-  if (!home) throw new Error("Parent home not found for room update.");
+  // Optional: Add a check to ensure the home exists or user has permission if needed
+  // const home = await getHome(homeId);
+  // if (!home) throw new Error("Parent home not found for room update.");
   await updateDoc(roomDocRef, data);
 }
 
@@ -269,7 +280,7 @@ export async function updateRoomAnalysisData(
   roomId: string,
   analyzedObjectsData: Array<{ name: string; count: number }>,
   newlyUploadedPhotoUrls: string[],
-  userId: string
+  userId: string // userId of the uploader, for storage path or logging if needed
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
 
@@ -280,6 +291,7 @@ export async function updateRoomAnalysisData(
     }
     const roomData = roomSnap.data() as Room;
 
+    // Combine existing and new URLs, avoiding duplicates
     const existingUrls = new Set(roomData.analyzedPhotoUrls || []);
     newlyUploadedPhotoUrls.forEach(url => existingUrls.add(url));
     const finalPhotoUrls = Array.from(existingUrls);
@@ -299,14 +311,17 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string, user
   const roomSnap = await getDoc(roomDocRef);
   if (roomSnap.exists()) {
     const roomData = roomSnap.data() as Room;
+    // Delete from storage: all photos listed in analyzedPhotoUrls
     if (roomData.analyzedPhotoUrls && roomData.analyzedPhotoUrls.length > 0) {
       for (const url of roomData.analyzedPhotoUrls) {
          await safeDeleteStorageObject(url);
       }
     }
-    // Assuming room photos are stored under roomAnalysisPhotos/{OWNER_ID_OF_HOME}/{roomId}
+    // Also attempt to delete the entire folder for this room under the user
+    // This helps catch any orphaned files not in analyzedPhotoUrls
     await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
   }
+  // Update Firestore document
   await updateDoc(roomDocRef, {
     analyzedObjects: [],
     isAnalyzing: false,
@@ -326,23 +341,10 @@ export async function setRoomAnalyzingStatus(
 
 export async function deleteRoom(homeId: string, roomId: string, userId: string): Promise<void> {
   const roomDocRef = doc(db, `homes/${homeId}/rooms`, roomId);
-  // Assuming room photos are stored under roomAnalysisPhotos/{OWNER_ID_OF_HOME}/{roomId}
+  // Delete associated storage folder for the room
   await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
   await deleteDoc(roomDocRef);
 }
-
-// Users (This function is no longer used by the /api/send-inspection-report route)
-// export async function getUserEmail(userId: string): Promise<string | null> {
-//   const userDocRef = doc(db, "users", userId);
-//   const docSnap = await getDoc(userDocRef);
-//   if (docSnap.exists()) {
-//     const userData = docSnap.data();
-//     return userData?.email || null;
-//   }
-//   console.warn(`User document not found for ID: ${userId} when trying to get email.`);
-//   return null;
-// }
-
 
 // Inspection Reports
 export async function saveInspectionReport(reportData: Omit<InspectionReport, 'id' | 'inspectionDate'>): Promise<string> {
@@ -357,12 +359,12 @@ export async function saveInspectionReport(reportData: Omit<InspectionReport, 'i
 // Tenant Inspection Links
 export async function addTenantInspectionLink(
   homeId: string,
-  currentUserId: string,
+  currentUserId: string, // User ID of the owner creating the link
   linkData: CreateTenantInspectionLinkData
 ): Promise<TenantInspectionLink> {
   const home = await getHome(homeId);
   if (!home || home.ownerId !== currentUserId) {
-    throw new Error("Permission denied or home not found.");
+    throw new Error("Permission denied: You do not own this home or the home was not found.");
   }
 
   const linksCollectionRef = collection(db, "homes", homeId, "tenantInspectionLinks");
@@ -375,9 +377,9 @@ export async function addTenantInspectionLink(
     validUntil = Timestamp.fromDate(expiryDate);
   }
 
-  const newLink: Omit<TenantInspectionLink, 'id'> = {
+  const newLinkData: Omit<TenantInspectionLink, 'id'> = {
     homeId: homeId,
-    ownerDisplayName: home.ownerDisplayName || "Home Owner",
+    ownerDisplayName: home.ownerDisplayName || "Home Owner", // Use owner's display name from home doc
     tenantName: linkData.tenantName,
     createdAt: serverTimestamp() as Timestamp,
     isActive: true,
@@ -387,8 +389,8 @@ export async function addTenantInspectionLink(
     reportId: null,
   };
 
-  await setDoc(newLinkRef, newLink);
-  return { id: newLinkRef.id, ...newLink } as TenantInspectionLink;
+  await setDoc(newLinkRef, newLinkData);
+  return { id: newLinkRef.id, ...newLinkData } as TenantInspectionLink;
 }
 
 export async function getTenantInspectionLinks(homeId: string, ownerId: string): Promise<TenantInspectionLink[]> {
@@ -405,7 +407,9 @@ export async function getTenantInspectionLinks(homeId: string, ownerId: string):
 export async function getTenantInspectionLink(homeId: string, linkId: string): Promise<TenantInspectionLink | null> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
   const docSnap = await getDoc(linkDocRef);
-  if (docSnap.exists() && docSnap.data()?.isActive) {
+  // Important: Return the link data even if !isActive, the client page can then decide how to handle an inactive link.
+  // The security rules will prevent reading if !isActive for an unauthenticated user.
+  if (docSnap.exists()) {
     return { id: docSnap.id, ...docSnap.data() } as TenantInspectionLink;
   }
   return null;
@@ -413,6 +417,11 @@ export async function getTenantInspectionLink(homeId: string, linkId: string): P
 
 export async function deactivateTenantInspectionLink(homeId: string, linkId: string): Promise<void> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
+  // Check if link exists before attempting to update
+  const linkSnap = await getDoc(linkDocRef);
+  if (!linkSnap.exists()) {
+    throw new Error("Tenant inspection link not found for deactivation.");
+  }
   await updateDoc(linkDocRef, {
     isActive: false,
   });
@@ -421,6 +430,16 @@ export async function deactivateTenantInspectionLink(homeId: string, linkId: str
 export async function recordTenantInspectionLinkAccess(homeId: string, linkId: string): Promise<void> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
   try {
+    // First, get the link to ensure it exists and is active before trying to update.
+    // Firestore security rules should prevent this read if the link is not active for an unauth user.
+    const linkSnap = await getDoc(linkDocRef);
+    if (!linkSnap.exists()) {
+        throw new Error("Inspection link not found.");
+    }
+    if (linkSnap.data()?.isActive !== true) {
+        throw new Error("Inspection link is not active.");
+    }
+
     await updateDoc(linkDocRef, {
       accessCount: increment(1),
       lastAccessedAt: serverTimestamp(),
@@ -428,7 +447,7 @@ export async function recordTenantInspectionLinkAccess(homeId: string, linkId: s
     console.log(`Access recorded for tenant inspection link ${linkId} for home ${homeId}.`);
   } catch (error) {
     console.error(`Error recording access for tenant inspection link ${linkId}:`, error);
-    throw error;
+    throw error; // Re-throw to be caught by the calling page
   }
 }
 
@@ -443,7 +462,7 @@ export async function deleteTenantInspectionLink(homeId: string, linkId: string,
 
 export async function getActiveTenantInspectionLinksCount(homeId: string): Promise<number> {
     const linksRef = collection(db, `homes/${homeId}/tenantInspectionLinks`);
-    const q = query(linksRef, where("isActive", "==", true), limit(10));
+    const q = query(linksRef, where("isActive", "==", true), limit(10)); // Limit query for performance
     const snapshot = await getDocs(q);
     return snapshot.size;
 }
@@ -472,7 +491,7 @@ export async function getInspectionReport(reportId: string, userId: string): Pro
     if (reportSnap.exists()) {
         const reportData = reportSnap.data() as InspectionReport;
         const home = await getHome(reportData.houseId);
-        if (home && home.ownerId === userId) {
+        if (home && home.ownerId === userId) { // Check if the user owns the associated home
             return { id: reportSnap.id, ...reportData } as InspectionReport;
         } else {
             console.error("Permission denied: User does not own the home associated with this report.");
@@ -488,8 +507,8 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
 
     if (reportSnap.exists()) {
         const reportData = reportSnap.data() as InspectionReport;
-        const home = await getHome(reportData.houseId);
-        if (home && home.ownerId === userId) {
+        const home = await getHome(reportData.houseId); // Get the home associated with the report
+        if (home && home.ownerId === userId) { // Check if the current user owns that home
             await deleteDoc(reportDocRef);
         } else {
             throw new Error("Permission denied to delete this inspection report.");
@@ -498,4 +517,3 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
         throw new Error("Inspection report not found.");
     }
 }
-

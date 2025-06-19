@@ -4,7 +4,7 @@
 import type { NextPage } from 'next';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
-import { getHome, getRooms, saveInspectionReport, recordTenantInspectionLinkAccess, deactivateTenantInspectionLink } from '@/lib/firestore';
+import { getHome, getRooms, saveInspectionReport, recordTenantInspectionLinkAccess, deactivateTenantInspectionLink, getTenantInspectionLink } from '@/lib/firestore'; // Added getTenantInspectionLink
 import type { Home, Room, InspectionReport, RoomInspectionReportData, TenantInspectionLink } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,7 @@ const PublicInspectionPage: NextPage = () => {
     } else if (houseId) {
         setError("Inspection link ID is missing. Please use the link provided by the home owner. This link may also be invalid or expired.");
         setPageLoading(false);
+        return; // Stop further execution
     }
 
     if (houseId && linkIdFromQuery) {
@@ -58,6 +59,7 @@ const PublicInspectionPage: NextPage = () => {
         setPageLoading(true);
         setError(null);
         try {
+          // Attempt to record access and implicitly validate the link
           await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
 
           const fetchedHome = await getHome(houseId);
@@ -72,12 +74,20 @@ const PublicInspectionPage: NextPage = () => {
           if (fetchedLinkDetails && fetchedLinkDetails.tenantName) {
             setTenantNameFromLink(fetchedLinkDetails.tenantName);
             if (!inspectorName) setInspectorName(fetchedLinkDetails.tenantName); // Pre-fill if empty
+          } else if (!fetchedLinkDetails) {
+            // This case means the link was not found or is inactive AFTER attempting to record access.
+            // recordTenantInspectionLinkAccess might throw if the link doesn't exist,
+            // or getTenantInspectionLink will return null if it's inactive.
+            setError("Inspection link is invalid, expired, or has already been used. Please contact the home owner.");
+            setPageLoading(false);
+            return;
           }
 
 
           const fetchedRooms = await getRooms(houseId);
           if (fetchedRooms.length === 0) {
             setError("This home has no rooms configured for inspection.");
+            // Don't set pageLoading to false yet, as we might still want to show home info if home loaded.
           }
           setRooms(fetchedRooms);
 
@@ -90,8 +100,8 @@ const PublicInspectionPage: NextPage = () => {
         } catch (err: any) {
           console.error("Error during initial inspection setup:", err);
           let userErrorMessage = "Could not load inspection details. The link might be invalid, expired, or already used. Please contact the home owner.";
-          if (err.code === 'permission-denied' || (err.message && err.message.toLowerCase().includes("permission"))) {
-            userErrorMessage = "Access denied. This inspection link may be invalid, expired, already used, or there's a configuration issue. Please check with the home owner.";
+          if (err.message && (err.message.toLowerCase().includes("permission denied") || err.message.toLowerCase().includes("insufficient permissions"))) {
+            userErrorMessage = "There was a problem accessing inspection data. This could be due to an invalid link, an expired link, or a configuration issue. Please contact the home owner.";
           } else if (err.message) {
             userErrorMessage = `An error occurred: ${err.message}. Please try again or contact the home owner.`;
           }
@@ -102,13 +112,13 @@ const PublicInspectionPage: NextPage = () => {
       };
       fetchHouseDataAndRecordAccess();
     } else if (houseId && !linkIdFromQuery) {
-        // Error already set
+        // Error already set by the initial check
     } else if (!houseId) {
         setError("Home ID is missing from the link. Please use a valid inspection link.");
         setPageLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [houseId, searchParams]);
+  }, [houseId, searchParams]); // inspectorName removed from deps to avoid re-fetch on its change
 
   const handleRoomInspectionComplete = (reportData: RoomInspectionReportData) => {
     setRoomReports(prev => {
@@ -262,14 +272,14 @@ const PublicInspectionPage: NextPage = () => {
         inspectedBy: inspectorName,
         rooms: roomReports,
         overallStatus: roomReports.some(r => r.discrepancies.length > 0) ? "Completed with discrepancies" : "Completed - All Clear",
-        tenantLinkId: activeLinkId,
+        tenantLinkId: activeLinkId, // Ensure activeLinkId is included
       };
 
       const newReportId = await saveInspectionReport(reportToSave);
       const fullReportForPdf: InspectionReport = {
         ...reportToSave,
         id: newReportId,
-        inspectionDate: new Date() as any,
+        inspectionDate: new Date() as any, // Firestore will use serverTimestamp
       };
       setGeneratedReport(fullReportForPdf);
 
@@ -300,7 +310,7 @@ const PublicInspectionPage: NextPage = () => {
   };
 
   const handleSendReportToOwner = async () => {
-    if (!generatedReport || !generatedPdfForEmail || !home?.id) { // Check home.id for passing to API
+    if (!generatedReport || !generatedPdfForEmail || !home?.id) { 
       toast({ title: "Error", description: "Report data not available or home ID not identified.", variant: "destructive" });
       return;
     }
@@ -314,7 +324,7 @@ const PublicInspectionPage: NextPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          homeId: home.id, // Pass homeId
+          homeId: home.id, 
           homeName: generatedReport.homeName,
           inspectedBy: generatedReport.inspectedBy,
           pdfBase64: pdfBase64,
@@ -395,16 +405,19 @@ const PublicInspectionPage: NextPage = () => {
               variant="ghost"
               className="w-full text-muted-foreground hover:text-foreground"
               onClick={() => {
+                // Reset state for a potential new inspection or clean exit
                 setInspectionComplete(false);
                 setGeneratedReport(null);
                 setGeneratedPdfForEmail(null);
                 setCurrentRoomIndex(0);
                 setRoomReports([]);
-                setInspectorName('');
-                router.push('/');
+                setInspectorName(''); 
+                setActiveLinkId(null); // Clear active link ID
+                // searchParams.delete('linkId'); // This is not how you modify searchParams in Next.js App Router
+                router.push('/'); // Redirect to a neutral page
               }}
             >
-             <XCircle className="mr-2 h-4 w-4" /> Close
+             <XCircle className="mr-2 h-4 w-4" /> Close & Exit
             </Button>
           </CardContent>
         </Card>
@@ -419,7 +432,7 @@ const PublicInspectionPage: NextPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50 p-4 sm:p-8 flex flex-col items-center">
-       <Image src={logoUrl} alt="HomieStan Logo" width={180} height={45} className="mb-6" data-ai-hint="logo company" />
+       <Image src={logoUrl} alt="HomieStan Logo" width={180} height={45} className="mb-6" data-ai-hint="logo company"/>
       <Card className="w-full max-w-2xl shadow-2xl bg-card text-card-foreground">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-2xl sm:text-3xl font-bold text-center">
@@ -441,7 +454,7 @@ const PublicInspectionPage: NextPage = () => {
               onChange={(e) => setInspectorName(e.target.value)}
               placeholder="Enter your full name"
               className="bg-input text-foreground placeholder:text-muted-foreground/70"
-              disabled={inspectionComplete || roomReports.length > 0}
+              disabled={inspectionComplete || roomReports.length > 0 || (tenantNameFromLink && tenantNameFromLink === inspectorName)} // Disable if pre-filled from link and unchanged
             />
              {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Inspector name is locked after first room completion.</p>}
           </div>
@@ -486,7 +499,7 @@ const PublicInspectionPage: NextPage = () => {
               </Alert>
           )}
 
-          {rooms.length === 0 && !pageLoading && (
+          {rooms.length === 0 && !pageLoading && !error && ( // Added !error to hide if another error is showing
              <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>No Rooms Found</AlertTitle>
