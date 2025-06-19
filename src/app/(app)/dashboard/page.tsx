@@ -10,69 +10,80 @@ import { CreateHomeDialog } from "@/components/dashboard/CreateHomeDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { Home as HomeIcon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
-  const { user } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext(); // Renamed loading to authLoading for clarity
   const [homes, setHomes] = useState<Home[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast(); // Initialize useToast
+  const [pageLoading, setPageLoading] = useState(true); // Page-specific loading state
+  const { toast } = useToast();
 
   const handleHomesUpdated = useCallback(async () => {
-    if (user) {
-      setLoading(true);
+    if (user && user.uid) { // Ensure user and user.uid are available
+      setPageLoading(true);
       try {
         const userHomes = await getHomes(user.uid);
         setHomes(userHomes);
       } catch (error) {
         console.error("Failed to fetch homes:", error);
-        // Optionally, show a toast message for fetch error
+        toast({
+          title: "Error Loading Homes",
+          description: (error instanceof Error ? error.message : String(error)) + ". Please try refreshing or check permissions.",
+          variant: "destructive",
+          duration: 7000,
+        });
+        setHomes([]); // Clear homes on error
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     } else {
-      // If no user, ensure homes are cleared and not loading
+      // No user or user.uid, so clear homes and stop loading
       setHomes([]);
-      setLoading(false);
+      setPageLoading(false);
     }
-  }, [user]);
+  }, [user, toast]); // Dependencies for useCallback
 
   useEffect(() => {
-    if (user) {
-      // Welcome message logic
-      const shouldShowWelcome = sessionStorage.getItem("showWelcomeOnLoad");
-      if (shouldShowWelcome === "true") {
-        const lastAuthAction = sessionStorage.getItem("lastAuthAction");
-        const userName = user.displayName || user.email?.split('@')[0] || "User";
-        let toastTitle = "Welcome Back!";
-        let toastDescription = `Hello ${userName}, let's manage your homes.`;
+    // Only proceed if auth is no longer loading
+    if (!authLoading) {
+      if (user && user.uid) {
+        // Welcome message logic
+        const shouldShowWelcome = sessionStorage.getItem("showWelcomeOnLoad");
+        if (shouldShowWelcome === "true") {
+          const lastAuthAction = sessionStorage.getItem("lastAuthAction");
+          const userName = user.displayName || user.email?.split('@')[0] || "User";
+          let toastTitle = "Welcome Back!";
+          let toastDescription = `Hello ${userName}, let's manage your homes.`;
 
-        if (lastAuthAction === "signup") {
-          toastTitle = "Welcome to HomieStan!";
-          toastDescription = `Great to have you, ${userName}! Get started by creating your first home.`;
+          if (lastAuthAction === "signup") {
+            toastTitle = "Welcome to HomieStan!";
+            toastDescription = `Great to have you, ${userName}! Get started by creating your first home.`;
+          }
+
+          toast({
+            title: toastTitle,
+            description: toastDescription,
+            duration: 7000,
+          });
+
+          sessionStorage.removeItem("showWelcomeOnLoad");
+          sessionStorage.removeItem("lastAuthAction");
         }
-
-        toast({
-          title: toastTitle,
-          description: toastDescription,
-          duration: 7000, 
-        });
-
-        sessionStorage.removeItem("showWelcomeOnLoad");
-        sessionStorage.removeItem("lastAuthAction");
+        // Fetch homes
+        handleHomesUpdated();
+      } else {
+        // No user is logged in (and auth is not loading), clear homes and ensure page is not "loading"
+        setHomes([]);
+        setPageLoading(false);
       }
-      // Fetch homes
-      handleHomesUpdated();
     } else {
-      // Handle case where user logs out or session expires
-      // (though AppLayout usually redirects, this is a safeguard)
-      setLoading(false);
-      setHomes([]);
+      // Auth is still loading, ensure page loading state reflects this
+      setPageLoading(true);
     }
-  }, [user, toast, handleHomesUpdated]);
+  }, [user, authLoading, toast, handleHomesUpdated]); // Dependencies for useEffect
 
 
-  if (loading) {
+  if (authLoading || pageLoading) { // Check both authLoading and page-specific loading
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
