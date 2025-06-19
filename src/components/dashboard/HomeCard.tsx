@@ -20,19 +20,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteHome } from "@/lib/firestore"; 
+import { deleteHome } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { EditHomeDialog } from "./EditHomeDialog";
 import { useLoader } from "@/contexts/LoaderContext";
+import { useAuthContext } from "@/hooks/useAuthContext"; // Import useAuthContext
 
 interface HomeCardProps {
   home: Home;
-  onHomeAction: () => void; 
+  onHomeAction: () => void;
 }
 
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
+  const { user } = useAuthContext(); // Get the authenticated user
   const [copied, setCopied] = React.useState(false);
 
   const inspectionLink = typeof window !== 'undefined' ? `${window.location.origin}/inspect/${home.id}` : '';
@@ -50,14 +52,22 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   };
 
   const handleDelete = async () => {
+    if (!user || !user.uid) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to delete a home.",
+        variant: "destructive",
+      });
+      return;
+    }
     showLoader();
     try {
-      await deleteHome(home.id); 
+      await deleteHome(home.id, user.uid); // Pass user.uid
       toast({
         title: "Home Deleted",
         description: `Home "${home.name}" and all its data have been deleted.`,
       });
-      onHomeAction(); 
+      onHomeAction();
     } catch (error: any) {
       console.error("Error deleting home:", error);
       toast({
@@ -80,7 +90,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
               alt={`${home.name} cover image`}
               layout="fill"
               objectFit="cover"
-              priority 
+              priority
               data-ai-hint="house exterior"
             />
           </div>
@@ -117,10 +127,10 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           <div className="pt-2">
             <p className="text-xs font-medium text-muted-foreground mb-1">Inspection Link:</p>
             <div className="flex items-center gap-2">
-              <input 
-                type="text" 
-                value={inspectionLink} 
-                readOnly 
+              <input
+                type="text"
+                value={inspectionLink}
+                readOnly
                 className="flex-grow p-1.5 text-xs border rounded-md bg-input/50 text-foreground/80 h-8"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
@@ -136,7 +146,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
            <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
            <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive-outline" size="sm">
+              <Button variant="destructive" size="sm">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
