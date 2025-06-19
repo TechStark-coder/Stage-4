@@ -2,15 +2,15 @@
 "use client";
 
 import type { NextPage } from 'next';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
 import * as React from 'react';
-import { getHome, getRooms, saveInspectionReport, getUserEmail } from '@/lib/firestore';
-import type { Home, Room, InspectionReport, RoomInspectionReportData } from '@/types';
+import { getHome, getRooms, saveInspectionReport, recordTenantInspectionLinkAccess, deactivateTenantInspectionLink } from '@/lib/firestore';
+import type { Home, Room, InspectionReport, RoomInspectionReportData, TenantInspectionLink } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, ArrowLeft, Info, Download, Send, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, ArrowLeft, Info, Download, Send, XCircle, LinkIcon } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
@@ -22,6 +22,7 @@ import { useAiAnalysisLoader } from '@/contexts/AiAnalysisLoaderContext';
 const PublicInspectionPage: NextPage = () => {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams(); // Use the hook
   const { toast } = useToast();
   const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
   const houseId = params.houseId as string;
@@ -31,7 +32,8 @@ const PublicInspectionPage: NextPage = () => {
   const [currentRoomIndex, setCurrentRoomIndex] = React.useState(0);
   const [inspectorName, setInspectorName] = React.useState('');
   const [roomReports, setRoomReports] = React.useState<RoomInspectionReportData[]>([]);
-  
+  const [activeLinkId, setActiveLinkId] = React.useState<string | null>(null); // State for linkId
+
   const [pageLoading, setPageLoading] = React.useState(true);
   const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
   const [isSendingEmail, setIsSendingEmail] = React.useState(false);
@@ -39,44 +41,71 @@ const PublicInspectionPage: NextPage = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [generatedReport, setGeneratedReport] = React.useState<InspectionReport | null>(null);
   const [generatedPdfForEmail, setGeneratedPdfForEmail] = React.useState<jsPDF | null>(null);
+  const [tenantNameFromLink, setTenantNameFromLink] = React.useState<string | null>(null);
+
 
   React.useEffect(() => {
-    if (houseId) {
-      const fetchHouseData = async () => {
+    const linkIdFromQuery = searchParams.get('linkId');
+    if (linkIdFromQuery) {
+      setActiveLinkId(linkIdFromQuery);
+    } else if (houseId) { // Only if houseId exists but no linkId
+        setError("Inspection link ID is missing or invalid. Please use the link provided by the home owner.");
+        setPageLoading(false);
+    }
+
+    if (houseId && linkIdFromQuery) { // Ensure both are present before fetching
+      const fetchHouseDataAndRecordAccess = async () => {
         setPageLoading(true);
         setError(null);
         try {
+          // First, try to record access. This also implicitly validates the link's activity via security rules.
+          await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
+
+          // If access recording succeeded, fetch home and room details
           const fetchedHome = await getHome(houseId);
           if (!fetchedHome) {
-            setError("Inspection details not found. This link may be invalid or expired.");
+            setError("Inspection details not found. This link may be invalid or the home no longer exists.");
             setPageLoading(false);
             return;
           }
           setHome(fetchedHome);
+
           const fetchedRooms = await getRooms(houseId);
           if (fetchedRooms.length === 0) {
             setError("This home has no rooms configured for inspection.");
           }
           setRooms(fetchedRooms);
-          // Reset state for a new inspection session if houseId changes or on initial load
+
+          // Reset state for a new inspection session
           setCurrentRoomIndex(0);
           setRoomReports([]);
-          setInspectorName('');
+          // Do not reset inspectorName here as it might be pre-filled or they might be returning
           setInspectionComplete(false);
           setGeneratedReport(null);
           setGeneratedPdfForEmail(null);
 
-
-        } catch (err) {
-          console.error("Error fetching inspection data:", err);
-          setError("Could not load inspection details. Please try again later.");
+        } catch (err: any) {
+          console.error("Error during initial inspection setup:", err);
+          let userErrorMessage = "Could not load inspection details. The link might be invalid, expired, or already used. Please contact the home owner.";
+          if (err.message && err.message.toLowerCase().includes("permission")) {
+            userErrorMessage = "Access denied. This inspection link may be invalid, expired, or already used. Please check with the home owner.";
+          } else if (err.message) {
+            userErrorMessage = err.message; // Use specific error if available
+          }
+          setError(userErrorMessage);
         } finally {
           setPageLoading(false);
         }
       };
-      fetchHouseData();
+      fetchHouseDataAndRecordAccess();
+    } else if (houseId && !linkIdFromQuery) { // Handle case where linkId is missing but houseId is present
+        // Error already set above
+    } else if (!houseId) {
+        setError("Home ID is missing from the link. Please use a valid inspection link.");
+        setPageLoading(false);
     }
-  }, [houseId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [houseId, searchParams]); // searchParams is stable, fine to include
 
   const handleRoomInspectionComplete = (reportData: RoomInspectionReportData) => {
     setRoomReports(prev => {
@@ -98,7 +127,7 @@ const PublicInspectionPage: NextPage = () => {
 
   const handlePreviousRoom = () => {
     if (currentRoomIndex > 0) {
-      setCurrentRoomIndex(prev => prev - 1); 
+      setCurrentRoomIndex(prev => prev - 1);
     }
   };
 
@@ -106,7 +135,7 @@ const PublicInspectionPage: NextPage = () => {
     const doc = new jsPDF();
     const pageHeight = doc.internal.pageSize.height;
     let yPos = 20;
-    const lineHeight = 7; 
+    const lineHeight = 7;
     const margin = 15;
     const maxLineWidth = doc.internal.pageSize.width - margin * 2;
 
@@ -134,22 +163,21 @@ const PublicInspectionPage: NextPage = () => {
     yPos += lineHeight * 1.5;
 
     reportDetails.rooms.forEach(room => {
-      checkAndAddPage(lineHeight * 4); 
+      checkAndAddPage(lineHeight * 4);
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text(`Room: ${room.roomName}`, margin, yPos);
       doc.setFont(undefined, 'normal');
       yPos += lineHeight;
 
-      // Display "Message from Owner" for the room (AI's specific suggestion)
       if (room.missingItemSuggestionForRoom) {
-        checkAndAddPage(lineHeight * 2); 
+        checkAndAddPage(lineHeight * 2);
         doc.setFontSize(10);
         doc.setFont(undefined, 'italic');
-        const ownerMessagePrefix = "Note for Room:"; // Changed label for PDF
+        const ownerMessagePrefix = "Note for Room:";
         doc.text(ownerMessagePrefix, margin + 5, yPos);
         yPos += lineHeight * 0.8;
-        
+
         doc.setFont(undefined, 'normal');
         const suggestionLines = doc.splitTextToSize(`  ${room.missingItemSuggestionForRoom}`, maxLineWidth - 10);
         checkAndAddPage(suggestionLines.length * (lineHeight * 0.8));
@@ -172,13 +200,13 @@ const PublicInspectionPage: NextPage = () => {
           doc.text(discrepancyLines, margin + 10, yPos);
           yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
-      } else if (!room.missingItemSuggestionForRoom) { 
+      } else if (!room.missingItemSuggestionForRoom) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.text("No discrepancies noted by AI for this room.", margin + 5, yPos);
         yPos += lineHeight;
       }
-      yPos += lineHeight * 0.5; 
+      yPos += lineHeight * 0.5;
     });
     return doc;
   };
@@ -211,9 +239,17 @@ const PublicInspectionPage: NextPage = () => {
         });
         return;
     }
+    if (!activeLinkId) { // Check if activeLinkId is available
+        toast({
+            title: "Link Error",
+            description: "Inspection link ID is missing. Cannot submit report.",
+            variant: "destructive",
+        });
+        return;
+    }
 
     setIsSubmittingReport(true);
-    showAiLoader(); 
+    showAiLoader();
 
     try {
       const reportToSave: Omit<InspectionReport, 'id' | 'inspectionDate'> = {
@@ -223,20 +259,23 @@ const PublicInspectionPage: NextPage = () => {
         inspectedBy: inspectorName,
         rooms: roomReports,
         overallStatus: roomReports.some(r => r.discrepancies.length > 0) ? "Completed with discrepancies" : "Completed - All Clear",
+        tenantLinkId: activeLinkId, // Include the active link ID
       };
-      
+
       const newReportId = await saveInspectionReport(reportToSave);
       const fullReportForPdf: InspectionReport = {
         ...reportToSave,
         id: newReportId,
-        inspectionDate: new Date() as any, 
+        inspectionDate: new Date() as any, // Cast for PDF generation, Firestore will use serverTimestamp
       };
-      setGeneratedReport(fullReportForPdf); 
-      
+      setGeneratedReport(fullReportForPdf);
+
       const pdfDoc = generatePdfDocument(fullReportForPdf);
-      setGeneratedPdfForEmail(pdfDoc); 
-      // Do NOT automatically download:
-      // triggerPdfDownload(pdfDoc, fullReportForPdf); 
+      setGeneratedPdfForEmail(pdfDoc);
+
+      // Deactivate the link AFTER successful report submission
+      await deactivateTenantInspectionLink(home.id, activeLinkId);
+
 
       setInspectionComplete(true);
       toast({
@@ -245,16 +284,16 @@ const PublicInspectionPage: NextPage = () => {
         duration: 7000,
       });
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error submitting inspection report:", err);
       toast({
         title: "Submission Failed",
-        description: "Could not submit the inspection report. Please try again.",
+        description: err.message || "Could not submit the inspection report. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSubmittingReport(false);
-      hideAiLoader(); 
+      hideAiLoader();
     }
   };
 
@@ -268,7 +307,7 @@ const PublicInspectionPage: NextPage = () => {
 
     try {
       const pdfBase64 = generatedPdfForEmail.output('datauristring').split(',')[1];
-      
+
       const response = await fetch('/api/send-inspection-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -277,7 +316,7 @@ const PublicInspectionPage: NextPage = () => {
           homeName: generatedReport.homeName,
           inspectedBy: generatedReport.inspectedBy,
           pdfBase64: pdfBase64,
-          inspectionDate: generatedReport.inspectionDate.toISOString(), 
+          inspectionDate: generatedReport.inspectionDate instanceof Date ? generatedReport.inspectionDate.toISOString() : generatedReport.inspectionDate.toDate().toISOString(),
         }),
       });
 
@@ -295,7 +334,7 @@ const PublicInspectionPage: NextPage = () => {
       hideAiLoader();
     }
   };
-  
+
   const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media";
 
   if (pageLoading) {
@@ -311,13 +350,14 @@ const PublicInspectionPage: NextPage = () => {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-2xl font-semibold mb-2">Inspection Error</h1>
-        <p className="text-muted-foreground">{error}</p>
+        <h1 className="text-2xl font-semibold mb-2">Inspection Access Error</h1>
+        <p className="text-muted-foreground mb-1">{error}</p>
+        <p className="text-sm text-muted-foreground">If the issue persists, please contact the home owner.</p>
         <Button onClick={() => router.push('/')} className="mt-6">Go to Homepage</Button>
       </div>
     );
   }
-  
+
   if (inspectionComplete && generatedReport) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50 p-6">
@@ -333,36 +373,39 @@ const PublicInspectionPage: NextPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button 
-                onClick={() => triggerPdfDownload(generatedPdfForEmail, generatedReport)} 
+            <Button
+                onClick={() => triggerPdfDownload(generatedPdfForEmail, generatedReport)}
                 className="w-full"
                 disabled={!generatedPdfForEmail || isSendingEmail}
             >
               <Download className="mr-2 h-4 w-4" /> Download Report Again
             </Button>
-            <Button 
-              variant="default" 
-              className="w-full" 
+            <Button
+              variant="default"
+              className="w-full"
               onClick={handleSendReportToOwner}
               disabled={isSendingEmail || !home?.ownerId || !generatedPdfForEmail}
             >
               {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
               {isSendingEmail ? "Sending..." : "Send Report to Owner"}
             </Button>
-             <Button 
-              variant="ghost" 
+             <Button
+              variant="ghost"
               className="w-full text-muted-foreground hover:text-foreground"
               onClick={() => {
-                setInspectionComplete(false); 
+                // Reset all relevant states for a potential new inspection if they revisit the link page some other way
+                setInspectionComplete(false);
                 setGeneratedReport(null);
                 setGeneratedPdfForEmail(null);
                 setCurrentRoomIndex(0);
                 setRoomReports([]);
-                setInspectorName(''); 
-                router.push('/'); 
+                setInspectorName('');
+                // Do NOT reset activeLinkId or home/rooms if they might re-inspect the same link (though usually links are single-use)
+                // Redirecting to a neutral page is safer
+                router.push('/'); // Or a thank you page if one exists
               }}
             >
-             <XCircle className="mr-2 h-4 w-4" /> Close & Reset
+             <XCircle className="mr-2 h-4 w-4" /> Close
             </Button>
           </CardContent>
         </Card>
@@ -371,7 +414,9 @@ const PublicInspectionPage: NextPage = () => {
   }
 
   const currentRoom = rooms[currentRoomIndex];
-  const ownerName = home?.ownerDisplayName || "the Owner";
+  const ownerDisplayNameForGreeting = home?.ownerDisplayName || "the Home Owner";
+  const tenantNameForGreeting = tenantNameFromLink || inspectorName || "Inspector";
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50 p-4 sm:p-8 flex flex-col items-center">
@@ -382,12 +427,12 @@ const PublicInspectionPage: NextPage = () => {
             Property Inspection: {home?.name}
           </CardTitle>
           <CardDescription className="text-center text-base pt-2">
-            Hi {inspectorName || "Inspector"}, you are inspecting on behalf of {ownerName}. Please follow the steps below.
+             Hi {tenantNameForGreeting}, you are inspecting on behalf of {ownerDisplayNameForGreeting}. Please follow the steps below.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6 space-y-6">
-          
+
           <div className="space-y-2">
             <label htmlFor="inspectorName" className="block text-sm font-medium text-muted-foreground">Your Name (Inspector):</label>
             <Input
@@ -397,7 +442,7 @@ const PublicInspectionPage: NextPage = () => {
               onChange={(e) => setInspectorName(e.target.value)}
               placeholder="Enter your full name"
               className="bg-input text-foreground placeholder:text-muted-foreground/70"
-              disabled={inspectionComplete || roomReports.length > 0} 
+              disabled={inspectionComplete || roomReports.length > 0}
             />
              {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Inspector name is locked after first room completion.</p>}
           </div>
@@ -408,12 +453,12 @@ const PublicInspectionPage: NextPage = () => {
                 <Info className="h-4 w-4 text-primary" />
                 <AlertTitle className="text-primary">Current Room</AlertTitle>
                 <AlertDescription className="text-primary/90">
-                  You are now inspecting the: <strong>{currentRoom.name}</strong>.
+                  You are now inspecting the: <strong>{currentRoom.name}</strong>. ({currentRoomIndex + 1} of {rooms.length})
                   Ensure all photos are for this room.
                 </AlertDescription>
               </Alert>
               <RoomInspectionStep
-                key={currentRoom.id} 
+                key={currentRoom.id}
                 homeId={houseId}
                 room={currentRoom}
                 onInspectionStepComplete={handleRoomInspectionComplete}
@@ -422,7 +467,7 @@ const PublicInspectionPage: NextPage = () => {
               />
             </>
           )}
-          
+
           {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && inspectorName.trim() && (
              <Alert>
                 <Info className="h-4 w-4" />
@@ -441,7 +486,7 @@ const PublicInspectionPage: NextPage = () => {
                 </AlertDescription>
               </Alert>
           )}
-          
+
           {rooms.length === 0 && !pageLoading && (
              <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -457,7 +502,7 @@ const PublicInspectionPage: NextPage = () => {
         {inspectorName.trim() && rooms.length > 0 && !inspectionComplete && (
           <CardFooter className="border-t border-border pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Room {currentRoomIndex + 1} of {rooms.length}: {currentRoom?.name}
+              Room {Math.min(currentRoomIndex + 1, rooms.length)} of {rooms.length}{currentRoom ? `: ${currentRoom.name}` : ''}
             </div>
             <div className="flex gap-3">
               <Button
@@ -492,10 +537,14 @@ const PublicInspectionPage: NextPage = () => {
           </CardFooter>
         )}
       </Card>
+      <footer className="text-center py-4 mt-auto">
+        <p className="text-xs text-muted-foreground/70">
+          <LinkIcon className="inline h-3 w-3 mr-1" />
+          Inspection Link ID: {activeLinkId || "N/A"}
+        </p>
+      </footer>
     </div>
   );
 };
 
 export default PublicInspectionPage;
-
-    

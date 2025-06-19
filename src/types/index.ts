@@ -29,12 +29,12 @@ export interface UpdateHomeData {
 
 export interface Room extends FirebaseDocument {
   name: string;
-  homeId?: string; 
+  homeId?: string;
   createdAt: Timestamp;
-  analyzedObjects: Array<{ name: string; count: number }> | null; 
+  analyzedObjects: Array<{ name: string; count: number }> | null;
   isAnalyzing?: boolean;
   lastAnalyzedAt?: Timestamp | null;
-  analyzedPhotoUrls?: string[]; 
+  analyzedPhotoUrls?: string[];
 }
 
 export interface CreateRoomData {
@@ -56,17 +56,37 @@ export interface InspectionDiscrepancy {
 export interface RoomInspectionReportData {
   roomId: string;
   roomName: string;
-  tenantPhotoUrls: string[];
+  tenantPhotoUrls: string[]; // These are the URLs of photos taken by the tenant for this room during THIS inspection.
   discrepancies: InspectionDiscrepancy[];
-  missingItemSuggestionForRoom: string;
+  missingItemSuggestionForRoom: string; // AI's suggestion specific to this room based on tenant's photo
 }
 
 export interface InspectionReport extends FirebaseDocument {
   houseId: string;
-  homeOwnerName: string; // Owner's display name
+  homeOwnerName: string; // Owner's display name at the time of link creation
   homeName: string;
-  inspectedBy: string; // Tenant's name
-  inspectionDate: Timestamp;
+  inspectedBy: string; // Tenant's name as entered on the inspection form
+  inspectionDate: Timestamp; // Date of report submission
   rooms: RoomInspectionReportData[];
   overallStatus: string; // e.g., "Completed with discrepancies"
+  tenantLinkId: string; // Link ID used for this inspection - NOW REQUIRED
 }
+
+// For Tenant Inspection Links (stored as subcollection under homes)
+export interface TenantInspectionLink extends FirebaseDocument {
+  homeId: string;
+  ownerDisplayName: string; // Home owner's display name (snapshot)
+  tenantName: string;       // Intended tenant's name (for display/reference)
+  createdAt: Timestamp;
+  validUntil?: Timestamp | null; // Optional expiry
+  isActive: boolean;
+  accessCount: number;
+  lastAccessedAt?: Timestamp | null;
+  reportId?: string | null; // ID of the InspectionReport once submitted
+}
+
+export interface CreateTenantInspectionLinkData {
+  tenantName: string;
+  validityDurationDays?: number | null; // How many days the link is valid for
+}
+
