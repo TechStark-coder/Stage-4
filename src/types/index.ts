@@ -8,7 +8,8 @@ export interface FirebaseDocument {
 export interface Home extends FirebaseDocument {
   name: string;
   ownerId: string;
-  ownerDisplayName?: string; // Added for personalized greeting
+  ownerDisplayName?: string;
+  ownerEmail?: string; // Added owner's email
   createdAt: Timestamp;
   coverImageUrl?: string;
   address?: string;
@@ -17,13 +18,15 @@ export interface Home extends FirebaseDocument {
 export interface CreateHomeData {
   name: string;
   address?: string;
-  ownerDisplayName?: string; // To store at time of creation
+  ownerDisplayName?: string;
+  ownerEmail: string; // Made ownerEmail required for new homes
 }
 
 export interface UpdateHomeData {
   name?: string;
   address?: string | null;
-  ownerDisplayName?: string; // Could be updated if needed
+  ownerDisplayName?: string;
+  // ownerEmail could be updated here too if needed, but not in current scope
 }
 
 
@@ -56,37 +59,37 @@ export interface InspectionDiscrepancy {
 export interface RoomInspectionReportData {
   roomId: string;
   roomName: string;
-  tenantPhotoUrls: string[]; // These are the URLs of photos taken by the tenant for this room during THIS inspection.
+  tenantPhotoUrls: string[];
   discrepancies: InspectionDiscrepancy[];
-  missingItemSuggestionForRoom: string; // AI's suggestion specific to this room based on tenant's photo
+  missingItemSuggestionForRoom: string;
 }
 
 export interface InspectionReport extends FirebaseDocument {
   houseId: string;
-  homeOwnerName: string; // Owner's display name at the time of link creation
+  homeOwnerName: string;
   homeName: string;
-  inspectedBy: string; // Tenant's name as entered on the inspection form
-  inspectionDate: Timestamp; // Date of report submission
+  inspectedBy: string;
+  inspectionDate: Timestamp;
   rooms: RoomInspectionReportData[];
-  overallStatus: string; // e.g., "Completed with discrepancies"
-  tenantLinkId: string; // Link ID used for this inspection - NOW REQUIRED
+  overallStatus: string;
+  tenantLinkId: string;
 }
 
-// For Tenant Inspection Links (stored as subcollection under homes)
+// For Tenant Inspection Links
 export interface TenantInspectionLink extends FirebaseDocument {
   homeId: string;
-  ownerDisplayName: string; // Home owner's display name (snapshot)
-  tenantName: string;       // Intended tenant's name (for display/reference)
+  ownerDisplayName: string;
+  tenantName: string;
   createdAt: Timestamp;
-  validUntil?: Timestamp | null; // Optional expiry
+  validUntil?: Timestamp | null;
   isActive: boolean;
   accessCount: number;
   lastAccessedAt?: Timestamp | null;
-  reportId?: string | null; // ID of the InspectionReport once submitted
+  reportId?: string | null;
 }
 
 export interface CreateTenantInspectionLinkData {
   tenantName: string;
-  validityDurationDays?: number | null; // How many days the link is valid for
+  validityDurationDays?: number | null;
 }
 

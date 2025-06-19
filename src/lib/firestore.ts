@@ -15,7 +15,7 @@ import {
   writeBatch,
   setDoc,
   deleteField,
-  increment, 
+  increment,
   runTransaction,
   collectionGroup,
   limit,
@@ -74,7 +74,7 @@ const deleteFolderContents = async (folderPath: string) => {
 // Homes
 export async function addHome(
   userId: string,
-  data: CreateHomeData,
+  data: CreateHomeData, // Now includes ownerEmail
   coverImageFile?: File | null
 ): Promise<string> {
   const homesCollectionRef = collection(db, "homes");
@@ -92,6 +92,7 @@ export async function addHome(
     name: data.name,
     ownerId: userId,
     ownerDisplayName: data.ownerDisplayName || "Home Owner",
+    ownerEmail: data.ownerEmail, // Save owner's email
     createdAt: serverTimestamp(),
   };
 
@@ -114,7 +115,7 @@ export async function updateHome(
 ): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
   const homeSnap = await getDoc(homeDocRef);
-  if (!homeSnap.exists() || homeSnap.data()?.ownerId !== userId) { 
+  if (!homeSnap.exists() || homeSnap.data()?.ownerId !== userId) {
     throw new Error("Home not found or permission denied for update.");
   }
   const currentHomeData = homeSnap.data() as Home;
@@ -123,12 +124,14 @@ export async function updateHome(
   if (data.name !== undefined) {
     updateData.name = data.name;
   }
-  if (data.ownerDisplayName !== undefined) { 
+  if (data.ownerDisplayName !== undefined) {
     updateData.ownerDisplayName = data.ownerDisplayName;
   }
   if (data.address !== undefined) {
     updateData.address = data.address === null ? deleteField() : data.address;
   }
+  // Note: ownerEmail update is not part of this function's current scope,
+  // but could be added if user profile email changes and needs to sync to homes.
 
   if (newCoverImageFile) {
     if (currentHomeData.coverImageUrl) {
@@ -202,6 +205,7 @@ export async function deleteHome(homeId: string, userId: string): Promise<void> 
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
   for (const roomDoc of roomsSnapshot.docs) {
+    // Assuming room photos are stored under roomAnalysisPhotos/{OWNER_ID_OF_HOME}/{roomId}
     await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomDoc.id}`);
     batch.delete(roomDoc.ref);
   }
@@ -226,7 +230,7 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
   const docRef = await addDoc(roomsCollectionRef, {
     ...data,
     createdAt: serverTimestamp(),
-    analyzedObjects: [], 
+    analyzedObjects: [],
     isAnalyzing: false,
     lastAnalyzedAt: null,
     analyzedPhotoUrls: [],
@@ -265,7 +269,7 @@ export async function updateRoomAnalysisData(
   roomId: string,
   analyzedObjectsData: Array<{ name: string; count: number }>,
   newlyUploadedPhotoUrls: string[],
-  userId: string 
+  userId: string
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
 
@@ -300,13 +304,14 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string, user
          await safeDeleteStorageObject(url);
       }
     }
+    // Assuming room photos are stored under roomAnalysisPhotos/{OWNER_ID_OF_HOME}/{roomId}
     await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
   }
   await updateDoc(roomDocRef, {
-    analyzedObjects: [], 
+    analyzedObjects: [],
     isAnalyzing: false,
     lastAnalyzedAt: null,
-    analyzedPhotoUrls: [], 
+    analyzedPhotoUrls: [],
   });
 }
 
@@ -321,28 +326,29 @@ export async function setRoomAnalyzingStatus(
 
 export async function deleteRoom(homeId: string, roomId: string, userId: string): Promise<void> {
   const roomDocRef = doc(db, `homes/${homeId}/rooms`, roomId);
+  // Assuming room photos are stored under roomAnalysisPhotos/{OWNER_ID_OF_HOME}/{roomId}
   await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
   await deleteDoc(roomDocRef);
 }
 
-// Users
-export async function getUserEmail(userId: string): Promise<string | null> {
-  const userDocRef = doc(db, "users", userId);
-  const docSnap = await getDoc(userDocRef);
-  if (docSnap.exists()) {
-    const userData = docSnap.data();
-    return userData?.email || null;
-  }
-  console.warn(`User document not found for ID: ${userId} when trying to get email.`);
-  return null;
-}
+// Users (This function is no longer used by the /api/send-inspection-report route)
+// export async function getUserEmail(userId: string): Promise<string | null> {
+//   const userDocRef = doc(db, "users", userId);
+//   const docSnap = await getDoc(userDocRef);
+//   if (docSnap.exists()) {
+//     const userData = docSnap.data();
+//     return userData?.email || null;
+//   }
+//   console.warn(`User document not found for ID: ${userId} when trying to get email.`);
+//   return null;
+// }
 
 
 // Inspection Reports
 export async function saveInspectionReport(reportData: Omit<InspectionReport, 'id' | 'inspectionDate'>): Promise<string> {
   const inspectionsCollectionRef = collection(db, "inspections");
   const docRef = await addDoc(inspectionsCollectionRef, {
-    ...reportData, 
+    ...reportData,
     inspectionDate: serverTimestamp(),
   });
   return docRef.id;
@@ -351,11 +357,11 @@ export async function saveInspectionReport(reportData: Omit<InspectionReport, 'i
 // Tenant Inspection Links
 export async function addTenantInspectionLink(
   homeId: string,
-  currentUserId: string, // Changed parameter name for clarity
+  currentUserId: string,
   linkData: CreateTenantInspectionLinkData
 ): Promise<TenantInspectionLink> {
   const home = await getHome(homeId);
-  if (!home || home.ownerId !== currentUserId) { // Check current user against home's ownerId
+  if (!home || home.ownerId !== currentUserId) {
     throw new Error("Permission denied or home not found.");
   }
 
@@ -371,9 +377,9 @@ export async function addTenantInspectionLink(
 
   const newLink: Omit<TenantInspectionLink, 'id'> = {
     homeId: homeId,
-    ownerDisplayName: home.ownerDisplayName || "Home Owner", // Use home's ownerDisplayName
+    ownerDisplayName: home.ownerDisplayName || "Home Owner",
     tenantName: linkData.tenantName,
-    createdAt: serverTimestamp() as Timestamp, 
+    createdAt: serverTimestamp() as Timestamp,
     isActive: true,
     accessCount: 0,
     lastAccessedAt: null,
@@ -382,7 +388,7 @@ export async function addTenantInspectionLink(
   };
 
   await setDoc(newLinkRef, newLink);
-  return { id: newLinkRef.id, ...newLink } as TenantInspectionLink; 
+  return { id: newLinkRef.id, ...newLink } as TenantInspectionLink;
 }
 
 export async function getTenantInspectionLinks(homeId: string, ownerId: string): Promise<TenantInspectionLink[]> {
@@ -399,7 +405,7 @@ export async function getTenantInspectionLinks(homeId: string, ownerId: string):
 export async function getTenantInspectionLink(homeId: string, linkId: string): Promise<TenantInspectionLink | null> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
   const docSnap = await getDoc(linkDocRef);
-  if (docSnap.exists() && docSnap.data()?.isActive) { 
+  if (docSnap.exists() && docSnap.data()?.isActive) {
     return { id: docSnap.id, ...docSnap.data() } as TenantInspectionLink;
   }
   return null;
@@ -422,7 +428,7 @@ export async function recordTenantInspectionLinkAccess(homeId: string, linkId: s
     console.log(`Access recorded for tenant inspection link ${linkId} for home ${homeId}.`);
   } catch (error) {
     console.error(`Error recording access for tenant inspection link ${linkId}:`, error);
-    throw error; 
+    throw error;
   }
 }
 
@@ -437,7 +443,7 @@ export async function deleteTenantInspectionLink(homeId: string, linkId: string,
 
 export async function getActiveTenantInspectionLinksCount(homeId: string): Promise<number> {
     const linksRef = collection(db, `homes/${homeId}/tenantInspectionLinks`);
-    const q = query(linksRef, where("isActive", "==", true), limit(10)); 
+    const q = query(linksRef, where("isActive", "==", true), limit(10));
     const snapshot = await getDocs(q);
     return snapshot.size;
 }
@@ -446,7 +452,7 @@ export async function getInspectionReportsForHome(homeId: string, userId: string
     const home = await getHome(homeId);
     if (!home || home.ownerId !== userId) {
         console.error("Permission denied or home not found for fetching reports.");
-        return []; 
+        return [];
     }
 
     const reportsCollectionRef = collection(db, "inspections");
@@ -492,3 +498,4 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
         throw new Error("Inspection report not found.");
     }
 }
+

@@ -1,7 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Mailjet from 'node-mailjet';
-import { getUserEmail } from '@/lib/firestore'; // Assuming you have this function
+import { getHome } from '@/lib/firestore'; // Import getHome instead of getUserEmail
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -9,9 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { ownerId, homeName, inspectedBy, pdfBase64, inspectionDate } = req.body;
+  const { homeId, homeName, inspectedBy, pdfBase64, inspectionDate } = req.body; // Expect homeId
 
-  if (!ownerId || !homeName || !inspectedBy || !pdfBase64 || !inspectionDate) {
+  if (!homeId || !homeName || !inspectedBy || !pdfBase64 || !inspectionDate) {
     return res.status(400).json({ message: 'Missing required fields for sending report.' });
   }
 
@@ -25,11 +25,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const ownerEmail = await getUserEmail(ownerId);
-    if (!ownerEmail) {
-      console.error(`Could not find email for owner ID: ${ownerId}`);
-      return res.status(404).json({ message: 'Owner email not found.' });
+    const homeData = await getHome(homeId); // Fetch home document
+    if (!homeData || !homeData.ownerEmail) {
+      console.error(`Could not find home data or owner email for home ID: ${homeId}`);
+      return res.status(404).json({ message: 'Home data or owner email not found.' });
     }
+    const ownerEmail = homeData.ownerEmail;
+    const ownerDisplayName = homeData.ownerDisplayName || 'Home Owner';
+
 
     const mailjet = new Mailjet({
       apiKey: mailjetApiKey,
@@ -50,12 +53,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           To: [
             {
               Email: ownerEmail,
-              Name: 'Home Owner', // Or fetch owner's name if available
+              Name: ownerDisplayName,
             },
           ],
           Subject: `Inspection Report for ${homeName} - ${formattedDate}`,
-          TextPart: `Dear Home Owner,\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\nThank you,\nHomieStan Team`,
-          HTMLPart: `<h3>Dear Home Owner,</h3>
+          TextPart: `Dear ${ownerDisplayName},\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\nThank you,\nHomieStan Team`,
+          HTMLPart: `<h3>Dear ${ownerDisplayName},</h3>
                        <p>Please find attached the inspection report for your property "<strong>${homeName}</strong>", conducted by <strong>${inspectedBy}</strong> on <strong>${formattedDate}</strong>.</p>
                        <p>Thank you,<br/>HomieStan Team</p>`,
           Attachments: [

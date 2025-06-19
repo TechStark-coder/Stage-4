@@ -38,7 +38,7 @@ import { useLoader } from "@/contexts/LoaderContext";
 import { useRouter } from "next/navigation";
 
 interface CreateHomeDialogProps {
-  onHomeCreated: () => void; 
+  onHomeCreated: () => void;
 }
 
 export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
@@ -47,26 +47,25 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   const { user } = useAuthContext();
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
-  const router = useRouter(); 
+  const router = useRouter();
 
   const form = useForm<HomeFormData>({
     resolver: zodResolver(homeFormSchema),
     defaultValues: {
       name: "",
       ownerDisplayName:  "",
-      address: "", 
+      address: "",
       coverImage: undefined,
     },
   });
 
   useEffect(() => {
     if (user && open) {
-      // Set ownerDisplayName from user's current profile, or clear if no user
       form.setValue("ownerDisplayName", user.displayName || "");
-      form.setValue("name", ""); 
-      form.setValue("address", ""); 
-      form.setValue("coverImage", undefined); 
-      setImagePreview(null); 
+      form.setValue("name", "");
+      form.setValue("address", "");
+      form.setValue("coverImage", undefined);
+      setImagePreview(null);
     }
   }, [open, user, form]);
 
@@ -87,47 +86,44 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   };
 
   async function onSubmit(data: HomeFormData) {
-    if (!user) {
-      toast({ title: "Error", description: "You must be logged in to create a home.", variant: "destructive" });
+    if (!user || !user.email) { // Ensure user and user.email exist
+      toast({ title: "Error", description: "You must be logged in and have a verified email to create a home.", variant: "destructive" });
       return;
     }
     showLoader();
     try {
-      // Update user's Firebase Auth profile display name if it has changed in the form
       if (auth.currentUser && data.ownerDisplayName && data.ownerDisplayName !== user.displayName) {
         await updateProfile(auth.currentUser, { displayName: data.ownerDisplayName });
-        // Re-fetch user or update context if display name change should be immediately reflected app-wide
-        // For now, this primarily updates the auth profile.
       }
 
-      const homeDataToSubmit: CreateHomeData = { 
+      const homeDataToSubmit: CreateHomeData = {
         name: data.name,
         address: data.address || "",
-        // Use the (potentially updated) displayName from the form, or fallback to current user's displayName
         ownerDisplayName: data.ownerDisplayName || user.displayName || "Home Owner",
+        ownerEmail: user.email, // Include user's email
       };
       const coverImageFile = data.coverImage && data.coverImage.length > 0 ? data.coverImage[0] : null;
-      
+
       const newHomeId = await addHome(user.uid, homeDataToSubmit, coverImageFile);
 
       toast({ title: "Home Created", description: `Home "${data.name}" has been successfully created.` });
-      form.reset({ 
-        name: "", 
-        ownerDisplayName: data.ownerDisplayName || user.displayName || "", // Persist updated name for next dialog open in same session
-        address: "", 
-        coverImage: undefined 
+      form.reset({
+        name: "",
+        ownerDisplayName: data.ownerDisplayName || user.displayName || "",
+        address: "",
+        coverImage: undefined
       });
       setImagePreview(null);
-      onHomeCreated(); 
+      onHomeCreated();
       setOpen(false);
-      router.push(`/homes/${newHomeId}`); 
+      router.push(`/homes/${newHomeId}`);
     } catch (error: any) {
       console.error("Failed to create home:", error);
       const errorMessage = error.message || "An unexpected error occurred.";
       if (error.name === 'QuotaExceededError' || (typeof error.message === 'string' && error.message.includes("quota"))) {
-        toast({ 
-          title: "Image Too Large", 
-          description: "Cover image is too large to save. Home created without it.", 
+        toast({
+          title: "Image Too Large",
+          description: "Cover image is too large to save. Home created without it.",
           variant: "destructive",
           duration: 7000,
         });
@@ -142,10 +138,10 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
-      if (!isOpen) { // Reset form when dialog is closed
+      if (!isOpen) {
         form.reset({ name: "", ownerDisplayName: user?.displayName || "", address: "", coverImage: undefined });
         setImagePreview(null);
-      } else if (user) { // Reset/initialize form when dialog is opened
+      } else if (user) {
         form.setValue("ownerDisplayName", user.displayName || "");
         form.setValue("name", "");
         form.setValue("address", "");
@@ -184,7 +180,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             />
              <FormField
               control={form.control}
-              name="address" 
+              name="address"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Address (Optional)</FormLabel>
@@ -216,14 +212,14 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <FormField
               control={form.control}
               name="coverImage"
-              render={({ field }) => ( 
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cover Image (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange} 
+                      onChange={handleFileChange}
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
                   </FormControl>
@@ -242,7 +238,6 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => {
                 setOpen(false);
-                // Explicitly reset with potentially updated user.displayName if dialog was submitted
                 form.reset({ name: "", ownerDisplayName: user?.displayName || "", address: "", coverImage: undefined });
                 setImagePreview(null);
               }}>
