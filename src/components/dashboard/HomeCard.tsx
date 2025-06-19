@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, Link2, Copy, CheckCircle } from "lucide-react"; // Added CheckCircle
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, Link2 } from "lucide-react"; 
 import { format } from "date-fns";
 import Image from "next/image";
 import * as React from 'react';
@@ -24,7 +24,8 @@ import { deleteHome } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { EditHomeDialog } from "./EditHomeDialog";
 import { useLoader } from "@/contexts/LoaderContext";
-import { useAuthContext } from "@/hooks/useAuthContext"; // Import useAuthContext
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { GenerateTenantLinkDialog } from "./GenerateTenantLinkDialog"; // Import the new dialog
 
 interface HomeCardProps {
   home: Home;
@@ -34,22 +35,7 @@ interface HomeCardProps {
 export function HomeCard({ home, onHomeAction }: HomeCardProps) {
   const { toast } = useToast();
   const { showLoader, hideLoader } = useLoader();
-  const { user } = useAuthContext(); // Get the authenticated user
-  const [copied, setCopied] = React.useState(false);
-
-  const inspectionLink = typeof window !== 'undefined' ? `${window.location.origin}/inspect/${home.id}` : '';
-
-  const handleCopyLink = () => {
-    if (!inspectionLink) return;
-    navigator.clipboard.writeText(inspectionLink).then(() => {
-      setCopied(true);
-      toast({ title: "Link Copied!", description: "Inspection link copied to clipboard."});
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(err => {
-      console.error("Failed to copy link:", err);
-      toast({ title: "Copy Failed", description: "Could not copy link.", variant: "destructive"});
-    });
-  };
+  const { user } = useAuthContext();
 
   const handleDelete = async () => {
     if (!user || !user.uid) {
@@ -62,7 +48,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
     }
     showLoader();
     try {
-      await deleteHome(home.id, user.uid); // Pass user.uid
+      await deleteHome(home.id, user.uid);
       toast({
         title: "Home Deleted",
         description: `Home "${home.name}" and all its data have been deleted.`,
@@ -123,31 +109,14 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             No address provided.
           </p>
         )}
-        {inspectionLink && (
-          <div className="pt-2">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Inspection Link:</p>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={inspectionLink}
-                readOnly
-                className="flex-grow p-1.5 text-xs border rounded-md bg-input/50 text-foreground/80 h-8"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
-              <Button variant="outline" size="sm" onClick={handleCopyLink} className="h-8 px-2.5">
-                {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-        )}
       </CardContent>
-      <CardFooter className="flex justify-between items-center gap-2 pt-4 p-4 border-t">
-        <div className="flex gap-2">
+      <CardFooter className="grid grid-cols-2 gap-2 pt-4 p-4 border-t">
+        <div className="col-span-1 flex gap-2">
            <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
            <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                <Trash2 className="h-4 w-4" />
+              <Button variant="destructive" size="sm" className="flex-1">
+                <Trash2 /> 
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -167,11 +136,20 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             </AlertDialogContent>
           </AlertDialog>
         </div>
-        <Button asChild variant="default" size="sm">
-          <Link href={`/homes/${home.id}`}>
-            View Rooms <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
+        <div className="col-span-1 flex flex-col sm:flex-row gap-2">
+          {user && home.ownerId === user.uid && (
+            <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Link2 className="mr-1 h-3 w-3" /> Link
+              </Button>
+            </GenerateTenantLinkDialog>
+          )}
+          <Button asChild variant="default" size="sm" className="flex-1">
+            <Link href={`/homes/${home.id}`}>
+              View <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );
