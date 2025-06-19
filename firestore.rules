@@ -1,0 +1,118 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if the requester is the owner of a specific home
+    function isHomeOwner(homeId) {
+      let homeDoc = get(/databases/$(database)/documents/homes/$(homeId));
+      // Ensure the home document exists and has an ownerId before checking ownership
+      return request.auth != null && homeDoc.exists && homeDoc.data.ownerId == request.auth.uid;
+    }
+
+    // Users Collection
+    // - Authenticated users can read, create, and update their own document.
+    match /users/{userId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Homes Collection
+    match /homes/{homeId} {
+      // Create: Only an authenticated user can create a home, and they must be the owner.
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+
+      // Update, Delete: Only the authenticated owner of the home can update or delete it.
+      allow update, delete: if isHomeOwner(homeId);
+
+      // Read:
+      // - The authenticated owner can read their home.
+      // - ANY unauthenticated user can read ANY home document.
+      //   This is required for the public inspection page to display home details (e.g., name).
+      //   The security for the inspection workflow primarily relies on the TenantInspectionLink's validity.
+      //   WARNING: This makes home document fields (name, address, ownerDisplayName, ownerEmail)
+      //   publicly readable if the homeId is known. For enhanced security on sensitive data,
+      //   Firebase Callable Functions are a better approach for serving data to public pages.
+      allow read: if isHomeOwner(homeId) || (request.auth == null);
+    }
+
+    // Rooms Subcollection (nested under /homes/{homeId})
+    match /homes/{homeId}/rooms/{roomId} {
+      // Create, Update, Delete: Only the owner of the parent home can manage rooms.
+      allow create, update, delete: if isHomeOwner(homeId);
+
+      // Read:
+      // - The owner of the parent home can read rooms.
+      // - ANY unauthenticated user can read ANY room document.
+      //   This is required for the public inspection page to list rooms and their details.
+      //   Security again relies on the TenantInspectionLink being validated first.
+      //   WARNING: This makes room document fields publicly readable if IDs are known.
+      allow read: if isHomeOwner(homeId) || (request.auth == null);
+    }
+
+    // TenantInspectionLinks Subcollection (nested under /homes/{homeId})
+    match /homes/{homeId}/tenantInspectionLinks/{linkId} {
+      // Create, Delete: Only the owner of the parent home can manage inspection links.
+      allow create, delete: if isHomeOwner(homeId);
+
+      // Read:
+      // - The owner of the parent home can read links.
+      // - An unauthenticated user can read a specific link IF that link document's 'isActive' field is true.
+      //   This is the CRITICAL first step for the public inspection page to validate the link.
+      allow read: if isHomeOwner(homeId) ||
+                     (request.auth == null && resource.data.isActive == true);
+
+      // Update:
+      // - The owner of the parent home can update links.
+      // - An unauthenticated user (tenant) can update specific fields on an ACTIVE link:
+      //   - Increment 'accessCount' and set 'lastAccessedAt' (when they first access the link).
+      //   - Set 'isActive' to false (when they submit the inspection report).
+      allow update: if isHomeOwner(homeId) ||
+                       (
+                        request.auth == null && resource.data.isActive == true && // Link must be active for tenant update
+                        (
+                          // Scenario 1: Recording link access
+                          (
+                            request.resource.data.keys().hasAll(['accessCount', 'lastAccessedAt']) &&
+                            request.resource.data.keys().size() == 2 && // Must ONLY be these two fields
+                            request.resource.data.accessCount == resource.data.accessCount + 1 // Correct increment check
+                          ) ||
+                          // Scenario 2: Deactivating the link after report submission (also updates reportId)
+                          (
+                            request.resource.data.keys().hasAll(['isActive', 'reportId']) && // Expect reportId too
+                            request.resource.data.keys().size() == 2 && // Must ONLY be these two fields
+                            request.resource.data.isActive == false &&
+                            request.resource.data.reportId != null // reportId should be set
+                          ) ||
+                           // Scenario 3: Deactivating link without reportId (e.g. old rule compatibility or direct deactivation)
+                          (
+                            request.resource.data.keys().hasAll(['isActive']) &&
+                            request.resource.data.keys().size() == 1 &&
+                            request.resource.data.isActive == false
+                          )
+                        ) &&
+                        // Crucially, ensure tenant cannot change other fundamental properties of the link
+                        !request.resource.data.keys().hasAny(['homeId', 'ownerDisplayName', 'tenantName', 'createdAt', 'validUntil'])
+                       );
+    }
+
+    // InspectionReports Collection (top-level)
+    match /inspections/{reportId} {
+      // Create:
+      // - An unauthenticated user (tenant) can create a report IF:
+      //   - The report data includes 'houseId' and 'tenantLinkId'.
+      //   - The referenced TenantInspectionLink document exists and is currently active.
+      allow create: if request.auth == null &&
+                       request.resource.data.houseId != null &&
+                       request.resource.data.tenantLinkId != null &&
+                       exists(/databases/$(database)/documents/homes/$(request.resource.data.houseId)/tenantInspectionLinks/$(request.resource.data.tenantLinkId)) &&
+                       get(/databases/$(database)/documents/homes/$(request.resource.data.houseId)/tenantInspectionLinks/$(request.resource.data.tenantLinkId)).data.isActive == true;
+
+      // Read, Delete:
+      // - Only the owner of the home to which this inspection report pertains can read or delete it.
+      allow read, delete: if request.auth != null &&
+                             resource.data.houseId != null && // Ensure houseId exists on the report
+                             isHomeOwner(resource.data.houseId); // Check ownership of the linked home
+    }
+  }
+}
