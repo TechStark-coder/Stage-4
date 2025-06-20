@@ -385,13 +385,6 @@ export async function addTenantInspectionLink(
   const linksCollectionRef = collection(db, "homes", homeId, "tenantInspectionLinks");
   const newLinkRef = doc(linksCollectionRef);
 
-  let validUntil: Timestamp | null = null;
-  if (linkData.validityDurationDays && linkData.validityDurationDays > 0) {
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + linkData.validityDurationDays);
-    validUntil = Timestamp.fromDate(expiryDate);
-  }
-
   const newLinkData: Omit<TenantInspectionLink, 'id'> = {
     homeId: homeId,
     ownerDisplayName: home.ownerDisplayName || "Home Owner", 
@@ -400,7 +393,7 @@ export async function addTenantInspectionLink(
     isActive: true,
     accessCount: 0,
     lastAccessedAt: null,
-    validUntil: validUntil,
+    validUntil: null,
     reportId: null,
   };
 

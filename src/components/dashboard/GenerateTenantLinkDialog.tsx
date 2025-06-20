@@ -48,7 +48,6 @@ export function GenerateTenantLinkDialog({ home, currentUserUid, onLinkGenerated
     resolver: zodResolver(generateTenantLinkSchema),
     defaultValues: {
       tenantName: "",
-      validityDurationDays: undefined,
     },
   });
 
@@ -58,7 +57,6 @@ export function GenerateTenantLinkDialog({ home, currentUserUid, onLinkGenerated
     try {
       const newLink = await addTenantInspectionLink(home.id, currentUserUid, {
         tenantName: data.tenantName,
-        validityDurationDays: data.validityDurationDays || null, // Pass null if undefined
       });
       
       const fullLink = `${window.location.origin}/inspect/${home.id}?linkId=${newLink.id}`;
@@ -120,19 +118,6 @@ export function GenerateTenantLinkDialog({ home, currentUserUid, onLinkGenerated
                     <FormLabel>Tenant's Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter tenant's full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="validityDurationDays"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Link Validity (Days, Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="e.g., 7 (leave blank for no expiry)" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

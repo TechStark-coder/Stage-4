@@ -90,6 +90,4 @@ export interface TenantInspectionLink extends FirebaseDocument {
 
 export interface CreateTenantInspectionLinkData {
   tenantName: string;
-  validityDurationDays?: number | null;
 }
-

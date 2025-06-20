@@ -12,8 +12,9 @@ import { CreateRoomDialog } from "@/components/homes/CreateRoomDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
-import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
+import { ArrowLeft, DoorOpen, Home as HomeIcon, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { InspectionHistoryDialog } from "@/components/homes/InspectionHistoryDialog";
 
 export default function HomeDetailPage() {
   const { user } = useAuthContext();
@@ -24,6 +25,7 @@ export default function HomeDetailPage() {
   const [home, setHome] = useState<Home | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
 
   const fetchHomeAndRooms = useCallback(async () => {
     if (user && homeId) {
@@ -94,12 +96,19 @@ export default function HomeDetailPage() {
   }
 
   return (
+    <>
     <div className="space-y-8">
-      <Button variant="outline" size="sm" asChild className="mb-6">
-        <Link href="/dashboard">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-        </Link>
-      </Button>
+       <div className="flex justify-between items-center mb-6">
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+          </Link>
+        </Button>
+         <Button variant="outline" size="sm" onClick={() => setIsHistoryDialogOpen(true)}>
+            <History className="mr-2 h-4 w-4" /> View inspection history
+          </Button>
+      </div>
+
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -139,5 +148,16 @@ export default function HomeDetailPage() {
         </div>
       )}
     </div>
+    {user && (
+      <InspectionHistoryDialog
+        homeId={homeId}
+        homeName={home.name}
+        homeOwnerName={home.ownerDisplayName || 'N/A'}
+        isOpen={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        currentUserId={user.uid}
+      />
+    )}
+    </>
   );
 }

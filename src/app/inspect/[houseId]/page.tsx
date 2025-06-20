@@ -7,16 +7,14 @@ import * as React from 'react';
 import { getHome, getRooms, saveInspectionReport, recordTenantInspectionLinkAccess, deactivateTenantInspectionLink, getTenantInspectionLink } from '@/lib/firestore';
 import type { Home, Room, InspectionReport, RoomInspectionReportData, TenantInspectionLink } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, ArrowLeft, Info, Download, Send, XCircle, LinkIcon } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, Info, Download, Send, XCircle, LinkIcon } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
 import Image from "next/image";
 import jsPDF from 'jspdf';
-import { format } from 'date-fns';
 import { useAiAnalysisLoader } from '@/contexts/AiAnalysisLoaderContext';
 
 const PublicInspectionPage: NextPage = () => {
@@ -30,7 +28,6 @@ const PublicInspectionPage: NextPage = () => {
   const [home, setHome] = React.useState<Home | null>(null);
   const [rooms, setRooms] = React.useState<Room[]>([]);
   const [currentRoomIndex, setCurrentRoomIndex] = React.useState(0);
-  const [inspectorName, setInspectorName] = React.useState('');
   const [roomReports, setRoomReports] = React.useState<RoomInspectionReportData[]>([]);
   const [activeLinkId, setActiveLinkId] = React.useState<string | null>(null);
 
@@ -73,7 +70,6 @@ const PublicInspectionPage: NextPage = () => {
           const fetchedLinkDetails = await getTenantInspectionLink(houseId, linkIdFromQuery);
           if (fetchedLinkDetails && fetchedLinkDetails.tenantName) {
             setTenantNameFromLink(fetchedLinkDetails.tenantName);
-            if (!inspectorName) setInspectorName(fetchedLinkDetails.tenantName);
           } else if (!fetchedLinkDetails) {
              // With open rules, if link details aren't found, it likely means the link ID is incorrect or document was deleted.
             setError("Could not retrieve details for the inspection link. It might be an invalid ID.");
@@ -108,7 +104,7 @@ const PublicInspectionPage: NextPage = () => {
         setPageLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [houseId, searchParams]); // inspectorName removed as it was causing re-runs on typing
+  }, [houseId, searchParams]);
 
   const handleRoomInspectionComplete = (reportData: RoomInspectionReportData) => {
     setRoomReports(prev => {
@@ -128,13 +124,7 @@ const PublicInspectionPage: NextPage = () => {
     }
   };
 
-  const handlePreviousRoom = () => {
-    if (currentRoomIndex > 0) {
-      setCurrentRoomIndex(prev => prev + 1);
-    }
-  };
-
-  const generatePdfDocument = (reportDetails: InspectionReport): jsPDF => {
+  const generatePdfDocument = async (reportDetails: InspectionReport): Promise<jsPDF> => {
     const doc = new jsPDF();
     const pageHeight = doc.internal.pageSize.height;
     let yPos = 20;
@@ -148,6 +138,21 @@ const PublicInspectionPage: NextPage = () => {
         yPos = margin;
       }
     };
+    
+    // Add logo
+    const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media";
+    try {
+        const response = await fetch(logoUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+        doc.addImage(dataUrl, 'PNG', doc.internal.pageSize.width - margin - 30, 10, 30, 7.5);
+    } catch(e) {
+        console.error("Could not add logo to PDF", e);
+    }
 
     doc.setFontSize(18);
     doc.text(`Inspection Report: ${reportDetails.homeName}`, margin, yPos);
@@ -158,7 +163,18 @@ const PublicInspectionPage: NextPage = () => {
     yPos += lineHeight;
     doc.text(`Inspected By: ${reportDetails.inspectedBy}`, margin, yPos);
     yPos += lineHeight;
-    doc.text(`Date: ${format(reportDetails.inspectionDate instanceof Date ? reportDetails.inspectionDate : reportDetails.inspectionDate.toDate(), 'PPP p')}`, margin, yPos);
+    
+    const inspectionDate = reportDetails.inspectionDate instanceof Date ? reportDetails.inspectionDate : reportDetails.inspectionDate.toDate();
+    const formattedDateIST = inspectionDate.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }) + ' (IST)';
+    doc.text(`Date: ${formattedDateIST}`, margin, yPos);
     yPos += lineHeight * 1.5;
 
     doc.setFontSize(14);
@@ -200,7 +216,9 @@ const PublicInspectionPage: NextPage = () => {
           const discrepancyText = `- ${d.name}: Expected ${d.expectedCount}, Found ${d.actualCount}. Note: ${d.note}`;
           const discrepancyLines = doc.splitTextToSize(discrepancyText, maxLineWidth - 10);
           checkAndAddPage(discrepancyLines.length * (lineHeight*0.8));
+          doc.setTextColor(255, 0, 0); // Red
           doc.text(discrepancyLines, margin + 10, yPos);
+          doc.setTextColor(0, 0, 0); // Reset to black
           yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
       } else if (!room.missingItemSuggestionForRoom) {
@@ -214,22 +232,23 @@ const PublicInspectionPage: NextPage = () => {
     return doc;
   };
 
-  const triggerPdfDownload = (pdfDoc: jsPDF | null, reportDetails: InspectionReport | null) => {
-    if (!pdfDoc || !reportDetails) {
+  const triggerPdfDownload = async (reportDetails: InspectionReport | null) => {
+    if (!reportDetails) {
         toast({ title: "Error", description: "Report data not available for download.", variant: "destructive"});
         return;
     }
-    const pdfFileName = `Inspection_Report_${reportDetails.homeName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
+    const pdfDoc = await generatePdfDocument(reportDetails);
+    const pdfFileName = `Inspection_Report_${reportDetails.homeName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdfDoc.save(pdfFileName);
     toast({ title: "Report Downloaded", description: `PDF report ${pdfFileName} generated.` });
   };
 
 
   const handleSubmitInspection = async () => {
-    if (!home || !inspectorName.trim()) {
+    if (!home || !tenantNameFromLink) {
       toast({
         title: "Missing Information",
-        description: "Please enter your name before submitting the inspection.",
+        description: "Inspector name could not be found from the link.",
         variant: "destructive",
       });
       return;
@@ -259,7 +278,7 @@ const PublicInspectionPage: NextPage = () => {
         houseId: home.id,
         homeOwnerName: home.ownerDisplayName || "Home Owner",
         homeName: home.name,
-        inspectedBy: inspectorName,
+        inspectedBy: tenantNameFromLink,
         rooms: roomReports,
         overallStatus: roomReports.some(r => r.discrepancies.length > 0) ? "Completed with discrepancies" : "Completed - All Clear",
         tenantLinkId: activeLinkId,
@@ -273,7 +292,7 @@ const PublicInspectionPage: NextPage = () => {
       };
       setGeneratedReport(fullReportForPdf);
 
-      const pdfDoc = generatePdfDocument(fullReportForPdf);
+      const pdfDoc = await generatePdfDocument(fullReportForPdf);
       setGeneratedPdfForEmail(pdfDoc);
 
       // With open rules, this deactivation should succeed if the linkId is correct.
@@ -375,16 +394,16 @@ const PublicInspectionPage: NextPage = () => {
             </div>
             <CardTitle className="text-2xl">Inspection Completed!</CardTitle>
             <CardDescription>
-              Thank you, <strong>{inspectorName || "Inspector"}</strong>. The report for <strong>{home?.name}</strong> has been generated.
+              Thank you, <strong>{tenantNameFromLink || "Inspector"}</strong>. The report for <strong>{home?.name}</strong> has been generated.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
-                onClick={() => triggerPdfDownload(generatedPdfForEmail, generatedReport)}
+                onClick={() => triggerPdfDownload(generatedReport)}
                 className="w-full"
-                disabled={!generatedPdfForEmail || isSendingEmail}
+                disabled={!generatedReport || isSendingEmail}
             >
-              <Download className="mr-2 h-4 w-4" /> Download Report Again
+              <Download className="mr-2 h-4 w-4" /> Download Report
             </Button>
             <Button
               variant="default"
@@ -399,14 +418,7 @@ const PublicInspectionPage: NextPage = () => {
               variant="ghost"
               className="w-full text-muted-foreground hover:text-foreground"
               onClick={() => {
-                setInspectionComplete(false);
-                setGeneratedReport(null);
-                setGeneratedPdfForEmail(null);
-                setCurrentRoomIndex(0);
-                setRoomReports([]);
-                // Do not reset inspectorName if it came from link
-                // setActiveLinkId(null); // Keep activeLinkId for footer display consistency
-                router.push('/'); 
+                window.location.href = 'https://www.google.com';
               }}
             >
              <XCircle className="mr-2 h-4 w-4" /> Close & Exit
@@ -419,7 +431,7 @@ const PublicInspectionPage: NextPage = () => {
 
   const currentRoom = rooms[currentRoomIndex];
   const ownerDisplayNameForGreeting = home?.ownerDisplayName || "the Home Owner";
-  const currentInspectorName = inspectorName || tenantNameFromLink || "Inspector";
+  const currentInspectorName = tenantNameFromLink || "Inspector";
 
 
   return (
@@ -436,22 +448,7 @@ const PublicInspectionPage: NextPage = () => {
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6 space-y-6">
-
-          <div className="space-y-2">
-            <label htmlFor="inspectorName" className="block text-sm font-medium text-muted-foreground">Your Name (Inspector):</label>
-            <Input
-              id="inspectorName"
-              type="text"
-              value={inspectorName}
-              onChange={(e) => setInspectorName(e.target.value)}
-              placeholder="Enter your full name"
-              className="bg-input text-foreground placeholder:text-muted-foreground/70"
-              disabled={inspectionComplete || roomReports.length > 0 || (tenantNameFromLink && tenantNameFromLink === inspectorName)}
-            />
-             {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Inspector name is locked after first room completion.</p>}
-          </div>
-
-          {inspectorName.trim() && currentRoom && !inspectionComplete && (
+          {currentRoom && !inspectionComplete && (
             <>
               <Alert variant="default" className="my-4 bg-primary/10 border-primary/30 text-primary-foreground">
                 <Info className="h-4 w-4 text-primary" />
@@ -472,21 +469,12 @@ const PublicInspectionPage: NextPage = () => {
             </>
           )}
 
-          {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && inspectorName.trim() && (
+          {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && (
              <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>Ready to Start Inspection</AlertTitle>
                 <AlertDescription>
-                  Press "Next Room" to begin inspecting <strong>{rooms[0]?.name}</strong>, or proceed if you've already started.
-                </AlertDescription>
-              </Alert>
-          )}
-           {!currentRoom && rooms.length > 0 && !inspectionComplete && !pageLoading && !inspectorName.trim() && (
-             <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Ready to Start?</AlertTitle>
-                <AlertDescription>
-                  Please enter your name above to begin the inspection for the first room: <strong>{rooms[0]?.name}</strong>.
+                  Press "Next Room" to begin inspecting <strong>{rooms[0]?.name}</strong>.
                 </AlertDescription>
               </Alert>
           )}
@@ -503,19 +491,12 @@ const PublicInspectionPage: NextPage = () => {
 
         </CardContent>
 
-        {inspectorName.trim() && rooms.length > 0 && !inspectionComplete && (
+        {tenantNameFromLink && rooms.length > 0 && !inspectionComplete && (
           <CardFooter className="border-t border-border pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
               Room {Math.min(currentRoomIndex + 1, rooms.length)} of {rooms.length}{currentRoom ? `: ${currentRoom.name}` : ''}
             </div>
             <div className="flex gap-3">
-              <Button
-                onClick={handlePreviousRoom}
-                disabled={currentRoomIndex === 0 || isSubmittingReport}
-                variant="outline"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-              </Button>
               {currentRoomIndex < rooms.length - 1 ? (
                 <Button
                   onClick={handleNextRoom}
