@@ -117,7 +117,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           {user && home.ownerId === user.uid && (
             <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
               <Button variant="outline" size="sm" className="flex-1">
-                <Link2 className="mr-1 h-3 w-3" /> Link
+                <Link2 className="mr-1 h-3 w-3" /> Generate Link
               </Button>
             </GenerateTenantLinkDialog>
           )}
