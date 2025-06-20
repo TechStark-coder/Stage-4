@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,13 +56,12 @@ export function ImageLightbox({
       <DialogContent 
         className="p-0 m-0 max-w-[90vw] max-h-[90vh] w-auto h-auto bg-transparent border-none shadow-none flex items-center justify-center overflow-hidden"
         onInteractOutside={(e) => {
-          // Allow closing on outside click by calling onClose
-          // Default Dialog behavior might already handle this if onOpenChange is setup correctly
-          // If you want to prevent close on outside click, use e.preventDefault()
            onClose(); 
         }}
-        // Removed onPointerDownOutside to let onOpenChange handle it or default Dialog behavior
       >
+        <DialogHeader className="sr-only">
+          <DialogTitle>Enlarged Image Viewer</DialogTitle>
+        </DialogHeader>
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Image Display */}
           <div className="relative max-w-full max-h-full flex items-center justify-center">
