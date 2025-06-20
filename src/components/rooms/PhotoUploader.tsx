@@ -7,8 +7,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { describeRoomObjects, type DescribeRoomObjectsInput } from "@/ai/flows/describe-room-objects";
-import { setRoomAnalyzingStatus } from "@/lib/firestore";
+// describeRoomObjects is no longer called directly from here
 import { photoUploadSchema, type PhotoUploadFormData } from "@/schemas/roomSchemas";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadCloud, ImagePlus, Camera, Sparkles, Loader2 } from "lucide-react";
@@ -31,10 +30,8 @@ interface PhotoUploaderProps {
   homeId: string;
   roomId: string;
   userId: string;
-  onAnalysisComplete: (
-    analysisSuccessful: boolean,
-    analyzedObjects?: Array<{ name: string; count: number }>,
-    photoUrls?: string[]
+  onAnalysisComplete: ( // MODIFIED: Only passes back new URLs or undefined
+    newlyUploadedPhotoUrls?: string[]
   ) => void;
   currentPhotos: File[];
   onPhotosChange: (photos: File[]) => void;
@@ -51,8 +48,8 @@ export function PhotoUploader({
   onPhotosChange
 }: PhotoUploaderProps) {
   const { toast } = useToast();
-  const { showAiLoader } = useAiAnalysisLoader();
-  const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false);
+  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader(); // hideAiLoader will be used
+  const [isUploading, setIsUploading] = useState(false); // Renamed from isAnalyzingLocal
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -217,7 +214,8 @@ export function PhotoUploader({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); 
     if (!userId) {
-      toast({ title: "Authentication Error", description: "User ID is missing. Cannot upload or analyze photos. Please ensure you are logged in.", variant: "destructive" });
+      toast({ title: "Authentication Error", description: "User ID is missing. Cannot upload photos. Please ensure you are logged in.", variant: "destructive" });
+      onAnalysisComplete(undefined); // Pass undefined if critical error before upload
       return;
     }
     if (currentPhotos.length === 0) {
@@ -226,18 +224,16 @@ export function PhotoUploader({
         description: "Please add or capture photos before analyzing.",
         variant: "destructive",
       });
+      onAnalysisComplete(undefined); // Pass undefined if no photos
       return;
     }
 
-    showAiLoader();
-    setIsAnalyzingLocal(true);
+    showAiLoader(); // Show global AI loader for the upload process
+    setIsUploading(true); // Local state for uploader's button
     
-    let analysisSuccessful = false;
-    let uploadedImageUrls: string[] = [];
-    let aiAnalyzedObjects: Array<{ name: string; count: number }> | undefined = undefined;
+    let successfullyUploadedUrls: string[] = [];
 
     try {
-      await setRoomAnalyzingStatus(homeId, roomId, true);
       toast({ title: "Uploading Photos...", description: `Starting upload of ${currentPhotos.length} photo(s).`, duration: 2000 });
       
       for (let i = 0; i < currentPhotos.length; i++) {
@@ -249,40 +245,26 @@ export function PhotoUploader({
         toast({ title: `Uploading ${i+1}/${currentPhotos.length}`, description: file.name, duration: 1500});
         await uploadBytes(imageStorageRef, file);
         const downloadURL = await getDownloadURL(imageStorageRef);
-        uploadedImageUrls.push(downloadURL);
+        successfullyUploadedUrls.push(downloadURL);
       }
-      toast({ title: "Upload Complete", description: "All photos uploaded. Starting AI analysis...", duration: 2000 });
-
-      const aiInput: DescribeRoomObjectsInput = { photoDataUris: uploadedImageUrls };
-      const result = await describeRoomObjects(aiInput);
+      toast({ title: "Upload Complete", description: "Photos uploaded. Room page will now re-analyze all images.", duration: 3000 });
       
-      if (result && result.objects) {
-        aiAnalyzedObjects = result.objects;
-        analysisSuccessful = true;
-      } else {
-        throw new Error("AI analysis did not return the expected object structure.");
-      }
+      // No direct AI call from here anymore.
+      // onAnalysisComplete will be called with the new URLs.
       
     } catch (error: any) {
-      console.error("Error during photo upload or AI Analysis:", error);
+      console.error("Error during photo upload:", error);
       toast({
-        title: "Analysis Process Failed",
-        description: error.message || "Could not upload photos or get AI description.",
+        title: "Upload Process Failed",
+        description: error.message || "Could not upload photos.",
         variant: "destructive",
       });
-      analysisSuccessful = false;
-      try {
-        await setRoomAnalyzingStatus(homeId, roomId, false);
-      } catch (statusError) {
-        console.error("Error resetting analyzing status after failure:", statusError);
-      }
+      successfullyUploadedUrls = []; // Ensure empty array on failure
     } finally {
-      setIsAnalyzingLocal(false);
-      onAnalysisComplete(
-        analysisSuccessful, 
-        analysisSuccessful ? aiAnalyzedObjects : undefined, 
-        analysisSuccessful ? uploadedImageUrls : [] 
-      );
+      setIsUploading(false); // Reset local button state
+      // The global AI loader (showAiLoader) will be hidden by RoomDetailPage after its full re-analysis.
+      // Do not hide it here.
+      onAnalysisComplete(successfullyUploadedUrls.length > 0 ? successfullyUploadedUrls : undefined);
     }
   }
 
@@ -327,12 +309,12 @@ export function PhotoUploader({
                 )}
               />
               <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full px-4 sm:px-0">
-                <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1">
+                <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1" disabled={isUploading}>
                     <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
                 </Button>
                 <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
                   <DialogTrigger asChild>
-                    <Button type="button" variant="outline" className="flex-1">
+                    <Button type="button" variant="outline" className="flex-1" disabled={isUploading}>
                       <Camera className="mr-2 h-4 w-4" /> Capture Image
                     </Button>
                   </DialogTrigger>
@@ -375,14 +357,14 @@ export function PhotoUploader({
             <Button 
               type="submit"
               className="w-full"
-              disabled={isAnalyzingLocal || currentPhotos.length === 0 || !userId}
+              disabled={isUploading || currentPhotos.length === 0 || !userId}
             >
-              {isAnalyzingLocal ? (
+              {isUploading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              {isAnalyzingLocal ? "Analyzing..." : "Analyze Images"}
+              {isUploading ? "Uploading..." : `Process ${currentPhotos.length} Photo(s)`}
             </Button>
           </CardFooter>
         </form>

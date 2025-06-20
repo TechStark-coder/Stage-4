@@ -15,12 +15,12 @@ import {
   writeBatch,
   setDoc,
   deleteField,
-  increment, // Ensure increment is imported
+  increment, 
   runTransaction,
   collectionGroup,
   limit,
   arrayRemove, 
-  arrayUnion, // Import arrayUnion for merging URLs safely
+  arrayUnion, 
 } from "firebase/firestore";
 import { db, storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
@@ -31,21 +31,16 @@ const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
   if (!fileUrlOrPath) return;
   let storageRefPath: string;
 
-  // Check if it's a GCS path or a relative path (not a full HTTPS URL)
   if (fileUrlOrPath.startsWith('gs://') || !fileUrlOrPath.includes('firebasestorage.googleapis.com')) {
     storageRefPath = fileUrlOrPath;
   } else {
-    // It's an HTTPS URL, extract the path
     try {
       const url = new URL(fileUrlOrPath);
-      // Pathname is like /v0/b/YOUR_BUCKET/o/folder%2Ffile.jpg
-      // We need to decode and strip the /v0/b/YOUR_BUCKET/o/ part
       const decodedPathName = decodeURIComponent(url.pathname);
-      storageRefPath = decodedPathName.substring(decodedPathName.indexOf('/o/') + 3).split('?')[0]; // Remove query params like alt=media
-
+      storageRefPath = decodedPathName.substring(decodedPathName.indexOf('/o/') + 3).split('?')[0]; 
     } catch (error) {
       console.error("Invalid URL, cannot extract path for deletion:", fileUrlOrPath, error);
-      return; // Don't proceed if URL is malformed
+      return; 
     }
   }
 
@@ -58,8 +53,6 @@ const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
       console.log("Object not found in Firebase Storage (already deleted or path issue?):", storageRefPath);
     } else {
       console.error("Error deleting object from Firebase Storage:", storageRefPath, error);
-      // Optionally re-throw if you want the calling function to handle it
-      // throw error;
     }
   }
 };
@@ -75,7 +68,6 @@ const deleteFolderContents = async (folderPath: string) => {
     console.log(`Successfully deleted contents of folder: ${folderPath}`);
   } catch (error) {
     console.error(`Error deleting contents of folder ${folderPath}:`, error);
-    // Do not re-throw, allow Firestore deletions to proceed if storage deletion fails partially
   }
 };
 
@@ -193,49 +185,41 @@ export async function getHome(homeId: string): Promise<Home | null> {
 export async function deleteHome(homeId: string, userId: string): Promise<void> {
   const homeDocRef = doc(db, "homes", homeId);
   const homeSnap = await getDoc(homeDocRef);
-  let ownerIdToDelete = userId; // Default to the deleter's ID
+  let ownerIdToDelete = userId; 
 
   if (homeSnap.exists()) {
     const homeData = homeSnap.data() as Home;
     if (homeData.ownerId !== userId) {
       throw new Error("Permission denied to delete this home. You are not the owner.");
     }
-    ownerIdToDelete = homeData.ownerId; // Use the confirmed ownerId from the document
+    ownerIdToDelete = homeData.ownerId; 
 
     if (homeData.coverImageUrl) {
       await safeDeleteStorageObject(homeData.coverImageUrl);
     }
-    // Delete home cover image folder contents
     await deleteFolderContents(`homeCovers/${ownerIdToDelete}/${homeId}`);
   } else {
-    // If home doesn't exist or user can't read it, we might still try to delete related folders if we have an ID.
-    // However, without homeData.ownerId, constructing storage paths is problematic.
-    // This error indicates the initial check failed.
     throw new Error("Home not found for deletion, or you do not have permission to access its details.");
   }
 
   const batch = writeBatch(db);
 
-  // Delete rooms and their storage
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
   for (const roomDoc of roomsSnapshot.docs) {
-    await deleteFolderContents(`roomAnalysisPhotos/${ownerIdToDelete}/${roomDoc.id}`); // Adjusted path if userId is ownerId
+    await deleteFolderContents(`roomAnalysisPhotos/${ownerIdToDelete}/${roomDoc.id}`); 
     batch.delete(roomDoc.ref);
   }
 
-  // Delete tenant inspection links
   const linksCollectionRef = collection(db, `homes/${homeId}/tenantInspectionLinks`);
   const linksSnapshot = await getDocs(linksCollectionRef);
   linksSnapshot.forEach(linkDoc => batch.delete(linkDoc.ref));
 
-  // Delete inspection reports
   const inspectionsCollectionRef = collection(db, "inspections");
   const reportsQuery = query(inspectionsCollectionRef, where("houseId", "==", homeId));
   const reportsSnapshot = await getDocs(reportsQuery);
   reportsSnapshot.forEach(reportDoc => batch.delete(reportDoc.ref));
 
-  // Delete the home document itself
   batch.delete(homeDocRef);
 
   await batch.commit();
@@ -258,9 +242,6 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
 
 export async function updateRoom(homeId: string, roomId: string, data: UpdateRoomData): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
-  // Optional: Add a check to ensure the home exists or user has permission if needed
-  // const home = await getHome(homeId);
-  // if (!home) throw new Error("Parent home not found for room update.");
   await updateDoc(roomDocRef, data);
 }
 
@@ -283,51 +264,32 @@ export async function getRoom(homeId: string, roomId: string): Promise<Room | nu
   return null;
 }
 
+// MODIFIED: This function now *replaces* existing analysis data with the new complete data.
 export async function updateRoomAnalysisData(
   homeId: string,
   roomId: string,
-  newlyAnalyzedObjects: Array<{ name: string; count: number }>,
-  newlyUploadedPhotoUrls: string[],
-  userId: string // userId of the uploader
+  finalAnalyzedObjects: Array<{ name: string; count: number }>,
+  finalPhotoUrls: string[], 
+  userId: string 
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
+  
+  // Optional: Verify user owns the home before proceeding if not handled by rules
+  // const parentHome = await getHome(homeId);
+  // if (!parentHome || parentHome.ownerId !== userId) {
+  //   throw new Error("Permission denied or home not found.");
+  // }
 
-  await runTransaction(db, async (transaction) => {
-    const roomSnap = await transaction.get(roomDocRef);
-    if (!roomSnap.exists()) {
-      throw new Error("Room not found for updating analysis data.");
-    }
-    const roomData = roomSnap.data() as Room;
-
-    // Merge analyzedObjects: Sum counts for existing items, add new items
-    const existingObjects = roomData.analyzedObjects || [];
-    const mergedObjectsMap = new Map<string, number>();
-
-    existingObjects.forEach(obj => {
-      mergedObjectsMap.set(obj.name, (mergedObjectsMap.get(obj.name) || 0) + obj.count);
-    });
-
-    newlyAnalyzedObjects.forEach(newObj => {
-      mergedObjectsMap.set(newObj.name, (mergedObjectsMap.get(newObj.name) || 0) + newObj.count);
-    });
-
-    const finalAnalyzedObjects: Array<{ name: string; count: number }> = [];
-    mergedObjectsMap.forEach((count, name) => {
-      finalAnalyzedObjects.push({ name, count });
-    });
-    
-    // Merge analyzedPhotoUrls: Use arrayUnion to add new unique URLs
-    const finalPhotoUrls = arrayUnion(...newlyUploadedPhotoUrls);
-
-    transaction.update(roomDocRef, {
-      analyzedObjects: finalAnalyzedObjects,
-      isAnalyzing: false,
-      lastAnalyzedAt: serverTimestamp(),
-      analyzedPhotoUrls: finalPhotoUrls, 
-    });
+  await updateDoc(roomDocRef, {
+    analyzedObjects: finalAnalyzedObjects,
+    isAnalyzing: false, // This should be set to true *before* the AI call, and false here
+    lastAnalyzedAt: serverTimestamp(),
+    analyzedPhotoUrls: finalPhotoUrls, 
   });
 }
 
+// MODIFIED: This function ONLY removes the photo URL and deletes from storage.
+// It does NOT clear analyzedObjects. Client will trigger re-analysis.
 export async function removeAnalyzedRoomPhoto(
   homeId: string,
   roomId: string,
@@ -341,20 +303,13 @@ export async function removeAnalyzedRoomPhoto(
     throw new Error("Permission denied or home not found.");
   }
 
-  await runTransaction(db, async (transaction) => {
-    const roomSnap = await transaction.get(roomDocRef);
-    if (!roomSnap.exists()) {
-      throw new Error("Room not found for removing photo.");
-    }
+  await safeDeleteStorageObject(photoUrlToRemove);
 
-    await safeDeleteStorageObject(photoUrlToRemove);
-
-    transaction.update(roomDocRef, {
-      analyzedPhotoUrls: arrayRemove(photoUrlToRemove),
-      analyzedObjects: [], // Clear the objects when a photo is removed
-      lastAnalyzedAt: null, // Clear last analyzed timestamp
-      isAnalyzing: false, // Ensure not stuck in analyzing state
-    });
+  await updateDoc(roomDocRef, {
+    analyzedPhotoUrls: arrayRemove(photoUrlToRemove),
+    // analyzedObjects: [], // NO LONGER CLEARING HERE
+    // lastAnalyzedAt: null, // NO LONGER CLEARING HERE
+    isAnalyzing: false, // Reset this, client will manage for re-analysis
   });
 }
 
@@ -362,7 +317,6 @@ export async function removeAnalyzedRoomPhoto(
 export async function clearRoomAnalysisData(homeId: string, roomId: string, userId: string): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
   
-  // Verify user owns the home before proceeding
   const parentHome = await getHome(homeId);
   if (!parentHome || parentHome.ownerId !== userId) {
     throw new Error("Permission denied or home not found.");
@@ -376,10 +330,8 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string, user
          await safeDeleteStorageObject(url);
       }
     }
-    // Attempt to delete the entire folder for this room under the user
     await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
   }
-  // Update Firestore document
   await updateDoc(roomDocRef, {
     analyzedObjects: [],
     isAnalyzing: false,
@@ -400,13 +352,11 @@ export async function setRoomAnalyzingStatus(
 export async function deleteRoom(homeId: string, roomId: string, userId: string): Promise<void> {
   const roomDocRef = doc(db, `homes/${homeId}/rooms`, roomId);
   
-  // Verify user owns the home before proceeding
   const parentHome = await getHome(homeId);
   if (!parentHome || parentHome.ownerId !== userId) {
     throw new Error("Permission denied or home not found.");
   }
 
-  // Delete associated storage folder for the room
   await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
   await deleteDoc(roomDocRef);
 }
@@ -424,7 +374,7 @@ export async function saveInspectionReport(reportData: Omit<InspectionReport, 'i
 // Tenant Inspection Links
 export async function addTenantInspectionLink(
   homeId: string,
-  currentUserId: string, // User ID of the owner creating the link
+  currentUserId: string, 
   linkData: CreateTenantInspectionLinkData
 ): Promise<TenantInspectionLink> {
   const home = await getHome(homeId);
@@ -444,7 +394,7 @@ export async function addTenantInspectionLink(
 
   const newLinkData: Omit<TenantInspectionLink, 'id'> = {
     homeId: homeId,
-    ownerDisplayName: home.ownerDisplayName || "Home Owner", // Use owner's display name from home doc
+    ownerDisplayName: home.ownerDisplayName || "Home Owner", 
     tenantName: linkData.tenantName,
     createdAt: serverTimestamp() as Timestamp,
     isActive: true,
@@ -589,7 +539,3 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
         throw new Error("Inspection report not found.");
     }
 }
-
-    
-
-    

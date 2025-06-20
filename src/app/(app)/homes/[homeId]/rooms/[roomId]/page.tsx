@@ -5,16 +5,17 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, removeAnalyzedRoomPhoto } from "@/lib/firestore";
+import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, removeAnalyzedRoomPhoto, setRoomAnalyzingStatus } from "@/lib/firestore";
 import type { Home, Room } from "@/types";
 import { PhotoUploader } from "@/components/rooms/PhotoUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
 import { ImageGallery } from "@/components/rooms/ImageGallery";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
+import { ArrowLeft, DoorOpen, Home as HomeIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
+import { describeRoomObjects } from "@/ai/flows/describe-room-objects";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +25,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 export default function RoomDetailPage() {
@@ -33,19 +33,20 @@ export default function RoomDetailPage() {
   const homeId = params.homeId as string;
   const roomId = params.roomId as string;
   const { toast } = useToast();
-  const { hideAiLoader } = useAiAnalysisLoader();
+  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+  const [isProcessingFullAnalysis, setIsProcessingFullAnalysis] = useState(false);
   
-  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]); // For PhotoUploader's pending list
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
 
 
-  const fetchRoomDetails = useCallback(async () => {
+  const fetchRoomDetails = useCallback(async (showLoadingIndicator = true) => {
     if (user && homeId && roomId) {
-      setPageLoading(true);
+      if (showLoadingIndicator) setPageLoading(true);
       try {
         const currentHome = await getHome(homeId);
         if (currentHome && currentHome.ownerId === user.uid) {
@@ -61,7 +62,7 @@ export default function RoomDetailPage() {
         console.error("Failed to fetch room details:", error);
         toast({ title: "Error", description: "Failed to fetch room details.", variant: "destructive" });
       } finally {
-        setPageLoading(false);
+        if (showLoadingIndicator) setPageLoading(false);
       }
     }
   }, [user, homeId, roomId, toast]);
@@ -78,23 +79,69 @@ export default function RoomDetailPage() {
     setUploadedPhotos(prevPhotos => prevPhotos.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleAnalysisComplete = async (
-    analysisSuccessful: boolean,
-    analyzedObjects?: Array<{ name: string; count: number }>,
-    newlyUploadedPhotoUrls?: string[]
-  ) => {
-    hideAiLoader();
-    if (analysisSuccessful && analyzedObjects && newlyUploadedPhotoUrls && homeId && roomId && user?.uid) {
-      try {
-        await updateRoomAnalysisData(homeId, roomId, analyzedObjects, newlyUploadedPhotoUrls, user.uid);
-        toast({ title: "Analysis Complete", description: "Room analysis results have been updated." });
-        setUploadedPhotos([]); 
-      } catch (error) {
-        console.error("Error updating room analysis data:", error);
-        toast({ title: "Update Error", description: "Failed to save analysis results.", variant: "destructive" });
-      }
+  const performFullRoomAnalysis = async (photoUrlsToAnalyze: string[]) => {
+    if (!homeId || !roomId || !user?.uid) {
+      toast({ title: "Error", description: "Cannot perform analysis. Missing required information.", variant: "destructive" });
+      return;
     }
-    fetchRoomDetails(); 
+
+    if (photoUrlsToAnalyze.length === 0) {
+      // No photos to analyze, so clear existing analysis
+      setIsProcessingFullAnalysis(true); // Show some indicator if needed
+      showAiLoader(); // Use global AI loader
+      try {
+        await updateRoomAnalysisData(homeId, roomId, [], [], user.uid);
+        toast({ title: "Analysis Cleared", description: "No photos remaining. Object analysis for the room has been cleared." });
+        fetchRoomDetails(false); // Refresh room data without full page loader
+      } catch (error) {
+        console.error("Error clearing room analysis data when no photos left:", error);
+        toast({ title: "Update Error", description: "Failed to clear analysis results.", variant: "destructive" });
+      } finally {
+        setIsProcessingFullAnalysis(false);
+        hideAiLoader();
+      }
+      return;
+    }
+
+    setIsProcessingFullAnalysis(true);
+    showAiLoader();
+    try {
+      await setRoomAnalyzingStatus(homeId, roomId, true);
+      toast({ title: "Full Room Re-analysis", description: `Analyzing all ${photoUrlsToAnalyze.length} photos... This may take a moment.`, duration: 5000 });
+
+      const result = await describeRoomObjects({ photoDataUris: photoUrlsToAnalyze });
+      
+      if (result && result.objects) {
+        await updateRoomAnalysisData(homeId, roomId, result.objects, photoUrlsToAnalyze, user.uid);
+        toast({ title: "Room Re-analysis Complete!", description: "The object list for the room has been updated based on all current photos." });
+      } else {
+        throw new Error("AI analysis did not return the expected object structure.");
+      }
+      fetchRoomDetails(false); // Refresh room data
+    } catch (error: any) {
+      console.error("Error during full room re-analysis:", error);
+      toast({ title: "Re-analysis Failed", description: error.message || "Could not re-analyze room objects.", variant: "destructive" });
+      await setRoomAnalyzingStatus(homeId, roomId, false); // Reset status on error
+    } finally {
+      setIsProcessingFullAnalysis(false);
+      hideAiLoader();
+    }
+  };
+
+  const handleAnalysisComplete = async (newlyUploadedPhotoUrls?: string[]) => {
+    // This is called by PhotoUploader after it *only* uploads photos.
+    // hideAiLoader(); // PhotoUploader's internal loader is hidden by itself or here
+    
+    setUploadedPhotos([]); // Clear the pending photos from PhotoUploader UI
+
+    if (newlyUploadedPhotoUrls && newlyUploadedPhotoUrls.length > 0) {
+      const existingPhotoUrls = room?.analyzedPhotoUrls || [];
+      const allCurrentPhotoUrls = Array.from(new Set([...existingPhotoUrls, ...newlyUploadedPhotoUrls]));
+      await performFullRoomAnalysis(allCurrentPhotoUrls);
+    } else {
+      toast({ title: "Upload Issue", description: "No new photos were processed by the uploader. Re-analysis skipped.", variant: "destructive"});
+      fetchRoomDetails(false); // Refresh to ensure consistent state
+    }
   };
 
   const handleClearResults = async () => {
@@ -122,17 +169,34 @@ export default function RoomDetailPage() {
       setPhotoToDelete(null);
       return;
     }
-    setPageLoading(true);
+    
+    setPageLoading(true); // Show general page loader for the delete operation
+    let photoSuccessfullyRemoved = false;
+
     try {
+      // This Firestore function now only removes the URL and deletes from storage.
       await removeAnalyzedRoomPhoto(homeId, roomId, photoToDelete, user.uid);
-      toast({ title: "Photo Deleted", description: "The photo has been removed, and the room's object analysis has been cleared. Re-analyze if needed.", duration: 7000 });
-      fetchRoomDetails();
+      toast({ title: "Photo Removed", description: "Photo deleted. Re-analyzing remaining photos for the room..." });
+      photoSuccessfullyRemoved = true;
     } catch (error: any) {
-      console.error("Failed to delete photo:", error);
+      console.error("Failed to delete photo from Firestore/Storage:", error);
       toast({ title: "Error Deleting Photo", description: error.message, variant: "destructive" });
     } finally {
       setPageLoading(false);
-      setPhotoToDelete(null);
+      setPhotoToDelete(null); 
+    }
+
+    if (photoSuccessfullyRemoved) {
+      // Fetch the updated room details to get the new list of analyzedPhotoUrls
+      const updatedRoomData = await getRoom(homeId, roomId); // Explicitly refetch
+      setRoom(updatedRoomData); // Update local room state immediately
+      
+      if (updatedRoomData && updatedRoomData.analyzedPhotoUrls) {
+        await performFullRoomAnalysis(updatedRoomData.analyzedPhotoUrls);
+      } else {
+        // Fallback if room data is somehow null after deletion
+        await performFullRoomAnalysis([]);
+      }
     }
   };
 
@@ -167,6 +231,8 @@ export default function RoomDetailPage() {
     );
   }
 
+  const displayAnalyzing = room.isAnalyzing || isProcessingFullAnalysis;
+
   return (
     <>
     <div className="space-y-8">
@@ -180,6 +246,7 @@ export default function RoomDetailPage() {
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
           <DoorOpen className="h-8 w-8 text-primary" />
           {room.name}
+          {displayAnalyzing && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
         </h1>
         <p className="text-sm text-muted-foreground">
           Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
@@ -203,7 +270,7 @@ export default function RoomDetailPage() {
         />
       </div>
        <ObjectAnalysisCard
-         room={room}
+         room={{...room, isAnalyzing: displayAnalyzing }} // Pass the combined analyzing state
          onClearResults={handleClearResults}
          homeName={home.name}
         />
@@ -213,13 +280,14 @@ export default function RoomDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Delete Photo</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to permanently delete this photo? This will also clear the current object analysis for this room. This action cannot be undone.
+              Are you sure you want to permanently delete this photo? 
+              This will remove the photo and trigger a re-analysis of the remaining photos for this room. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPhotoToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmRemoveAnalyzedPhoto} className="bg-destructive hover:bg-destructive/90">
-              Delete Photo & Clear Analysis
+              Delete Photo & Re-analyze Room
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -227,6 +295,3 @@ export default function RoomDetailPage() {
     </>
   );
 }
-
-
-    
