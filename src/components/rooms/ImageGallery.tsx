@@ -3,16 +3,22 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { XCircle, ImageIcon, ImageOff as ImageOffIcon } from "lucide-react"; 
+import { XCircle, ImageIcon, ImageOff as ImageOffIcon, Trash2 } from "lucide-react"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ImageGalleryProps {
   pendingPhotos: File[];
   analyzedPhotoUrls: string[];
   onRemovePendingPhoto: (index: number) => void;
+  onRemoveAnalyzedPhoto?: (photoUrl: string) => void; // Optional prop
 }
 
-export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePendingPhoto }: ImageGalleryProps) {
+export function ImageGallery({ 
+  pendingPhotos, 
+  analyzedPhotoUrls, 
+  onRemovePendingPhoto, 
+  onRemoveAnalyzedPhoto 
+}: ImageGalleryProps) {
   const hasPendingPhotos = pendingPhotos && pendingPhotos.length > 0;
   const hasAnalyzedPhotos = analyzedPhotoUrls && analyzedPhotoUrls.length > 0;
 
@@ -43,7 +49,7 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
         <CardDescription>
           {hasPendingPhotos 
             ? "Images queued for analysis. Click 'X' to remove an image before analysis." 
-            : "These images were used for the last successful analysis."}
+            : "These images were used for the last successful analysis. Click 'X' to delete an analyzed image."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
@@ -74,7 +80,7 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
         ) : hasAnalyzedPhotos ? (
            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {analyzedPhotoUrls.map((url, index) => (
-              <div key={`analyzed-${index}`} className="relative aspect-square rounded-md overflow-hidden border border-border shadow-sm">
+              <div key={`analyzed-${index}-${url}`} className="relative group aspect-square rounded-md overflow-hidden border border-border shadow-sm">
                 <Image
                   src={url}
                   alt={`Analyzed image ${index + 1}`}
@@ -82,6 +88,17 @@ export function ImageGallery({ pendingPhotos, analyzedPhotoUrls, onRemovePending
                   objectFit="cover"
                   data-ai-hint="analyzed room"
                 />
+                {onRemoveAnalyzedPhoto && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-destructive/80"
+                    onClick={() => onRemoveAnalyzedPhoto(url)}
+                    aria-label="Delete analyzed image"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             ))}
           </div>

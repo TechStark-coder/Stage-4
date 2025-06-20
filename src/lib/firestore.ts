@@ -19,6 +19,7 @@ import {
   runTransaction,
   collectionGroup,
   limit,
+  arrayRemove, // Import arrayRemove
 } from "firebase/firestore";
 import { db, storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
@@ -29,17 +30,21 @@ const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
   if (!fileUrlOrPath) return;
   let storageRefPath: string;
 
+  // Check if it's a GCS path or a relative path (not a full HTTPS URL)
   if (fileUrlOrPath.startsWith('gs://') || !fileUrlOrPath.includes('firebasestorage.googleapis.com')) {
     storageRefPath = fileUrlOrPath;
   } else {
+    // It's an HTTPS URL, extract the path
     try {
       const url = new URL(fileUrlOrPath);
+      // Pathname is like /v0/b/YOUR_BUCKET/o/folder%2Ffile.jpg
+      // We need to decode and strip the /v0/b/YOUR_BUCKET/o/ part
       const decodedPathName = decodeURIComponent(url.pathname);
-      storageRefPath = decodedPathName.substring(decodedPathName.indexOf('/o/') + 3).split('?')[0];
+      storageRefPath = decodedPathName.substring(decodedPathName.indexOf('/o/') + 3).split('?')[0]; // Remove query params like alt=media
 
     } catch (error) {
       console.error("Invalid URL, cannot extract path for deletion:", fileUrlOrPath, error);
-      return;
+      return; // Don't proceed if URL is malformed
     }
   }
 
@@ -52,6 +57,8 @@ const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
       console.log("Object not found in Firebase Storage (already deleted or path issue?):", storageRefPath);
     } else {
       console.error("Error deleting object from Firebase Storage:", storageRefPath, error);
+      // Optionally re-throw if you want the calling function to handle it
+      // throw error;
     }
   }
 };
@@ -305,6 +312,36 @@ export async function updateRoomAnalysisData(
   });
 }
 
+export async function removeAnalyzedRoomPhoto(
+  homeId: string,
+  roomId: string,
+  photoUrlToRemove: string,
+  userId: string // For permission checks or potential storage path if needed, though safeDeleteStorageObject handles URLs directly
+): Promise<void> {
+  const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
+
+  // Optional: Verify user owns the home before proceeding
+  const parentHome = await getHome(homeId);
+  if (!parentHome || parentHome.ownerId !== userId) {
+    throw new Error("Permission denied or home not found.");
+  }
+
+  await runTransaction(db, async (transaction) => {
+    const roomSnap = await transaction.get(roomDocRef);
+    if (!roomSnap.exists()) {
+      throw new Error("Room not found for removing photo.");
+    }
+
+    // Attempt to delete from storage first
+    await safeDeleteStorageObject(photoUrlToRemove);
+
+    // Then update Firestore
+    transaction.update(roomDocRef, {
+      analyzedPhotoUrls: arrayRemove(photoUrlToRemove),
+    });
+  });
+}
+
 
 export async function clearRoomAnalysisData(homeId: string, roomId: string, userId: string): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
@@ -415,7 +452,7 @@ export async function getTenantInspectionLink(homeId: string, linkId: string): P
   return null;
 }
 
-export async function deactivateTenantInspectionLink(homeId: string, linkId: string): Promise<void> {
+export async function deactivateTenantInspectionLink(homeId: string, linkId: string, reportId: string): Promise<void> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
   // Check if link exists before attempting to update
   const linkSnap = await getDoc(linkDocRef);
@@ -424,32 +461,43 @@ export async function deactivateTenantInspectionLink(homeId: string, linkId: str
   }
   await updateDoc(linkDocRef, {
     isActive: false,
+    reportId: reportId, // Add report ID to the link when deactivating
   });
 }
 
-export async function recordTenantInspectionLinkAccess(homeId: string, linkId: string): Promise<void> {
+export async function recordTenantInspectionLinkAccess(homeId: string, linkId: string): Promise<TenantInspectionLink | null> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
   try {
-    // First, get the link to ensure it exists and is active before trying to update.
-    // Firestore security rules should prevent this read if the link is not active for an unauth user.
-    const linkSnap = await getDoc(linkDocRef);
-    if (!linkSnap.exists()) {
+    let linkData: TenantInspectionLink | null = null;
+    await runTransaction(db, async (transaction) => {
+      const linkSnap = await transaction.get(linkDocRef);
+      if (!linkSnap.exists()) {
         throw new Error("Inspection link not found.");
-    }
-    if (linkSnap.data()?.isActive !== true) {
-        throw new Error("Inspection link is not active.");
-    }
+      }
+      linkData = { id: linkSnap.id, ...linkSnap.data() } as TenantInspectionLink;
 
-    await updateDoc(linkDocRef, {
-      accessCount: increment(1),
-      lastAccessedAt: serverTimestamp(),
+      if (!linkData.isActive) {
+        throw new Error("Inspection link is not active or has expired.");
+      }
+      if (linkData.validUntil && linkData.validUntil.toDate() < new Date()) {
+        // Optionally deactivate it here if it's past validUntil
+        // transaction.update(linkDocRef, { isActive: false });
+        throw new Error("Inspection link has expired.");
+      }
+
+      transaction.update(linkDocRef, {
+        accessCount: increment(1),
+        lastAccessedAt: serverTimestamp(),
+      });
     });
     console.log(`Access recorded for tenant inspection link ${linkId} for home ${homeId}.`);
+    return linkData; // Return the link data upon successful recording
   } catch (error) {
     console.error(`Error recording access for tenant inspection link ${linkId}:`, error);
     throw error; // Re-throw to be caught by the calling page
   }
 }
+
 
 export async function deleteTenantInspectionLink(homeId: string, linkId: string, ownerId: string): Promise<void> {
   const home = await getHome(homeId);

@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, setRoomAnalyzingStatus } from "@/lib/firestore";
+import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, removeAnalyzedRoomPhoto } from "@/lib/firestore";
 import type { Home, Room } from "@/types";
 import { PhotoUploader } from "@/components/rooms/PhotoUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
@@ -15,6 +15,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function RoomDetailPage() {
   const { user } = useAuthContext();
@@ -22,13 +33,15 @@ export default function RoomDetailPage() {
   const homeId = params.homeId as string;
   const roomId = params.roomId as string;
   const { toast } = useToast();
-  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
+  const { hideAiLoader } = useAiAnalysisLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
+  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
+
 
   const fetchRoomDetails = useCallback(async () => {
     if (user && homeId && roomId) {
@@ -67,13 +80,13 @@ export default function RoomDetailPage() {
 
   const handleAnalysisComplete = async (
     analysisSuccessful: boolean,
-    analyzedObjects?: Array<{ name: string; count: number }>, // Updated type
+    analyzedObjects?: Array<{ name: string; count: number }>,
     newlyUploadedPhotoUrls?: string[]
   ) => {
     hideAiLoader();
-    if (analysisSuccessful && analyzedObjects && newlyUploadedPhotoUrls && homeId && roomId) {
+    if (analysisSuccessful && analyzedObjects && newlyUploadedPhotoUrls && homeId && roomId && user?.uid) {
       try {
-        await updateRoomAnalysisData(homeId, roomId, analyzedObjects, newlyUploadedPhotoUrls);
+        await updateRoomAnalysisData(homeId, roomId, analyzedObjects, newlyUploadedPhotoUrls, user.uid);
         toast({ title: "Analysis Complete", description: "Room analysis results have been updated." });
         setUploadedPhotos([]); 
       } catch (error) {
@@ -81,15 +94,17 @@ export default function RoomDetailPage() {
         toast({ title: "Update Error", description: "Failed to save analysis results.", variant: "destructive" });
       }
     }
-    // If analysis failed, uploadedPhotos remains, allowing user to retry or modify.
     fetchRoomDetails(); 
   };
 
   const handleClearResults = async () => {
-    if (!homeId || !roomId) return;
+    if (!homeId || !roomId || !user?.uid) {
+      toast({ title: "Error", description: "Cannot clear results. Missing required information.", variant: "destructive" });
+      return;
+    }
     setPageLoading(true); 
     try {
-      await clearRoomAnalysisData(homeId, roomId);
+      await clearRoomAnalysisData(homeId, roomId, user.uid);
       toast({ title: "Results Cleared", description: "The object analysis results and stored images have been cleared." });
       setUploadedPhotos([]); 
       fetchRoomDetails();
@@ -100,6 +115,27 @@ export default function RoomDetailPage() {
       setPageLoading(false);
     }
   };
+
+  const confirmRemoveAnalyzedPhoto = async () => {
+    if (!photoToDelete || !homeId || !roomId || !user?.uid) {
+      toast({ title: "Error", description: "Cannot delete photo. Missing required information.", variant: "destructive" });
+      setPhotoToDelete(null);
+      return;
+    }
+    setPageLoading(true);
+    try {
+      await removeAnalyzedRoomPhoto(homeId, roomId, photoToDelete, user.uid);
+      toast({ title: "Photo Deleted", description: "The selected photo has been removed." });
+      fetchRoomDetails();
+    } catch (error: any) {
+      console.error("Failed to delete photo:", error);
+      toast({ title: "Error Deleting Photo", description: error.message, variant: "destructive" });
+    } finally {
+      setPageLoading(false);
+      setPhotoToDelete(null);
+    }
+  };
+
 
   if (pageLoading && !room) { 
     return (
@@ -132,6 +168,7 @@ export default function RoomDetailPage() {
   }
 
   return (
+    <>
     <div className="space-y-8">
       <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent">
         <Link href={`/homes/${homeId}`}>
@@ -161,7 +198,8 @@ export default function RoomDetailPage() {
         <ImageGallery 
           pendingPhotos={uploadedPhotos} 
           analyzedPhotoUrls={room.analyzedPhotoUrls || []}
-          onRemovePendingPhoto={handleRemovePendingPhoto} 
+          onRemovePendingPhoto={handleRemovePendingPhoto}
+          onRemoveAnalyzedPhoto={(url) => setPhotoToDelete(url)} 
         />
       </div>
        <ObjectAnalysisCard
@@ -170,5 +208,22 @@ export default function RoomDetailPage() {
          homeName={home.name}
         />
     </div>
+    <AlertDialog open={!!photoToDelete} onOpenChange={(open) => !open && setPhotoToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delete Photo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this photo? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPhotoToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveAnalyzedPhoto} className="bg-destructive hover:bg-destructive/90">
+              Delete Photo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
