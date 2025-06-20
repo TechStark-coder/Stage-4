@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, Link2 } from "lucide-react"; 
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, Link2 } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import * as React from 'react';
@@ -110,13 +110,30 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           </p>
         )}
       </CardContent>
-      <CardFooter className="grid grid-cols-2 gap-2 pt-4 p-4 border-t">
-        <div className="col-span-1 flex gap-2">
-           <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
-           <AlertDialog>
+      <CardFooter className="flex flex-col gap-3 pt-4 p-4 border-t">
+        {/* Row 1: Edit button, Generate Link button */}
+        <div className="flex w-full gap-2">
+          <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
+          {user && home.ownerId === user.uid && (
+            <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Link2 className="mr-1 h-3 w-3" /> Link
+              </Button>
+            </GenerateTenantLinkDialog>
+          )}
+        </div>
+
+        {/* Row 2: View button, Delete button */}
+        <div className="flex w-full gap-2">
+          <Button asChild variant="default" size="sm" className="flex-1">
+            <Link href={`/homes/${home.id}`}>
+              View <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+          <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" className="flex-1">
-                <Trash2 /> 
+                <Trash2 />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -135,20 +152,6 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-        <div className="col-span-1 flex flex-col sm:flex-row gap-2">
-          {user && home.ownerId === user.uid && (
-            <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
-              <Button variant="outline" size="sm" className="flex-1">
-                <Link2 className="mr-1 h-3 w-3" /> Link
-              </Button>
-            </GenerateTenantLinkDialog>
-          )}
-          <Button asChild variant="default" size="sm" className="flex-1">
-            <Link href={`/homes/${home.id}`}>
-              View <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
         </div>
       </CardFooter>
     </Card>
