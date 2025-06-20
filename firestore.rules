@@ -6,8 +6,8 @@ service cloud.firestore {
 
     // Helper function to check if the requester is the owner of a specific home
     function isHomeOwner(homeId) {
+      // Ensure the home document exists and has an ownerId before checking
       let homeDoc = get(/databases/$(database)/documents/homes/$(homeId));
-      // Ensure the home document exists and has an ownerId before checking ownership
       return request.auth != null && homeDoc.exists && homeDoc.data.ownerId == request.auth.uid;
     }
 
@@ -66,7 +66,7 @@ service cloud.firestore {
       // - The owner of the parent home can update links.
       // - An unauthenticated user (tenant) can update specific fields on an ACTIVE link:
       //   - Increment 'accessCount' and set 'lastAccessedAt' (when they first access the link).
-      //   - Set 'isActive' to false (when they submit the inspection report).
+      //   - Set 'isActive' to false and 'reportId' (when they submit the inspection report).
       allow update: if isHomeOwner(homeId) ||
                        (
                         request.auth == null && resource.data.isActive == true && // Link must be active for tenant update
@@ -84,7 +84,7 @@ service cloud.firestore {
                             request.resource.data.isActive == false &&
                             request.resource.data.reportId != null // reportId should be set
                           ) ||
-                           // Scenario 3: Deactivating link without reportId (e.g. old rule compatibility or direct deactivation)
+                           // Scenario 3: Deactivating link by owner or simpler client update (only isActive)
                           (
                             request.resource.data.keys().hasAll(['isActive']) &&
                             request.resource.data.keys().size() == 1 &&
