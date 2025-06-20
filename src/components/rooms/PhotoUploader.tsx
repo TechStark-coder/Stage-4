@@ -51,7 +51,7 @@ export function PhotoUploader({
   onPhotosChange
 }: PhotoUploaderProps) {
   const { toast } = useToast();
-  const { showAiLoader } = useAiAnalysisLoader(); // hideAiLoader removed as it's called in onAnalysisComplete
+  const { showAiLoader } = useAiAnalysisLoader();
   const [isAnalyzingLocal, setIsAnalyzingLocal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,7 +65,6 @@ export function PhotoUploader({
 
   const form = useForm<PhotoUploadFormData>({
     resolver: zodResolver(photoUploadSchema),
-    // No defaultValues needed as we manage files separately
   });
 
   const addNewFiles = (newFilesArray: File[]) => {
@@ -191,7 +190,7 @@ export function PhotoUploader({
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob((blob) => {
           if (blob) {
-            const newFile = new File([blob], `capture_${Date.now()}.png`, { type: 'image/png' });
+            const newFile = new File([blob], 'capture_' + Date.now() + '.png', { type: 'image/png' });
             addNewFiles([newFile]);
             closeCamera();
           } else {
@@ -207,7 +206,7 @@ export function PhotoUploader({
       openCamera();
     }
     return () => {
-      if (cameraStream) { // Ensure stream is stopped if dialog closes unexpectedly
+      if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
       }
     };
@@ -216,17 +215,17 @@ export function PhotoUploader({
 
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault(); 
+    if (!userId) {
+      toast({ title: "Authentication Error", description: "User ID is missing. Cannot upload or analyze photos. Please ensure you are logged in.", variant: "destructive" });
+      return;
+    }
     if (currentPhotos.length === 0) {
       toast({
         title: "No Photos",
         description: "Please add or capture photos before analyzing.",
         variant: "destructive",
       });
-      return;
-    }
-    if (!userId) {
-      toast({ title: "Error", description: "User not identified. Cannot upload photos.", variant: "destructive" });
       return;
     }
 
@@ -244,7 +243,7 @@ export function PhotoUploader({
       for (let i = 0; i < currentPhotos.length; i++) {
         const file = currentPhotos[i];
         const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '')}`;
-        const imagePath = `roomAnalysisPhotos/${userId}/${roomId}/${uniqueFileName}`;
+        const imagePath = `roomAnalysisPhotos/${userId}/${roomId}/${uniqueFileName}`; 
         const imageStorageRef = ref(storage, imagePath);
         
         toast({ title: `Uploading ${i+1}/${currentPhotos.length}`, description: file.name, duration: 1500});
@@ -284,7 +283,6 @@ export function PhotoUploader({
         analysisSuccessful ? aiAnalyzedObjects : undefined, 
         analysisSuccessful ? uploadedImageUrls : [] 
       );
-      // hideAiLoader(); // This is called by onAnalysisComplete on the page level
     }
   }
 
@@ -377,7 +375,7 @@ export function PhotoUploader({
             <Button 
               type="submit"
               className="w-full"
-              disabled={isAnalyzingLocal || currentPhotos.length === 0}
+              disabled={isAnalyzingLocal || currentPhotos.length === 0 || !userId}
             >
               {isAnalyzingLocal ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

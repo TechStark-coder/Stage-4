@@ -1,110 +1,79 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper function to check if the requester is the owner of a specific home
-    // Ensures the home document exists before trying to access its data.
     function isHomeOwner(homeId) {
+      // Ensure the home document exists and has an ownerId before checking
       let homeDoc = get(/databases/$(database)/documents/homes/$(homeId));
       return request.auth != null && homeDoc.exists && homeDoc.data.ownerId == request.auth.uid;
     }
 
     // Users Collection
-    // - Authenticated users can read, create, and update their own document.
     match /users/{userId} {
       allow read, create, update: if request.auth != null && request.auth.uid == userId;
     }
 
     // Homes Collection
     match /homes/{homeId} {
-      // Create: Only an authenticated user can create a home, and they must be the owner.
       allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
-
-      // Update, Delete: Only the authenticated owner of the home can update or delete it.
       allow update, delete: if isHomeOwner(homeId);
-
-      // Read:
-      // - An authenticated user can read a home IF their UID matches the home's ownerId.
-      // - ANY unauthenticated user can read ANY home document (for public inspection pages).
       allow read: if (request.auth != null && request.auth.uid == resource.data.ownerId) ||
                      (request.auth == null);
     }
 
     // Rooms Subcollection (nested under /homes/{homeId})
     match /homes/{homeId}/rooms/{roomId} {
-      // Create, Update, Delete: Only the owner of the parent home can manage rooms.
-      allow create, update, delete: if isHomeOwner(homeId);
-
-      // Read:
-      // - The owner of the parent home can read rooms.
-      // - ANY unauthenticated user can read ANY room document (for public inspection pages).
+      // Explicit rule for create, inlining isHomeOwner logic for clarity
+      allow create: if request.auth != null &&
+                       exists(/databases/$(database)/documents/homes/$(homeId)) &&
+                       get(/databases/$(database)/documents/homes/$(homeId)).data.ownerId == request.auth.uid;
+      // Use isHomeOwner for update and delete as it's concise
+      allow update, delete: if isHomeOwner(homeId);
       allow read: if isHomeOwner(homeId) || (request.auth == null);
     }
 
     // TenantInspectionLinks Subcollection (nested under /homes/{homeId})
     match /homes/{homeId}/tenantInspectionLinks/{linkId} {
-      // Create, Delete: Only the owner of the parent home can manage inspection links.
       allow create, delete: if isHomeOwner(homeId);
-
-      // Read:
-      // - The owner of the parent home can read links.
-      // - An unauthenticated user can read a specific link IF that link document's 'isActive' field is true.
       allow read: if isHomeOwner(homeId) ||
                      (request.auth == null && resource.data.isActive == true);
-
-      // Update:
-      // - The owner of the parent home can update links.
-      // - An unauthenticated user (tenant) can update specific fields on an ACTIVE link.
       allow update: if isHomeOwner(homeId) ||
                        (
-                        request.auth == null && resource.data.isActive == true && // Link must be active for tenant update
+                        request.auth == null && resource.data.isActive == true &&
                         (
-                          // Scenario 1: Recording link access
                           (
                             request.resource.data.keys().hasAll(['accessCount', 'lastAccessedAt']) &&
-                            request.resource.data.keys().size() == 2 && // Must ONLY be these two fields
+                            request.resource.data.keys().size() == 2 &&
                             request.resource.data.accessCount == resource.data.accessCount + 1
                           ) ||
-                          // Scenario 2: Deactivating the link after report submission (also updates reportId)
                           (
                             request.resource.data.keys().hasAll(['isActive', 'reportId']) &&
                             request.resource.data.keys().size() == 2 &&
                             request.resource.data.isActive == false &&
                             request.resource.data.reportId != null
                           ) ||
-                           // Scenario 3: Deactivating link without reportId (e.g. direct deactivation by owner via app logic, or simpler tenant update)
                           (
                             request.resource.data.keys().hasAll(['isActive']) &&
                             request.resource.data.keys().size() == 1 &&
                             request.resource.data.isActive == false
                           )
                         ) &&
-                        // Crucially, ensure tenant cannot change other fundamental properties of the link
                         !request.resource.data.keys().hasAny(['homeId', 'ownerDisplayName', 'tenantName', 'createdAt', 'validUntil'])
                        );
     }
 
     // InspectionReports Collection (top-level)
     match /inspections/{reportId} {
-      // Create:
-      // - An unauthenticated user (tenant) can create a report IF:
-      //   - The report data includes 'houseId' and 'tenantLinkId'.
-      //   - The referenced TenantInspectionLink document exists and is currently active.
       allow create: if request.auth == null &&
                        request.resource.data.houseId != null &&
                        request.resource.data.tenantLinkId != null &&
                        exists(/databases/$(database)/documents/homes/$(request.resource.data.houseId)/tenantInspectionLinks/$(request.resource.data.tenantLinkId)) &&
                        get(/databases/$(database)/documents/homes/$(request.resource.data.houseId)/tenantInspectionLinks/$(request.resource.data.tenantLinkId)).data.isActive == true;
-
-      // Read, Delete:
-      // - Only the owner of the home to which this inspection report pertains can read or delete it.
       allow read, delete: if request.auth != null &&
-                             resource.data.houseId != null && // Ensure houseId exists on the report
-                             isHomeOwner(resource.data.houseId); // Check ownership of the linked home
+                             resource.data.houseId != null &&
+                             isHomeOwner(resource.data.houseId);
     }
   }
 }
-
-    
