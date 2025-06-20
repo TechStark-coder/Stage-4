@@ -32,6 +32,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${inter.variable} ${robotoMono.variable} antialiased`}
+        suppressHydrationWarning={true} // Added to suppress hydration warnings
       >
         <Providers>
           <AppRouterEvents />
