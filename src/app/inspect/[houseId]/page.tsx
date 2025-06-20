@@ -4,7 +4,7 @@
 import type { NextPage } from 'next';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
-import { getHome, getRooms, saveInspectionReport, recordTenantInspectionLinkAccess, deactivateTenantInspectionLink, getTenantInspectionLink } from '@/lib/firestore'; // Added getTenantInspectionLink
+import { getHome, getRooms, saveInspectionReport, recordTenantInspectionLinkAccess, deactivateTenantInspectionLink, getTenantInspectionLink } from '@/lib/firestore';
 import type { Home, Room, InspectionReport, RoomInspectionReportData, TenantInspectionLink } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +51,7 @@ const PublicInspectionPage: NextPage = () => {
     } else if (houseId) {
         setError("Inspection link ID is missing. Please use the link provided by the home owner. This link may also be invalid or expired.");
         setPageLoading(false);
-        return; // Stop further execution
+        return; 
     }
 
     if (houseId && linkIdFromQuery) {
@@ -59,35 +59,53 @@ const PublicInspectionPage: NextPage = () => {
         setPageLoading(true);
         setError(null);
         try {
-          // Attempt to record access and implicitly validate the link
-          await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
+          // STEP 1: Validate and record access to the inspection link
+          try {
+            await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
+          } catch (linkAccessError: any) {
+            console.error("Error accessing or validating inspection link (recordTenantInspectionLinkAccess):", linkAccessError);
+            let specificErrorMessage = `The inspection link (ID: ${linkIdFromQuery}) appears to be invalid. This could be due to the link not existing, being inactive, or a permission issue accessing it. Please verify the link with the home owner.`;
+            if (linkAccessError.message) {
+                if (linkAccessError.message.toLowerCase().includes("not found")) {
+                    specificErrorMessage = `The inspection link (ID: ${linkIdFromQuery}) was not found. Please ensure the link is correct.`;
+                } else if (linkAccessError.message.toLowerCase().includes("not active")) {
+                    specificErrorMessage = `The inspection link (ID: ${linkIdFromQuery}) is no longer active. Please request a new link from the home owner.`;
+                } else if (linkAccessError.message.toLowerCase().includes("permission denied") || linkAccessError.message.toLowerCase().includes("insufficient permissions")) {
+                    specificErrorMessage = `There was a permission issue accessing inspection link (ID: ${linkIdFromQuery}). This often indicates a configuration problem. Please contact the home owner.`;
+                } else {
+                    specificErrorMessage = `An unexpected issue occurred with the inspection link (ID: ${linkIdFromQuery}): ${linkAccessError.message}. Please contact the home owner.`;
+                }
+            }
+            setError(specificErrorMessage);
+            setPageLoading(false);
+            return; 
+          }
 
+          // STEP 2: Fetch home details
           const fetchedHome = await getHome(houseId);
           if (!fetchedHome) {
-            setError("Inspection details not found. This link may be invalid or the home no longer exists.");
+            setError(`Details for the home (ID: ${houseId}) could not be found. The link may be for a home that no longer exists or there was an issue fetching its data.`);
             setPageLoading(false);
             return;
           }
           setHome(fetchedHome);
 
+          // STEP 3: Fetch link details again (primarily for tenantName)
           const fetchedLinkDetails = await getTenantInspectionLink(houseId, linkIdFromQuery);
           if (fetchedLinkDetails && fetchedLinkDetails.tenantName) {
             setTenantNameFromLink(fetchedLinkDetails.tenantName);
-            if (!inspectorName) setInspectorName(fetchedLinkDetails.tenantName); // Pre-fill if empty
+            if (!inspectorName) setInspectorName(fetchedLinkDetails.tenantName);
           } else if (!fetchedLinkDetails) {
-            // This case means the link was not found or is inactive AFTER attempting to record access.
-            // recordTenantInspectionLinkAccess might throw if the link doesn't exist,
-            // or getTenantInspectionLink will return null if it's inactive.
-            setError("Inspection link is invalid, expired, or has already been used. Please contact the home owner.");
+            // This might happen if the link was deactivated between recordTenantInspectionLinkAccess and this call,
+            // or if recordTenantInspectionLinkAccess somehow succeeded but getTenantInspectionLink can't read it.
+            setError("Could not retrieve full details for the inspection link. It might have been used or deactivated. Please contact the home owner.");
             setPageLoading(false);
             return;
           }
 
-
           const fetchedRooms = await getRooms(houseId);
           if (fetchedRooms.length === 0) {
             setError("This home has no rooms configured for inspection.");
-            // Don't set pageLoading to false yet, as we might still want to show home info if home loaded.
           }
           setRooms(fetchedRooms);
 
@@ -98,12 +116,13 @@ const PublicInspectionPage: NextPage = () => {
           setGeneratedPdfForEmail(null);
 
         } catch (err: any) {
-          console.error("Error during initial inspection setup:", err);
-          let userErrorMessage = "Could not load inspection details. The link might be invalid, expired, or already used. Please contact the home owner.";
+          console.error("Error during general inspection setup (after initial link access):", err);
+          // This catch is for errors from getHome, getTenantInspectionLink (after first validation), or getRooms
+          let userErrorMessage = "Could not load complete inspection details. Please contact the home owner.";
           if (err.message && (err.message.toLowerCase().includes("permission denied") || err.message.toLowerCase().includes("insufficient permissions"))) {
-            userErrorMessage = "There was a problem accessing inspection data. This could be due to an invalid link, an expired link, or a configuration issue. Please contact the home owner.";
+            userErrorMessage = "There was a problem accessing inspection data. This could be due to a configuration issue. Please contact the home owner.";
           } else if (err.message) {
-            userErrorMessage = `An error occurred: ${err.message}. Please try again or contact the home owner.`;
+            userErrorMessage = `An error occurred while fetching inspection details: ${err.message}. Please try again or contact the home owner.`;
           }
           setError(userErrorMessage);
         } finally {
@@ -112,13 +131,13 @@ const PublicInspectionPage: NextPage = () => {
       };
       fetchHouseDataAndRecordAccess();
     } else if (houseId && !linkIdFromQuery) {
-        // Error already set by the initial check
+        // Error already set by the initial check for missing linkId
     } else if (!houseId) {
         setError("Home ID is missing from the link. Please use a valid inspection link.");
         setPageLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [houseId, searchParams]); // inspectorName removed from deps to avoid re-fetch on its change
+  }, [houseId, searchParams]);
 
   const handleRoomInspectionComplete = (reportData: RoomInspectionReportData) => {
     setRoomReports(prev => {
@@ -272,21 +291,21 @@ const PublicInspectionPage: NextPage = () => {
         inspectedBy: inspectorName,
         rooms: roomReports,
         overallStatus: roomReports.some(r => r.discrepancies.length > 0) ? "Completed with discrepancies" : "Completed - All Clear",
-        tenantLinkId: activeLinkId, // Ensure activeLinkId is included
+        tenantLinkId: activeLinkId,
       };
 
       const newReportId = await saveInspectionReport(reportToSave);
       const fullReportForPdf: InspectionReport = {
         ...reportToSave,
         id: newReportId,
-        inspectionDate: new Date() as any, // Firestore will use serverTimestamp
+        inspectionDate: new Date() as any, 
       };
       setGeneratedReport(fullReportForPdf);
 
       const pdfDoc = generatePdfDocument(fullReportForPdf);
       setGeneratedPdfForEmail(pdfDoc);
 
-      await deactivateTenantInspectionLink(home.id, activeLinkId);
+      await deactivateTenantInspectionLink(home.id, activeLinkId, newReportId);
 
 
       setInspectionComplete(true);
@@ -364,7 +383,7 @@ const PublicInspectionPage: NextPage = () => {
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h1 className="text-2xl font-semibold mb-2">Inspection Access Error</h1>
         <p className="text-muted-foreground mb-1">{error}</p>
-        <p className="text-sm text-muted-foreground">If the issue persists, please contact the home owner.</p>
+        <p className="text-sm text-muted-foreground">If the issue persists, please contact the home owner or try refreshing.</p>
         <Button onClick={() => router.push('/')} className="mt-6">Go to Homepage</Button>
       </div>
     );
@@ -405,16 +424,14 @@ const PublicInspectionPage: NextPage = () => {
               variant="ghost"
               className="w-full text-muted-foreground hover:text-foreground"
               onClick={() => {
-                // Reset state for a potential new inspection or clean exit
                 setInspectionComplete(false);
                 setGeneratedReport(null);
                 setGeneratedPdfForEmail(null);
                 setCurrentRoomIndex(0);
                 setRoomReports([]);
                 setInspectorName(''); 
-                setActiveLinkId(null); // Clear active link ID
-                // searchParams.delete('linkId'); // This is not how you modify searchParams in Next.js App Router
-                router.push('/'); // Redirect to a neutral page
+                setActiveLinkId(null); 
+                router.push('/'); 
               }}
             >
              <XCircle className="mr-2 h-4 w-4" /> Close & Exit
@@ -454,7 +471,7 @@ const PublicInspectionPage: NextPage = () => {
               onChange={(e) => setInspectorName(e.target.value)}
               placeholder="Enter your full name"
               className="bg-input text-foreground placeholder:text-muted-foreground/70"
-              disabled={inspectionComplete || roomReports.length > 0 || (tenantNameFromLink && tenantNameFromLink === inspectorName)} // Disable if pre-filled from link and unchanged
+              disabled={inspectionComplete || roomReports.length > 0 || (tenantNameFromLink && tenantNameFromLink === inspectorName)}
             />
              {roomReports.length > 0 && <p className="text-xs text-muted-foreground">Inspector name is locked after first room completion.</p>}
           </div>
@@ -499,7 +516,7 @@ const PublicInspectionPage: NextPage = () => {
               </Alert>
           )}
 
-          {rooms.length === 0 && !pageLoading && !error && ( // Added !error to hide if another error is showing
+          {rooms.length === 0 && !pageLoading && !error && ( 
              <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>No Rooms Found</AlertTitle>
@@ -560,3 +577,5 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
+
+    
