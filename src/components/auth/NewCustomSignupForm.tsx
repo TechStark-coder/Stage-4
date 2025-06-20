@@ -32,6 +32,26 @@ export function NewCustomSignupForm() {
     },
   });
 
+  const sendWelcomeEmail = async (email: string, displayName: string) => {
+    try {
+      const response = await fetch('/api/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, displayName }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.warn("Failed to send welcome email:", errorData.message);
+        // Optionally, show a non-critical toast to the user or admin
+        // toast({ title: "Info", description: "Welcome email could not be sent.", variant: "default" });
+      } else {
+        console.log("Welcome email initiated successfully.");
+      }
+    } catch (error) {
+      console.warn("Error calling send-welcome-email API:", error);
+    }
+  };
+
   const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
     showLoader();
     try {
@@ -54,6 +74,10 @@ export function NewCustomSignupForm() {
       });
       sessionStorage.setItem("showWelcomeOnLoad", "true");
       sessionStorage.setItem("lastAuthAction", "signup");
+      
+      // Send welcome email (fire and forget, don't block UI)
+      sendWelcomeEmail(data.email, data.displayName);
+
       router.push("/dashboard");
       // hideLoader() handled by AppRouterEvents
     } catch (error: any) {
