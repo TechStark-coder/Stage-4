@@ -317,7 +317,6 @@ export async function updateRoomAnalysisData(
     });
     
     // Merge analyzedPhotoUrls: Use arrayUnion to add new unique URLs
-    // Firestore's arrayUnion handles uniqueness automatically.
     const finalPhotoUrls = arrayUnion(...newlyUploadedPhotoUrls);
 
     transaction.update(roomDocRef, {
@@ -352,6 +351,9 @@ export async function removeAnalyzedRoomPhoto(
 
     transaction.update(roomDocRef, {
       analyzedPhotoUrls: arrayRemove(photoUrlToRemove),
+      analyzedObjects: [], // Clear the objects when a photo is removed
+      lastAnalyzedAt: null, // Clear last analyzed timestamp
+      isAnalyzing: false, // Ensure not stuck in analyzing state
     });
   });
 }
@@ -587,5 +589,7 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
         throw new Error("Inspection report not found.");
     }
 }
+
+    
 
     

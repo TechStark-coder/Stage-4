@@ -125,7 +125,7 @@ export default function RoomDetailPage() {
     setPageLoading(true);
     try {
       await removeAnalyzedRoomPhoto(homeId, roomId, photoToDelete, user.uid);
-      toast({ title: "Photo Deleted", description: "The selected photo has been removed." });
+      toast({ title: "Photo Deleted", description: "The photo has been removed, and the room's object analysis has been cleared. Re-analyze if needed.", duration: 7000 });
       fetchRoomDetails();
     } catch (error: any) {
       console.error("Failed to delete photo:", error);
@@ -213,13 +213,13 @@ export default function RoomDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Delete Photo</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to permanently delete this photo? This action cannot be undone.
+              Are you sure you want to permanently delete this photo? This will also clear the current object analysis for this room. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPhotoToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmRemoveAnalyzedPhoto} className="bg-destructive hover:bg-destructive/90">
-              Delete Photo
+              Delete Photo & Clear Analysis
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -227,3 +227,6 @@ export default function RoomDetailPage() {
     </>
   );
 }
+
+
+    
