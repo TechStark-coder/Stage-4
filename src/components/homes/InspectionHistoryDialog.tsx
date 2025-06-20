@@ -74,20 +74,6 @@ export function InspectionHistoryDialog({
       }
     };
 
-    const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media";
-    try {
-        const response = await fetch(logoUrl);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-        });
-        doc.addImage(dataUrl, 'PNG', doc.internal.pageSize.width - margin - 30, 10, 30, 7.5);
-    } catch(e) {
-        console.error("Could not add logo to PDF", e);
-    }
-
     doc.setFontSize(18);
     doc.text(`Inspection Report: ${reportDetails.homeName}`, margin, yPos);
     yPos += lineHeight * 2;
@@ -239,3 +225,5 @@ export function InspectionHistoryDialog({
     </Dialog>
   );
 }
+
+    
