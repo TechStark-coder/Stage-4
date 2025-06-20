@@ -11,6 +11,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,9 +32,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getInspectionReportsForHome } from "@/lib/firestore";
+import { getInspectionReportsForHome, deleteInspectionReport, deleteAllInspectionReportsForHome } from "@/lib/firestore";
 import type { InspectionReport } from "@/types";
-import { History, FileDown, Loader2, Info } from "lucide-react";
+import { History, FileDown, Loader2, Info, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
 
 interface InspectionHistoryDialogProps {
   homeId: string;
@@ -45,6 +58,9 @@ export function InspectionHistoryDialog({
   const [reports, setReports] = React.useState<InspectionReport[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [downloadingReportId, setDownloadingReportId] = React.useState<string | null>(null);
+  const [reportToDelete, setReportToDelete] = React.useState<InspectionReport | null>(null);
+  const [isClearingAll, setIsClearingAll] = React.useState(false);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (isOpen && homeId && currentUserId) {
@@ -156,74 +172,151 @@ export function InspectionHistoryDialog({
     }
   };
 
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+    try {
+      await deleteInspectionReport(reportToDelete.id, currentUserId);
+      setReports((prev) => prev.filter((r) => r.id !== reportToDelete.id));
+      toast({ title: "Report Deleted", description: "The selected inspection report has been deleted." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setReportToDelete(null);
+    }
+  };
+
+  const handleClearAllHistory = async () => {
+    setIsClearingAll(true);
+    try {
+      await deleteAllInspectionReportsForHome(homeId, currentUserId);
+      setReports([]);
+      toast({ title: "History Cleared", description: `All inspection reports for ${homeName} have been deleted.` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsClearingAll(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="h-6 w-6" /> Inspection History for {homeName}
-          </DialogTitle>
-          <DialogDescription>
-            Review past inspections and download reports.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="mt-4 max-h-[60vh] overflow-y-auto">
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <div className="flex justify-between items-start sm:items-center">
+              <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                <History className="h-6 w-6" /> Inspection History
+              </DialogTitle>
+               {!loading && reports.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={isClearingAll}>
+                       {isClearingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                       Clear History
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear all history?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all {reports.length} inspection reports for "{homeName}". This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearAllHistory} className="bg-destructive hover:bg-destructive/90">
+                        Yes, Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
-          ) : reports.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Inspection Date</TableHead>
-                  <TableHead>Inspected By</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.map((report) => (
-                  <TableRow key={report.id}>
-                    <TableCell>
-                      {report.inspectionDate.toDate().toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{report.inspectedBy}</TableCell>
-                    <TableCell>{report.overallStatus}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(report)}
-                        disabled={downloadingReportId === report.id}
-                      >
-                        {downloadingReportId === report.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <FileDown className="mr-2 h-4 w-4" />
-                        )}
-                        Download
-                      </Button>
-                    </TableCell>
+            <DialogDescription>
+              Review and manage past inspections for {homeName}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 max-h-[60vh] overflow-y-auto">
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : reports.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Inspected By</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>No History Found</AlertTitle>
-              <AlertDescription>
-                There are no completed inspection reports for this home yet.
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+                </TableHeader>
+                <TableBody>
+                  {reports.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell>
+                        {report.inspectionDate.toDate().toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{report.inspectedBy}</TableCell>
+                      <TableCell>{report.overallStatus}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownload(report)}
+                          disabled={downloadingReportId === report.id}
+                        >
+                          {downloadingReportId === report.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileDown className="mr-2 h-4 w-4" />
+                          )}
+                          Download
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setReportToDelete(report)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>No History Found</AlertTitle>
+                <AlertDescription>
+                  There are no completed inspection reports for this home yet.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Confirmation Dialog for single deletion */}
+      <AlertDialog open={!!reportToDelete} onOpenChange={(open) => !open && setReportToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this report?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the report from {reportToDelete?.inspectionDate.toDate().toLocaleDateString()} inspected by {reportToDelete?.inspectedBy}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteReport} className="bg-destructive hover:bg-destructive/90">
+              Delete Report
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
-
-    

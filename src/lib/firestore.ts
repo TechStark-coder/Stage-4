@@ -532,3 +532,26 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
         throw new Error("Inspection report not found.");
     }
 }
+
+export async function deleteAllInspectionReportsForHome(homeId: string, userId: string): Promise<void> {
+    const home = await getHome(homeId);
+    if (!home || home.ownerId !== userId) {
+        throw new Error("Permission denied or home not found.");
+    }
+
+    const reportsCollectionRef = collection(db, "inspections");
+    const q = query(reportsCollectionRef, where("houseId", "==", homeId));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+        // Nothing to delete
+        return;
+    }
+
+    const batch = writeBatch(db);
+    querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+}
