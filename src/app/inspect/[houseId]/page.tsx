@@ -48,10 +48,10 @@ const PublicInspectionPage: NextPage = () => {
     const linkIdFromQuery = searchParams.get('linkId');
     if (linkIdFromQuery) {
       setActiveLinkId(linkIdFromQuery);
-    } else if (houseId) {
-        setError("Inspection link ID is missing. Please use the link provided by the home owner. This link may also be invalid or expired.");
-        setPageLoading(false);
-        return; 
+    } else {
+      setError("Inspection link ID is missing. Please use the link provided by the home owner.");
+      setPageLoading(false);
+      return;
     }
 
     if (houseId && linkIdFromQuery) {
@@ -59,85 +59,56 @@ const PublicInspectionPage: NextPage = () => {
         setPageLoading(true);
         setError(null);
         try {
-          // STEP 1: Validate and record access to the inspection link
-          try {
-            await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
-          } catch (linkAccessError: any) {
-            console.error("Error accessing or validating inspection link (recordTenantInspectionLinkAccess):", linkAccessError);
-            let specificErrorMessage = `The inspection link (ID: ${linkIdFromQuery}) appears to be invalid. This could be due to the link not existing, being inactive, or a permission issue accessing it. Please verify the link with the home owner.`;
-            if (linkAccessError.message) {
-                if (linkAccessError.message.toLowerCase().includes("not found")) {
-                    specificErrorMessage = `The inspection link (ID: ${linkIdFromQuery}) was not found. Please ensure the link is correct.`;
-                } else if (linkAccessError.message.toLowerCase().includes("not active")) {
-                    specificErrorMessage = `The inspection link (ID: ${linkIdFromQuery}) is no longer active. Please request a new link from the home owner.`;
-                } else if (linkAccessError.message.toLowerCase().includes("permission denied") || linkAccessError.message.toLowerCase().includes("insufficient permissions")) {
-                    specificErrorMessage = `There was a permission issue accessing inspection link (ID: ${linkIdFromQuery}). This often indicates a configuration problem. Please contact the home owner.`;
-                } else {
-                    specificErrorMessage = `An unexpected issue occurred with the inspection link (ID: ${linkIdFromQuery}): ${linkAccessError.message}. Please contact the home owner.`;
-                }
-            }
-            setError(specificErrorMessage);
-            setPageLoading(false);
-            return; 
-          }
+          // Attempt to record access and validate the link
+          await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
 
-          // STEP 2: Fetch home details
           const fetchedHome = await getHome(houseId);
           if (!fetchedHome) {
-            setError(`Details for the home (ID: ${houseId}) could not be found. The link may be for a home that no longer exists or there was an issue fetching its data.`);
+            setError(`Home details (ID: ${houseId}) could not be found.`);
             setPageLoading(false);
             return;
           }
           setHome(fetchedHome);
 
-          // STEP 3: Fetch link details again (primarily for tenantName)
           const fetchedLinkDetails = await getTenantInspectionLink(houseId, linkIdFromQuery);
           if (fetchedLinkDetails && fetchedLinkDetails.tenantName) {
             setTenantNameFromLink(fetchedLinkDetails.tenantName);
             if (!inspectorName) setInspectorName(fetchedLinkDetails.tenantName);
           } else if (!fetchedLinkDetails) {
-            // This might happen if the link was deactivated between recordTenantInspectionLinkAccess and this call,
-            // or if recordTenantInspectionLinkAccess somehow succeeded but getTenantInspectionLink can't read it.
-            setError("Could not retrieve full details for the inspection link. It might have been used or deactivated. Please contact the home owner.");
+             // With open rules, if link details aren't found, it likely means the link ID is incorrect or document was deleted.
+            setError("Could not retrieve details for the inspection link. It might be an invalid ID.");
             setPageLoading(false);
             return;
           }
 
+
           const fetchedRooms = await getRooms(houseId);
           if (fetchedRooms.length === 0) {
             setError("This home has no rooms configured for inspection.");
+            // Still allow proceeding if home and link are valid, tenant just can't inspect rooms
           }
           setRooms(fetchedRooms);
-
-          setCurrentRoomIndex(0);
           setRoomReports([]);
           setInspectionComplete(false);
           setGeneratedReport(null);
           setGeneratedPdfForEmail(null);
 
         } catch (err: any) {
-          console.error("Error during general inspection setup (after initial link access):", err);
-          // This catch is for errors from getHome, getTenantInspectionLink (after first validation), or getRooms
-          let userErrorMessage = "Could not load complete inspection details. Please contact the home owner.";
-          if (err.message && (err.message.toLowerCase().includes("permission denied") || err.message.toLowerCase().includes("insufficient permissions"))) {
-            userErrorMessage = "There was a problem accessing inspection data. This could be due to a configuration issue. Please contact the home owner.";
-          } else if (err.message) {
-            userErrorMessage = `An error occurred while fetching inspection details: ${err.message}. Please try again or contact the home owner.`;
-          }
-          setError(userErrorMessage);
+          console.error("Error during inspection setup:", err);
+          // With open rules, errors here are less likely to be permission issues and more likely
+          // to be missing data, network issues, or typos in IDs.
+          setError(`Could not load inspection details. Problem: ${err.message}. Please check the link or contact the home owner.`);
         } finally {
           setPageLoading(false);
         }
       };
       fetchHouseDataAndRecordAccess();
-    } else if (houseId && !linkIdFromQuery) {
-        // Error already set by the initial check for missing linkId
     } else if (!houseId) {
         setError("Home ID is missing from the link. Please use a valid inspection link.");
         setPageLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [houseId, searchParams]);
+  }, [houseId, searchParams]); // inspectorName removed as it was causing re-runs on typing
 
   const handleRoomInspectionComplete = (reportData: RoomInspectionReportData) => {
     setRoomReports(prev => {
@@ -159,7 +130,7 @@ const PublicInspectionPage: NextPage = () => {
 
   const handlePreviousRoom = () => {
     if (currentRoomIndex > 0) {
-      setCurrentRoomIndex(prev => prev - 1);
+      setCurrentRoomIndex(prev => prev + 1);
     }
   };
 
@@ -263,7 +234,7 @@ const PublicInspectionPage: NextPage = () => {
       });
       return;
     }
-    if (roomReports.length !== rooms.length) {
+    if (roomReports.length !== rooms.length && rooms.length > 0) { // Check if rooms > 0 before this validation
         toast({
             title: "Incomplete Inspection",
             description: `Please complete the inspection for all ${rooms.length} rooms. Only ${roomReports.length} completed.`,
@@ -305,6 +276,7 @@ const PublicInspectionPage: NextPage = () => {
       const pdfDoc = generatePdfDocument(fullReportForPdf);
       setGeneratedPdfForEmail(pdfDoc);
 
+      // With open rules, this deactivation should succeed if the linkId is correct.
       await deactivateTenantInspectionLink(home.id, activeLinkId, newReportId);
 
 
@@ -357,8 +329,11 @@ const PublicInspectionPage: NextPage = () => {
       }
 
       toast({ title: "Report Sent", description: "The inspection report has been emailed to the owner." });
-    } catch (err: any) {
+    } catch (err: any)
+       {
       console.error("Error sending report:", err);
+      // With open rules, this error is less likely to be Firestore permission for getting owner email.
+      // More likely Mailjet config, network, or issue with the API route itself.
       toast({ title: "Email Sending Failed", description: err.message || "Could not send the report.", variant: "destructive" });
     } finally {
       setIsSendingEmail(false);
@@ -429,8 +404,8 @@ const PublicInspectionPage: NextPage = () => {
                 setGeneratedPdfForEmail(null);
                 setCurrentRoomIndex(0);
                 setRoomReports([]);
-                setInspectorName(''); 
-                setActiveLinkId(null); 
+                // Do not reset inspectorName if it came from link
+                // setActiveLinkId(null); // Keep activeLinkId for footer display consistency
                 router.push('/'); 
               }}
             >
@@ -551,7 +526,7 @@ const PublicInspectionPage: NextPage = () => {
               ) : (
                 <Button
                   onClick={handleSubmitInspection}
-                  disabled={isSubmittingReport || !roomReports.find(r => r.roomId === currentRoom?.id) || roomReports.length !== rooms.length}
+                  disabled={isSubmittingReport || !roomReports.find(r => r.roomId === currentRoom?.id) || (rooms.length > 0 && roomReports.length !== rooms.length) }
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isSubmittingReport ? (
@@ -577,5 +552,3 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
-
-    
