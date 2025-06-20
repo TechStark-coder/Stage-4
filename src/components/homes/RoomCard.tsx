@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLoader } from "@/contexts/LoaderContext";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 
 export interface RoomCardProps {
@@ -37,11 +38,20 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
   const { toast } = useToast();
   const [_isDownloading, setIsDownloading] = _React.useState(false);
   const { showLoader, hideLoader } = useLoader(); 
+  const { user } = useAuthContext();
 
   const handleDelete = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to delete a room.",
+        variant: "destructive",
+      });
+      return;
+    }
     showLoader();
     try {
-      await deleteRoom(homeId, room.id);
+      await deleteRoom(homeId, room.id, user.uid);
       toast({
         title: "Room Deleted",
         description: `Room "${room.name}" has been deleted.`,
@@ -197,4 +207,3 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
     </Card>
   );
 }
-
