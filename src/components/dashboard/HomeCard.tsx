@@ -123,11 +123,11 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           )}
         </div>
 
-        {/* Row 2: View button, Delete button */}
+        {/* Row 2: Manage Rooms button, Delete button */}
         <div className="flex w-full gap-2">
           <Button asChild variant="default" size="sm" className="flex-1">
             <Link href={`/homes/${home.id}`}>
-              View <ArrowRight className="ml-1 h-4 w-4" />
+              Manage Rooms <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
           <AlertDialog>
