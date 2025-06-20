@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // WARNING: Allows anyone to read, write, and delete any file.
+    // This is highly insecure and for temporary debugging ONLY.
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
