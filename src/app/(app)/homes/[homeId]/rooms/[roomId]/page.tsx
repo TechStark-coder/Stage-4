@@ -10,6 +10,7 @@ import type { Home, Room } from "@/types";
 import { PhotoUploader } from "@/components/rooms/PhotoUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
 import { ImageGallery } from "@/components/rooms/ImageGallery";
+import { ImageLightbox } from "@/components/rooms/ImageLightbox"; // Import the new lightbox component
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon, Loader2 } from "lucide-react";
@@ -40,8 +41,14 @@ export default function RoomDetailPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [isProcessingFullAnalysis, setIsProcessingFullAnalysis] = useState(false);
   
-  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]); // For PhotoUploader's pending list
+  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
+
+  // State for lightbox
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxCurrentIndex, setLightboxCurrentIndex] = useState<number | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [objectUrlsToRevoke, setObjectUrlsToRevoke] = useState<string[]>([]);
 
 
   const fetchRoomDetails = useCallback(async (showLoadingIndicator = true) => {
@@ -71,11 +78,46 @@ export default function RoomDetailPage() {
     fetchRoomDetails();
   }, [fetchRoomDetails]);
 
+  // Lightbox handlers
+  const openLightbox = (imageUrls: string[], startIndex: number, isPending: boolean = false) => {
+    setLightboxImages(imageUrls);
+    setLightboxCurrentIndex(startIndex);
+    setIsLightboxOpen(true);
+    if (isPending) {
+      setObjectUrlsToRevoke(imageUrls); 
+    }
+  };
+
+  const closeLightbox = () => {
+    setIsLightboxOpen(false);
+    // Revoke object URLs for pending images when lightbox closes
+    if (objectUrlsToRevoke.length > 0) {
+      objectUrlsToRevoke.forEach(url => URL.revokeObjectURL(url));
+      setObjectUrlsToRevoke([]);
+    }
+    // Reset states after a short delay to allow Dialog's closing animation
+    setTimeout(() => {
+        setLightboxCurrentIndex(null);
+        setLightboxImages([]);
+    }, 300); // Adjust delay to match your Dialog's animation duration
+  };
+
+  const navigateLightbox = (newIndex: number) => {
+    if (newIndex >= 0 && newIndex < lightboxImages.length) {
+      setLightboxCurrentIndex(newIndex);
+    }
+  };
+
+
   const handlePhotosChange = (newPhotos: File[]) => {
     setUploadedPhotos(newPhotos);
   };
 
   const handleRemovePendingPhoto = (indexToRemove: number) => {
+    const photoToRemove = uploadedPhotos[indexToRemove];
+    if (photoToRemove) {
+      // If this photo's URL was used in lightbox, ensure it's handled, though typically lightbox closes before removal
+    }
     setUploadedPhotos(prevPhotos => prevPhotos.filter((_, index) => index !== indexToRemove));
   };
 
@@ -86,13 +128,12 @@ export default function RoomDetailPage() {
     }
 
     if (photoUrlsToAnalyze.length === 0) {
-      // No photos to analyze, so clear existing analysis
-      setIsProcessingFullAnalysis(true); // Show some indicator if needed
-      showAiLoader(); // Use global AI loader
+      setIsProcessingFullAnalysis(true);
+      showAiLoader();
       try {
-        await updateRoomAnalysisData(homeId, roomId, [], [], user.uid);
+        await updateRoomAnalysisData(homeId, roomId, [], [], user.uid); 
         toast({ title: "Analysis Cleared", description: "No photos remaining. Object analysis for the room has been cleared." });
-        fetchRoomDetails(false); // Refresh room data without full page loader
+        fetchRoomDetails(false);
       } catch (error) {
         console.error("Error clearing room analysis data when no photos left:", error);
         toast({ title: "Update Error", description: "Failed to clear analysis results.", variant: "destructive" });
@@ -107,6 +148,7 @@ export default function RoomDetailPage() {
     showAiLoader();
     try {
       await setRoomAnalyzingStatus(homeId, roomId, true);
+      fetchRoomDetails(false); 
       toast({ title: "Full Room Re-analysis", description: `Analyzing all ${photoUrlsToAnalyze.length} photos... This may take a moment.`, duration: 5000 });
 
       const result = await describeRoomObjects({ photoDataUris: photoUrlsToAnalyze });
@@ -117,11 +159,12 @@ export default function RoomDetailPage() {
       } else {
         throw new Error("AI analysis did not return the expected object structure.");
       }
-      fetchRoomDetails(false); // Refresh room data
+      fetchRoomDetails(false); 
     } catch (error: any) {
       console.error("Error during full room re-analysis:", error);
       toast({ title: "Re-analysis Failed", description: error.message || "Could not re-analyze room objects.", variant: "destructive" });
-      await setRoomAnalyzingStatus(homeId, roomId, false); // Reset status on error
+      await setRoomAnalyzingStatus(homeId, roomId, false); 
+      fetchRoomDetails(false);
     } finally {
       setIsProcessingFullAnalysis(false);
       hideAiLoader();
@@ -129,18 +172,16 @@ export default function RoomDetailPage() {
   };
 
   const handleAnalysisComplete = async (newlyUploadedPhotoUrls?: string[]) => {
-    // This is called by PhotoUploader after it *only* uploads photos.
-    // hideAiLoader(); // PhotoUploader's internal loader is hidden by itself or here
-    
-    setUploadedPhotos([]); // Clear the pending photos from PhotoUploader UI
-
+    setUploadedPhotos([]);
     if (newlyUploadedPhotoUrls && newlyUploadedPhotoUrls.length > 0) {
       const existingPhotoUrls = room?.analyzedPhotoUrls || [];
       const allCurrentPhotoUrls = Array.from(new Set([...existingPhotoUrls, ...newlyUploadedPhotoUrls]));
       await performFullRoomAnalysis(allCurrentPhotoUrls);
+    } else if (newlyUploadedPhotoUrls === undefined && currentPhotos.length > 0){
+      toast({ title: "Upload May Have Issues", description: "No new photos processed. If you selected photos, please try again.", variant: "destructive"});
+      fetchRoomDetails(false);
     } else {
-      toast({ title: "Upload Issue", description: "No new photos were processed by the uploader. Re-analysis skipped.", variant: "destructive"});
-      fetchRoomDetails(false); // Refresh to ensure consistent state
+      fetchRoomDetails(false);
     }
   };
 
@@ -170,11 +211,10 @@ export default function RoomDetailPage() {
       return;
     }
     
-    setPageLoading(true); // Show general page loader for the delete operation
+    setPageLoading(true);
     let photoSuccessfullyRemoved = false;
 
     try {
-      // This Firestore function now only removes the URL and deletes from storage.
       await removeAnalyzedRoomPhoto(homeId, roomId, photoToDelete, user.uid);
       toast({ title: "Photo Removed", description: "Photo deleted. Re-analyzing remaining photos for the room..." });
       photoSuccessfullyRemoved = true;
@@ -187,14 +227,12 @@ export default function RoomDetailPage() {
     }
 
     if (photoSuccessfullyRemoved) {
-      // Fetch the updated room details to get the new list of analyzedPhotoUrls
-      const updatedRoomData = await getRoom(homeId, roomId); // Explicitly refetch
-      setRoom(updatedRoomData); // Update local room state immediately
+      const updatedRoomData = await getRoom(homeId, roomId); 
+      setRoom(updatedRoomData); 
       
       if (updatedRoomData && updatedRoomData.analyzedPhotoUrls) {
         await performFullRoomAnalysis(updatedRoomData.analyzedPhotoUrls);
       } else {
-        // Fallback if room data is somehow null after deletion
         await performFullRoomAnalysis([]);
       }
     }
@@ -266,11 +304,14 @@ export default function RoomDetailPage() {
           pendingPhotos={uploadedPhotos} 
           analyzedPhotoUrls={room.analyzedPhotoUrls || []}
           onRemovePendingPhoto={handleRemovePendingPhoto}
-          onRemoveAnalyzedPhoto={(url) => setPhotoToDelete(url)} 
+          onRemoveAnalyzedPhoto={(url) => setPhotoToDelete(url)}
+          onImageClick={(urls, index, isPending) => {
+            openLightbox(urls, index, isPending);
+          }}
         />
       </div>
        <ObjectAnalysisCard
-         room={{...room, isAnalyzing: displayAnalyzing }} // Pass the combined analyzing state
+         room={{...room, isAnalyzing: displayAnalyzing }}
          onClearResults={handleClearResults}
          homeName={home.name}
         />
@@ -292,6 +333,14 @@ export default function RoomDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImageLightbox
+        images={lightboxImages}
+        currentIndex={lightboxCurrentIndex}
+        isOpen={isLightboxOpen}
+        onClose={closeLightbox}
+        onNavigate={navigateLightbox}
+      />
     </>
   );
 }
