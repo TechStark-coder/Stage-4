@@ -49,11 +49,6 @@ export function RoomInspectionStep({
   const [cameraError, setCameraError] = React.useState<string | null>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-
-  // New state for the retake loop
-  const [retakeCount, setRetakeCount] = React.useState(0);
-  const [isAwaitingRetake, setIsAwaitingRetake] = React.useState(false);
-  const [lastSuggestion, setLastSuggestion] = React.useState<string | null>(null);
   const [tenantNotes, setTenantNotes] = React.useState('');
 
   React.useEffect(() => {
@@ -63,10 +58,6 @@ export function RoomInspectionStep({
     setAnalysisAttempted(false);
     setShowOwnerExpectedItems(false);
     setIsLoading(false);
-    // Reset retake state
-    setRetakeCount(0);
-    setIsAwaitingRetake(false);
-    setLastSuggestion(null);
     setTenantNotes('');
     console.log(`RoomInspectionStep: Switched to room: ${room.name} (ID: ${room.id})`);
   }, [room]);
@@ -195,24 +186,10 @@ export function RoomInspectionStep({
       const result = await aiIdentifyDiscrepancies(aiInput);
       setAnalysisResult(result);
       
-      const currentRetakeCount = isAwaitingRetake ? retakeCount + 1 : retakeCount;
-
-      if (result.missingItemSuggestion && result.discrepancies.length > 0 && currentRetakeCount < 3) {
-        setLastSuggestion(result.missingItemSuggestion);
-        setIsAwaitingRetake(true);
-        if (isAwaitingRetake) { // If it was already a retake
-          setRetakeCount(prev => prev + 1);
-        }
-        toast({ title: "Action Required", description: "The AI suggests an item might be missing.", duration: 6000 });
+      if (result.discrepancies.length > 0) {
+        toast({ title: "Analysis Complete", description: "Discrepancies were found. You can re-analyze with new photos or confirm.", variant: "destructive", duration: 6000 });
       } else {
-        setIsAwaitingRetake(false);
-        if (currentRetakeCount >= 3 && result.discrepancies.length > 0) {
-          toast({ title: "Retake Limit Reached", description: "The discrepancy will be noted in the final report.", duration: 5000 });
-        } else if (result.discrepancies.length === 0) {
-          toast({ title: "Item Found!", description: "The discrepancy has been resolved. You may now continue.", duration: 5000 });
-        } else {
-          toast({ title: "AI Analysis Complete", description: "Review the results below." });
-        }
+        toast({ title: "Analysis Complete", description: "No discrepancies found!", duration: 5000 });
       }
 
     } catch (error: any) {
@@ -233,28 +210,13 @@ export function RoomInspectionStep({
     const reportData: RoomInspectionReportData = {
       roomId: room.id,
       roomName: room.name,
-      tenantPhotoUrls: [],
+      tenantPhotoUrls: [], // This is handled server-side now
       discrepancies: analysisResult?.discrepancies || [],
       missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "",
       tenantNotes: tenantNotes,
     };
     onInspectionStepComplete(reportData);
     toast({ title: `Report for ${room.name} Saved`, description: "Proceed to the next room or complete inspection.", duration: 3000});
-  };
-
-  const handleRetake = () => {
-    setRetakeCount(prev => prev + 1);
-    setTenantPhotos([]);
-    setAnalysisResult(null);
-    setAnalysisAttempted(false);
-    setIsAwaitingRetake(false);
-    setLastSuggestion(null);
-    toast({ title: "Ready for Retake", description: `Please add new photos. You have ${3 - retakeCount} attempts left.`, duration: 5000 });
-  };
-  
-  const handleContinueAnyway = () => {
-    setIsAwaitingRetake(false);
-    toast({ title: "Discrepancy Noted", description: "Continuing with the inspection. Please confirm and save.", duration: 4000 });
   };
 
   const ownerExpectedItemsList = room.analyzedObjects && room.analyzedObjects.length > 0
@@ -351,7 +313,7 @@ export function RoomInspectionStep({
           <div className="mt-4">
             <Button onClick={handleAnalyze} disabled={isLoading || tenantPhotos.length === 0}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                {analysisAttempted ? 'Analyze Again' : 'Analyze My Photos'}
+                {analysisAttempted ? 'Re-analyze Photos' : 'Analyze My Photos'}
             </Button>
           </div>
         </div>
@@ -372,24 +334,15 @@ export function RoomInspectionStep({
         {analysisAttempted && !isLoading && (
           <div className="space-y-4 pt-4 border-t mt-4">
             <h3 className="text-lg font-semibold">Inspection Results</h3>
-            {isAwaitingRetake && lastSuggestion ? (
-                 <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Action Required: Possible Missing Item ({3 - retakeCount} attempts left)</AlertTitle>
-                    <AlertDescription>
-                        <p className="font-semibold mb-2">{lastSuggestion}</p>
-                        <p>Please take new photos focusing on this item and click "Analyze Again", or choose to ignore.</p>
-                    </AlertDescription>
-                </Alert>
-            ) : analysisResult ? (
+            {analysisResult ? (
                  <>
                     {analysisResult.discrepancies.length > 0 ? (
                       <Alert variant="destructive">
                           <AlertTriangle className="h-4 w-4" />
-                          <AlertTitle>Discrepancies Noted</AlertTitle>
+                          <AlertTitle>Discrepancies Found</AlertTitle>
                           <AlertDescription>
-                            {retakeCount >= 3 ? "Retake limit reached. " : ""}
-                            These discrepancies will be included in the report.
+                            <p className="font-semibold mb-2">{analysisResult.missingItemSuggestion}</p>
+                            These discrepancies will be noted in the report. You can add more photos and re-analyze, or confirm to continue.
                           </AlertDescription>
                       </Alert>
                     ) : (
@@ -397,7 +350,6 @@ export function RoomInspectionStep({
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertTitle className="text-green-700">All Clear!</AlertTitle>
                         <AlertDescription className="text-green-700">
-                          {retakeCount > 0 ? "Item found! " : ""}
                           No issues identified by AI. You can now confirm and save.
                         </AlertDescription>
                       </Alert>
@@ -411,31 +363,14 @@ export function RoomInspectionStep({
           </div>
         )}
       </CardContent>
-      <CardFooter className="border-t pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="text-xs text-muted-foreground">
-           {isAwaitingRetake ? `Retake attempts used: ${retakeCount}/3` : "Ready to proceed when analysis is clear."}
-        </div>
-        <div className="flex gap-2">
-            {analysisAttempted && !isLoading && isAwaitingRetake ? (
-                <>
-                    <Button onClick={handleRetake} variant="default">
-                        <Camera className="mr-2 h-4 w-4" /> I'll Retake Photos
-                    </Button>
-                    <Button onClick={handleContinueAnyway} variant="secondary">
-                        Ignore & Continue
-                    </Button>
-                </>
-            ) : (
-                <Button 
-                    onClick={handleCompleteStep} 
-                    disabled={isLoading || !analysisAttempted || isAwaitingRetake} 
-                    className="w-full sm:w-auto"
-                >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Confirm & Save for {room.name}
-                </Button>
-            )}
-        </div>
+      <CardFooter className="border-t pt-4 flex justify-end">
+        <Button 
+            onClick={handleCompleteStep} 
+            disabled={isLoading || !analysisAttempted} 
+        >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Confirm & Save for {room.name}
+        </Button>
       </CardFooter>
     </Card>
   );
