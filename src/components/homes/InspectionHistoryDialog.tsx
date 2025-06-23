@@ -34,8 +34,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInspectionReportsForHome, deleteInspectionReport, deleteAllInspectionReportsForHome } from "@/lib/firestore";
 import type { InspectionReport } from "@/types";
-import { History, FileDown, Loader2, Info, Trash2 } from "lucide-react";
+import { History, FileDown, Loader2, Info, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ReportViewerDialog } from "./ReportViewerDialog";
 
 
 interface InspectionHistoryDialogProps {
@@ -62,6 +63,11 @@ export function InspectionHistoryDialog({
   const [isClearingAll, setIsClearingAll] = React.useState(false);
   const { toast } = useToast();
 
+  // State for the report viewer
+  const [reportToView, setReportToView] = React.useState<InspectionReport | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = React.useState(false);
+
+
   React.useEffect(() => {
     if (isOpen && homeId && currentUserId) {
       setLoading(true);
@@ -69,11 +75,12 @@ export function InspectionHistoryDialog({
         .then(setReports)
         .catch(err => {
           console.error("Failed to fetch inspection history:", err);
+          toast({ title: "Error", description: "Failed to fetch inspection history.", variant: "destructive" });
           setReports([]);
         })
         .finally(() => setLoading(false));
     }
-  }, [isOpen, homeId, currentUserId]);
+  }, [isOpen, homeId, currentUserId, toast]);
 
   const generatePdfDocument = async (reportDetails: InspectionReport): Promise<jsPDF> => {
     const doc = new jsPDF();
@@ -126,7 +133,18 @@ export function InspectionHistoryDialog({
       yPos += lineHeight;
 
       if (room.missingItemSuggestionForRoom) {
-        // ... (existing logic for suggestion)
+        checkAndAddPage(lineHeight * 2);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'italic');
+        const ownerMessagePrefix = "Note for Room:";
+        doc.text(ownerMessagePrefix, margin + 5, yPos);
+        yPos += lineHeight * 0.8;
+
+        doc.setFont(undefined, 'normal');
+        const suggestionLines = doc.splitTextToSize(`  ${room.missingItemSuggestionForRoom}`, maxLineWidth - 10);
+        checkAndAddPage(suggestionLines.length * (lineHeight * 0.8));
+        doc.text(suggestionLines, margin + 5, yPos);
+        yPos += suggestionLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
 
       if (room.discrepancies.length > 0) {
@@ -167,6 +185,7 @@ export function InspectionHistoryDialog({
         doc.save(`Inspection_Report_${homeName.replace(/\s/g, '_')}_${formattedDate}.pdf`);
     } catch (e) {
         console.error("PDF generation failed", e);
+        toast({ title: "PDF Error", description: "Failed to generate PDF.", variant: "destructive" });
     } finally {
         setDownloadingReportId(null);
     }
@@ -197,10 +216,18 @@ export function InspectionHistoryDialog({
       setIsClearingAll(false);
     }
   };
+  
+  const handleDialogClose = (isOpen: boolean) => {
+      onOpenChange(isOpen);
+      if (!isOpen) {
+          setReportToView(null);
+          setIsViewerOpen(false);
+      }
+  };
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <Dialog open={isOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <div className="flex justify-between items-start sm:items-center">
@@ -265,6 +292,16 @@ export function InspectionHistoryDialog({
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => {
+                              setReportToView(report);
+                              setIsViewerOpen(true);
+                          }}
+                        >
+                            <Eye className="mr-2 h-4 w-4" /> View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleDownload(report)}
                           disabled={downloadingReportId === report.id}
                         >
@@ -317,6 +354,13 @@ export function InspectionHistoryDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report Viewer Dialog */}
+      <ReportViewerDialog
+          report={reportToView}
+          isOpen={isViewerOpen}
+          onOpenChange={setIsViewerOpen}
+      />
     </>
   );
 }
