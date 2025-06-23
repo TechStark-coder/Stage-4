@@ -56,9 +56,9 @@ const PublicInspectionPage: NextPage = () => {
         setPageLoading(true);
         setError(null);
         try {
-          // Attempt to record access and validate the link
           await recordTenantInspectionLinkAccess(houseId, linkIdFromQuery);
-
+          
+          // If the above call succeeds, the link is active. Load the inspection page normally.
           const fetchedHome = await getHome(houseId);
           if (!fetchedHome) {
             setError(`Home details (ID: ${houseId}) could not be found.`);
@@ -71,17 +71,14 @@ const PublicInspectionPage: NextPage = () => {
           if (fetchedLinkDetails && fetchedLinkDetails.tenantName) {
             setTenantNameFromLink(fetchedLinkDetails.tenantName);
           } else if (!fetchedLinkDetails) {
-             // With open rules, if link details aren't found, it likely means the link ID is incorrect or document was deleted.
             setError("Could not retrieve details for the inspection link. It might be an invalid ID.");
             setPageLoading(false);
             return;
           }
 
-
           const fetchedRooms = await getRooms(houseId);
           if (fetchedRooms.length === 0) {
             setError("This home has no rooms configured for inspection.");
-            // Still allow proceeding if home and link are valid, tenant just can't inspect rooms
           }
           setRooms(fetchedRooms);
           setRoomReports([]);
@@ -90,10 +87,40 @@ const PublicInspectionPage: NextPage = () => {
           setGeneratedPdfForEmail(null);
 
         } catch (err: any) {
-          console.error("Error during inspection setup:", err);
-          // With open rules, errors here are less likely to be permission issues and more likely
-          // to be missing data, network issues, or typos in IDs.
-          setError(`Could not load inspection details. Problem: ${err.message}. Please check the link or contact the home owner.`);
+           // Check if the error is because the link is inactive (already used).
+           if (err.message && (err.message.includes("is not active") || err.message.includes("has expired"))) {
+            console.log("Inactive link accessed, attempting to show completion page.");
+            const linkDetails = await getTenantInspectionLink(houseId, linkIdFromQuery);
+            const homeDetails = await getHome(houseId);
+
+            // If we have the link, home, and a report ID, show the completion page.
+            if (linkDetails && homeDetails && linkDetails.reportId) {
+              setHome(homeDetails);
+              setTenantNameFromLink(linkDetails.tenantName);
+              // Create a report object to render the completion card.
+              const dummyReport: InspectionReport = {
+                id: linkDetails.reportId,
+                houseId: homeDetails.id,
+                homeName: homeDetails.name,
+                homeOwnerName: homeDetails.ownerDisplayName || 'Home Owner',
+                inspectedBy: linkDetails.tenantName,
+                inspectionDate: linkDetails.lastAccessedAt || linkDetails.createdAt, // Best guess
+                rooms: [], // Not needed for this card
+                overallStatus: 'Completed',
+                tenantLinkId: linkIdFromQuery,
+              };
+              const pdfDoc = await generatePdfDocument(dummyReport);
+              setGeneratedPdfForEmail(pdfDoc);
+              setGeneratedReport(dummyReport);
+              setInspectionComplete(true);
+            } else {
+              setError(`The inspection link is no longer valid and the original report could not be found.`);
+            }
+          } else {
+            // It's a different error (e.g., link not found).
+            console.error("Error during inspection setup:", err);
+            setError(`Could not load inspection details. Problem: ${err.message}. Please check the link or contact the home owner.`);
+          }
         } finally {
           setPageLoading(false);
         }
@@ -518,5 +545,7 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
+
+    
 
     
