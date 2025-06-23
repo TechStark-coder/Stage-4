@@ -230,14 +230,19 @@ export function InspectionHistoryDialog({
       <Dialog open={isOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <div className="flex justify-between items-start sm:items-center">
-              <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl">
-                <History className="h-6 w-6" /> Inspection History
-              </DialogTitle>
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+              <div className="space-y-1.5">
+                <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                  <History className="h-6 w-6" /> Inspection History
+                </DialogTitle>
+                <DialogDescription>
+                  Review and manage past inspections for {homeName}.
+                </DialogDescription>
+              </div>
                {!loading && reports.length > 0 && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" disabled={isClearingAll}>
+                    <Button variant="destructive" size="sm" disabled={isClearingAll} className="shrink-0">
                        {isClearingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                        Clear History
                     </Button>
@@ -259,9 +264,6 @@ export function InspectionHistoryDialog({
                 </AlertDialog>
               )}
             </div>
-            <DialogDescription>
-              Review and manage past inspections for {homeName}.
-            </DialogDescription>
           </DialogHeader>
           <div className="mt-4 max-h-[60vh] overflow-y-auto">
             {loading ? (

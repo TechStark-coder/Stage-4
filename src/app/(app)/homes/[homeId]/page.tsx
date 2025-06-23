@@ -12,9 +12,8 @@ import { CreateRoomDialog } from "@/components/homes/CreateRoomDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
-import { ArrowLeft, DoorOpen, Home as HomeIcon, History } from "lucide-react";
+import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { InspectionHistoryDialog } from "@/components/homes/InspectionHistoryDialog";
 
 export default function HomeDetailPage() {
   const { user } = useAuthContext();
@@ -25,7 +24,6 @@ export default function HomeDetailPage() {
   const [home, setHome] = useState<Home | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
 
   const fetchHomeAndRooms = useCallback(async () => {
     if (user && homeId) {
@@ -96,7 +94,6 @@ export default function HomeDetailPage() {
   }
 
   return (
-    <>
     <div className="space-y-8">
        <div className="flex justify-between items-center mb-6">
         <Button variant="outline" size="sm" asChild>
@@ -104,9 +101,6 @@ export default function HomeDetailPage() {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
           </Link>
         </Button>
-         <Button variant="outline" size="sm" onClick={() => setIsHistoryDialogOpen(true)}>
-            <History className="mr-2 h-4 w-4" /> View inspection history
-          </Button>
       </div>
 
 
@@ -148,16 +142,5 @@ export default function HomeDetailPage() {
         </div>
       )}
     </div>
-    {user && (
-      <InspectionHistoryDialog
-        homeId={homeId}
-        homeName={home.name}
-        homeOwnerName={home.ownerDisplayName || 'N/A'}
-        isOpen={isHistoryDialogOpen}
-        onOpenChange={setIsHistoryDialogOpen}
-        currentUserId={user.uid}
-      />
-    )}
-    </>
   );
 }
