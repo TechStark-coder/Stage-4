@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const ownerDisplayName = homeData.ownerDisplayName || 'Home Owner';
 
     const protocol = req.headers['x-forwarded-proto'] || 'http';
-    const host = req.headers.host;
+    const host = (req.headers['x-forwarded-host'] as string) || req.headers.host; // Prioritize x-forwarded-host
     const dashboardLink = `${protocol}://${host}/homes/${homeId}`;
 
     const mailjet = new Mailjet({
