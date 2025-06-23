@@ -322,7 +322,7 @@ export function RoomInspectionStep({
           <Label htmlFor={`tenant-notes-${room.id}`}>Notes for Owner (Optional)</Label>
           <Textarea
             id={`tenant-notes-${room.id}`}
-            placeholder={`e.g., "The tap in the bathroom is leaking slightly."`}
+            placeholder={`e.g., "Last week the care taker moved the things out of home."`}
             value={tenantNotes}
             onChange={(e) => setTenantNotes(e.target.value)}
             className="bg-background"
