@@ -9,13 +9,14 @@ import type { Home, Room, InspectionReport, RoomInspectionReportData, TenantInsp
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, Info, Download, Send, XCircle, LinkIcon } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, Info, Download, Send, XCircle, LinkIcon, MonitorOff } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
 import Image from "next/image";
 import jsPDF from 'jspdf';
 import { useAiAnalysisLoader } from '@/contexts/AiAnalysisLoaderContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PublicInspectionPage: NextPage = () => {
   const params = useParams();
@@ -24,6 +25,7 @@ const PublicInspectionPage: NextPage = () => {
   const { toast } = useToast();
   const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
   const houseId = params.houseId as string;
+  const isMobile = useIsMobile();
 
   const [home, setHome] = React.useState<Home | null>(null);
   const [rooms, setRooms] = React.useState<Room[]>([]);
@@ -42,6 +44,17 @@ const PublicInspectionPage: NextPage = () => {
 
 
   React.useEffect(() => {
+    // Wait until mobile check is complete before fetching data
+    if (isMobile === null) {
+      return;
+    }
+    
+    // If not mobile, just stop and let the render logic handle the message.
+    if (isMobile === false) {
+      setPageLoading(false);
+      return;
+    }
+
     const linkIdFromQuery = searchParams.get('linkId');
     if (linkIdFromQuery) {
       setActiveLinkId(linkIdFromQuery);
@@ -131,7 +144,7 @@ const PublicInspectionPage: NextPage = () => {
         setPageLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [houseId, searchParams]);
+  }, [houseId, searchParams, isMobile]);
 
   const handleRoomInspectionComplete = (reportData: RoomInspectionReportData) => {
     setRoomReports(prev => {
@@ -374,11 +387,31 @@ const PublicInspectionPage: NextPage = () => {
 
   const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media";
 
-  if (pageLoading) {
+  if (pageLoading || isMobile === null) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading inspection details...</p>
+        <p className="text-muted-foreground">Verifying device and loading details...</p>
+      </div>
+    );
+  }
+  
+  if (isMobile === false) {
+    return (
+       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50 p-6 text-center">
+        <Image src={logoUrl} alt="HomieStan Logo" width={200} height={50} className="mb-8" data-ai-hint="logo company" />
+        <Card className="w-full max-w-md shadow-xl bg-card text-card-foreground p-8">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-destructive/10 mb-4">
+            <MonitorOff className="h-8 w-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-semibold mb-2">Mobile Device Required</h1>
+          <p className="text-muted-foreground">
+            This inspection link is designed for mobile use to allow for photo uploads from your camera.
+          </p>
+          <p className="text-muted-foreground mt-2">
+            Please open this link on your smartphone to proceed.
+          </p>
+        </Card>
       </div>
     );
   }
@@ -545,7 +578,5 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
-
-    
 
     
