@@ -173,15 +173,78 @@ export default function RoomDetailPage() {
 
   const handleAnalysisComplete = async (newlyUploadedPhotoUrls?: string[]) => {
     setUploadedPhotos([]);
-    if (newlyUploadedPhotoUrls && newlyUploadedPhotoUrls.length > 0) {
-      const existingPhotoUrls = room?.analyzedPhotoUrls || [];
-      const allCurrentPhotoUrls = Array.from(new Set([...existingPhotoUrls, ...newlyUploadedPhotoUrls]));
-      await performFullRoomAnalysis(allCurrentPhotoUrls);
-    } else if (newlyUploadedPhotoUrls === undefined && currentPhotos.length > 0){
-      toast({ title: "Upload May Have Issues", description: "No new photos processed. If you selected photos, please try again.", variant: "destructive"});
+  
+    if (!newlyUploadedPhotoUrls || newlyUploadedPhotoUrls.length === 0) {
+      toast({ title: "Upload May Have Issues", description: "No new photos were processed. If you selected photos, please try again.", variant: "destructive" });
       fetchRoomDetails(false);
-    } else {
-      fetchRoomDetails(false);
+      return;
+    }
+  
+    if (!homeId || !roomId || !user?.uid) {
+      toast({ title: "Error", description: "Cannot perform analysis. Missing required information.", variant: "destructive" });
+      return;
+    }
+  
+    setIsProcessingFullAnalysis(true);
+    showAiLoader();
+    try {
+      await setRoomAnalyzingStatus(homeId, roomId, true);
+      await fetchRoomDetails(false); // Get latest room data before merge
+  
+      toast({ title: "Incremental Analysis", description: `Analyzing ${newlyUploadedPhotoUrls.length} new photos... This may take a moment.`, duration: 5000 });
+  
+      // 1. Analyze only new photos
+      const result = await describeRoomObjects({ photoDataUris: newlyUploadedPhotoUrls });
+  
+      if (result && result.objects) {
+        // 2. Merge with existing results
+        const existingObjects = room?.analyzedObjects || [];
+        const newAnalysisObjects = result.objects;
+        
+        const mergedObjectsMap = new Map<string, number>();
+        const nameMap = new Map<string, string>(); // To preserve original casing
+  
+        existingObjects.forEach(obj => {
+          const key = obj.name.toLowerCase().trim();
+          mergedObjectsMap.set(key, obj.count);
+          nameMap.set(key, obj.name);
+        });
+  
+        newAnalysisObjects.forEach(newObj => {
+          const key = newObj.name.toLowerCase().trim();
+          const currentCount = mergedObjectsMap.get(key) || 0;
+          mergedObjectsMap.set(key, currentCount + newObj.count);
+          if (!nameMap.has(key)) {
+            nameMap.set(key, newObj.name); // Store original casing for new items
+          }
+        });
+  
+        const finalObjects = Array.from(mergedObjectsMap.entries()).map(([key, count]) => ({
+          name: nameMap.get(key)!,
+          count: count
+        }));
+        finalObjects.sort((a, b) => a.name.localeCompare(b.name));
+  
+        // 3. Combine photo URLs
+        const existingPhotoUrls = room?.analyzedPhotoUrls || [];
+        const finalPhotoUrls = Array.from(new Set([...existingPhotoUrls, ...newlyUploadedPhotoUrls]));
+  
+        // 4. Update Firestore with the complete, merged data
+        await updateRoomAnalysisData(homeId, roomId, finalObjects, finalPhotoUrls, user.uid);
+        toast({ title: "Room Analysis Updated!", description: "The object list has been updated with the new findings." });
+      } else {
+        throw new Error("AI analysis did not return the expected object structure.");
+      }
+      
+      await fetchRoomDetails(false);
+    } catch (error: any) {
+      console.error("Error during incremental analysis:", error);
+      toast({ title: "Analysis Failed", description: error.message || "Could not analyze new photos.", variant: "destructive" });
+      await setRoomAnalyzingStatus(homeId, roomId, false);
+      await fetchRoomDetails(false);
+    } finally {
+      setIsProcessingFullAnalysis(false);
+      hideAiLoader();
     }
   };
 
