@@ -488,7 +488,7 @@ const PublicInspectionPage: NextPage = () => {
             Property Inspection: {home?.name}
           </CardTitle>
           <CardDescription className="text-center text-base pt-2">
-             Hi {currentInspectorName}, you are inspecting on behalf of {ownerDisplayNameForGreeting}. Please follow the steps below.
+             Hi {currentInspectorName}, you are inspecting on behalf of Owner {ownerDisplayNameForGreeting}. Please follow the steps below.
           </CardDescription>
         </CardHeader>
 
@@ -567,16 +567,8 @@ const PublicInspectionPage: NextPage = () => {
           </CardFooter>
         )}
       </Card>
-      <footer className="text-center py-4 mt-auto">
-        <p className="text-xs text-muted-foreground/70">
-          <LinkIcon className="inline h-3 w-3 mr-1" />
-          Inspection Link ID: {activeLinkId || "N/A"}
-        </p>
-      </footer>
     </div>
   );
 };
 
 export default PublicInspectionPage;
-
-    
