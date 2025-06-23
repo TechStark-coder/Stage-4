@@ -20,8 +20,6 @@ import {
 import type { IdentifyDiscrepanciesInput, IdentifyDiscrepanciesOutput } from '@/ai/flows/identify-discrepancies-flow';
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 
-const MAX_PHOTOS_PER_ROOM = 5;
-
 interface RoomInspectionStepProps {
   homeId: string;
   room: Room;
@@ -74,20 +72,8 @@ export function RoomInspectionStep({
       });
     }
 
-    const totalAfterAdd = tenantPhotos.length + filteredNewFiles.length;
-    if (totalAfterAdd > MAX_PHOTOS_PER_ROOM) {
-      toast({
-        title: "Photo Limit Exceeded",
-        description: `You can add a maximum of ${MAX_PHOTOS_PER_ROOM} photos. ${MAX_PHOTOS_PER_ROOM - tenantPhotos.length} more can be added.`,
-        variant: "destructive",
-      });
-      const remainingSlots = MAX_PHOTOS_PER_ROOM - tenantPhotos.length;
-      const filesToActuallyAdd = filteredNewFiles.slice(0, remainingSlots);
-      if (filesToActuallyAdd.length > 0) {
-        setTenantPhotos(prev => [...prev, ...filesToActuallyAdd]);
-      }
-    } else if (filteredNewFiles.length > 0) {
-       setTenantPhotos(prev => [...prev, ...filteredNewFiles]); // Corrected: use filteredNewFiles
+    if (filteredNewFiles.length > 0) {
+       setTenantPhotos(prev => [...prev, ...filteredNewFiles]);
     }
   };
 
@@ -167,39 +153,34 @@ export function RoomInspectionStep({
       return;
     }
 
-    console.log("ROOM INSPECTION: Attempting to show AI Loader...");
-    toast({ title: "AI Loader Status", description: "Attempting to show AI Loader now.", duration: 1000 });
     showAiLoader();
     setIsLoading(true);
     setAnalysisResult(null);
-    setAnalysisAttempted(true); // Set this early so expected items show
+    setAnalysisAttempted(true);
     setShowOwnerExpectedItems(true);
 
-    let tenantPhotoDataUri = "";
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(tenantPhotos[0]); 
-      await new Promise<void>((resolve, reject) => {
-        reader.onload = () => {
-          tenantPhotoDataUri = reader.result as string;
-          resolve();
-        };
-        reader.onerror = error => {
-          console.error("Error converting image to data URI:", error);
-          reject(new Error("Could not process the tenant's photo."));
-        };
-      });
+      const photoDataUris = await Promise.all(
+        tenantPhotos.map(file => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+          });
+        })
+      );
 
-      if (!tenantPhotoDataUri) {
-        throw new Error("Failed to prepare tenant photo for AI.");
+      if (photoDataUris.length === 0) {
+        throw new Error("Failed to prepare tenant photos for AI.");
       }
 
       const aiInput: IdentifyDiscrepanciesInput = {
-        tenantPhotoDataUri,
+        tenantPhotoDataUris: photoDataUris,
         expectedItems: room.analyzedObjects.map(obj => ({ name: obj.name, count: obj.count })),
       };
 
-      toast({ title: "AI Analysis Started", description: "HomieStan AI is checking the room...", duration: 3000 });
+      toast({ title: "AI Analysis Started", description: `HomieStan AI is checking ${photoDataUris.length} photos...`, duration: 3000 });
       const result = await aiIdentifyDiscrepancies(aiInput);
       setAnalysisResult(result);
       toast({ title: "AI Analysis Complete", description: "Review the results below." });
@@ -211,10 +192,9 @@ export function RoomInspectionStep({
         description: error.message || "Could not get AI discrepancy report.",
         variant: "destructive",
       });
-      setAnalysisResult(null); 
+      setAnalysisResult(null);
     } finally {
       setIsLoading(false);
-      console.log("ROOM INSPECTION: Attempting to hide AI Loader...");
       hideAiLoader();
     }
   };
@@ -223,7 +203,7 @@ export function RoomInspectionStep({
     const reportData: RoomInspectionReportData = {
       roomId: room.id,
       roomName: room.name,
-      tenantPhotoUrls: [], 
+      tenantPhotoUrls: [],
       discrepancies: analysisResult?.discrepancies || [],
       missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "",
     };
@@ -240,7 +220,7 @@ export function RoomInspectionStep({
       <CardHeader>
         <CardTitle>Inspecting: {room.name}</CardTitle>
         <CardDescription>
-          Provide photos of the room as it currently is. The AI will compare these with the owner's initial list. Max {MAX_PHOTOS_PER_ROOM} photos.
+          Provide photos of the room as it currently is. The AI will compare these with the owner's initial list.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -253,7 +233,7 @@ export function RoomInspectionStep({
 
         <div className="space-y-3">
           <label className="block text-sm font-medium text-muted-foreground">
-            Your Photos for {room.name} ({tenantPhotos.length}/{MAX_PHOTOS_PER_ROOM}):
+            Your Photos for {room.name} ({tenantPhotos.length} photo(s)):
           </label>
           <div className="flex flex-wrap gap-2">
             {tenantPhotos.map((file, index) => (
@@ -285,12 +265,12 @@ export function RoomInspectionStep({
               ref={fileInputRef}
               className="hidden"
             />
-            <Button type="button" variant="outline" onClick={triggerFileInput} disabled={tenantPhotos.length >= MAX_PHOTOS_PER_ROOM || isLoading}>
+            <Button type="button" variant="outline" onClick={triggerFileInput} disabled={isLoading}>
               <FileImage className="mr-2 h-4 w-4" /> Add File(s)
             </Button>
             <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
               <DialogTrigger asChild>
-                <Button type="button" variant="outline" disabled={tenantPhotos.length >= MAX_PHOTOS_PER_ROOM || isLoading}>
+                <Button type="button" variant="outline" disabled={isLoading}>
                   <Camera className="mr-2 h-4 w-4" /> Use Camera
                 </Button>
               </DialogTrigger>
