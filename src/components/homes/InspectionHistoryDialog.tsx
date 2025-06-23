@@ -19,7 +19,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Table,
@@ -32,7 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getInspectionReportsForHome, deleteInspectionReport, deleteAllInspectionReportsForHome } from "@/lib/firestore";
+import { getInspectionReportsForHome, deleteInspectionReport } from "@/lib/firestore";
 import type { InspectionReport } from "@/types";
 import { History, FileDown, Loader2, Info, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +59,6 @@ export function InspectionHistoryDialog({
   const [loading, setLoading] = React.useState(true);
   const [downloadingReportId, setDownloadingReportId] = React.useState<string | null>(null);
   const [reportToDelete, setReportToDelete] = React.useState<InspectionReport | null>(null);
-  const [isClearingAll, setIsClearingAll] = React.useState(false);
   const { toast } = useToast();
 
   // State for the report viewer
@@ -204,19 +202,6 @@ export function InspectionHistoryDialog({
     }
   };
 
-  const handleClearAllHistory = async () => {
-    setIsClearingAll(true);
-    try {
-      await deleteAllInspectionReportsForHome(homeId, currentUserId);
-      setReports([]);
-      toast({ title: "History Cleared", description: `All inspection reports for ${homeName} have been deleted.` });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setIsClearingAll(false);
-    }
-  };
-  
   const handleDialogClose = (isOpen: boolean) => {
       onOpenChange(isOpen);
       if (!isOpen) {
@@ -239,30 +224,6 @@ export function InspectionHistoryDialog({
                   Review and manage past inspections for {homeName}.
                 </DialogDescription>
               </div>
-               {!loading && reports.length > 0 && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" disabled={isClearingAll} className="shrink-0">
-                       {isClearingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                       Clear History
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Clear all history?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete all {reports.length} inspection reports for "{homeName}". This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleClearAllHistory} className="bg-destructive hover:bg-destructive/90">
-                        Yes, Clear All
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
             </div>
           </DialogHeader>
           <div className="mt-4 max-h-[60vh] overflow-y-auto">
