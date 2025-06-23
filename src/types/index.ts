@@ -62,6 +62,7 @@ export interface RoomInspectionReportData {
   tenantPhotoUrls: string[];
   discrepancies: InspectionDiscrepancy[];
   missingItemSuggestionForRoom: string;
+  tenantNotes?: string;
 }
 
 export interface InspectionReport extends FirebaseDocument {

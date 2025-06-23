@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import type { IdentifyDiscrepanciesInput, IdentifyDiscrepanciesOutput } from '@/ai/flows/identify-discrepancies-flow';
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface RoomInspectionStepProps {
   homeId: string;
@@ -52,6 +54,7 @@ export function RoomInspectionStep({
   const [retakeCount, setRetakeCount] = React.useState(0);
   const [isAwaitingRetake, setIsAwaitingRetake] = React.useState(false);
   const [lastSuggestion, setLastSuggestion] = React.useState<string | null>(null);
+  const [tenantNotes, setTenantNotes] = React.useState('');
 
   React.useEffect(() => {
     // Reset state when room changes
@@ -64,6 +67,7 @@ export function RoomInspectionStep({
     setRetakeCount(0);
     setIsAwaitingRetake(false);
     setLastSuggestion(null);
+    setTenantNotes('');
     console.log(`RoomInspectionStep: Switched to room: ${room.name} (ID: ${room.id})`);
   }, [room]);
 
@@ -232,6 +236,7 @@ export function RoomInspectionStep({
       tenantPhotoUrls: [],
       discrepancies: analysisResult?.discrepancies || [],
       missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "",
+      tenantNotes: tenantNotes,
     };
     onInspectionStepComplete(reportData);
     toast({ title: `Report for ${room.name} Saved`, description: "Proceed to the next room or complete inspection.", duration: 3000});
@@ -351,6 +356,19 @@ export function RoomInspectionStep({
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor={`tenant-notes-${room.id}`}>Notes for Owner (Optional)</Label>
+          <Textarea
+            id={`tenant-notes-${room.id}`}
+            placeholder={`e.g., "The tap in the bathroom is leaking slightly."`}
+            value={tenantNotes}
+            onChange={(e) => setTenantNotes(e.target.value)}
+            className="bg-background"
+            rows={3}
+            disabled={isLoading}
+          />
+        </div>
+
         {analysisAttempted && !isLoading && (
           <div className="space-y-4 pt-4 border-t mt-4">
             <h3 className="text-lg font-semibold">Inspection Results</h3>
@@ -422,5 +440,3 @@ export function RoomInspectionStep({
     </Card>
   );
 }
-
-    

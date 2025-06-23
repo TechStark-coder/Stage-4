@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { InspectionReport } from "@/types";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, MessageSquareQuote } from "lucide-react";
 
 interface ReportViewerDialogProps {
   report: InspectionReport | null;
@@ -52,8 +52,15 @@ export function ReportViewerDialog({ report, isOpen, onOpenChange }: ReportViewe
               <div key={room.roomId} className="p-3 border rounded-lg bg-background/50">
                 <h4 className="font-semibold text-lg mb-2">{room.roomName}</h4>
                 
+                {room.tenantNotes && (
+                    <div className="mb-3">
+                        <h5 className="font-medium text-sm text-foreground flex items-center gap-2"><MessageSquareQuote className="h-4 w-4" /> Tenant's Note:</h5>
+                        <p className="text-sm italic text-muted-foreground bg-muted/50 p-2 mt-1 rounded-md">"{room.tenantNotes}"</p>
+                    </div>
+                )}
+                
                 {room.missingItemSuggestionForRoom && (
-                   <p className="text-sm italic text-muted-foreground mb-2">Note: {room.missingItemSuggestionForRoom}</p>
+                   <p className="text-sm italic text-muted-foreground mb-2">AI Note: {room.missingItemSuggestionForRoom}</p>
                 )}
 
                 {room.discrepancies.length > 0 ? (

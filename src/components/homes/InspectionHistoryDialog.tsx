@@ -130,6 +130,20 @@ export function InspectionHistoryDialog({
       doc.setFont(undefined, 'normal');
       yPos += lineHeight;
 
+      if (room.tenantNotes) {
+        checkAndAddPage(lineHeight * 2);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'italic');
+        doc.text("Tenant's Note:", margin + 5, yPos);
+        yPos += lineHeight * 0.8;
+
+        doc.setFont(undefined, 'normal');
+        const noteLines = doc.splitTextToSize(`  "${room.tenantNotes}"`, maxLineWidth - 10);
+        checkAndAddPage(noteLines.length * (lineHeight * 0.8));
+        doc.text(noteLines, margin + 5, yPos);
+        yPos += noteLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
+      }
+      
       if (room.missingItemSuggestionForRoom) {
         checkAndAddPage(lineHeight * 2);
         doc.setFontSize(10);
@@ -162,10 +176,10 @@ export function InspectionHistoryDialog({
           doc.setTextColor(0, 0, 0); // Reset color to black
           yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
         });
-      } else if (!room.missingItemSuggestionForRoom) {
+      } else if (!room.missingItemSuggestionForRoom && !room.tenantNotes) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
-        doc.text("No discrepancies noted by AI for this room.", margin + 5, yPos);
+        doc.text("No discrepancies or notes for this room.", margin + 5, yPos);
         yPos += lineHeight;
       }
       yPos += lineHeight * 0.5;
