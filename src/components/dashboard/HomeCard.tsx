@@ -136,7 +136,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" className="flex-1">
-                  <Trash2 />
+                  <Trash2 /> Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
