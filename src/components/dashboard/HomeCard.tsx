@@ -114,13 +114,6 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-4 p-4 border-t">
-          {user && (
-            <Button variant="outline" className="w-full" onClick={() => setIsHistoryDialogOpen(true)}>
-              <History className="mr-2 h-4 w-4" />
-              View Inspection History
-            </Button>
-          )}
-
           {/* Row 1: Edit button, Generate Link button */}
           <div className="flex w-full gap-2">
             <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
@@ -163,6 +156,13 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          
+          {user && (
+            <Button variant="outline" className="w-full" onClick={() => setIsHistoryDialogOpen(true)}>
+              <History className="mr-2 h-4 w-4" />
+              View Inspection History
+            </Button>
+          )}
         </CardFooter>
       </Card>
       {user && (
