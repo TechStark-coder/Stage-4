@@ -561,15 +561,15 @@ const PublicInspectionPage: NextPage = () => {
             <div className="text-sm text-muted-foreground">
               Room {Math.min(currentRoomIndex + 1, rooms.length)} of {rooms.length}{currentRoom ? `: ${currentRoom.name}` : ''}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap items-center justify-center sm:justify-end w-full">
               {currentRoomIndex > 0 && (
-                  <Button
-                      onClick={handlePreviousRoom}
-                      disabled={isSubmittingReport}
-                      variant="outline"
-                  >
-                      <ArrowLeft className="mr-2 h-4 w-4" /> Previous Room
-                  </Button>
+                <Button
+                  onClick={handlePreviousRoom}
+                  disabled={isSubmittingReport}
+                  variant="outline"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous Room
+                </Button>
               )}
 
               {currentRoomIndex < rooms.length - 1 ? (
@@ -582,7 +582,11 @@ const PublicInspectionPage: NextPage = () => {
               ) : (
                 <Button
                   onClick={handleSubmitInspection}
-                  disabled={isSubmittingReport || !roomReports.find(r => r.roomId === currentRoom?.id) || (rooms.length > 0 && roomReports.length !== rooms.length) }
+                  disabled={
+                    isSubmittingReport ||
+                    !roomReports.find(r => r.roomId === currentRoom?.id) ||
+                    (rooms.length > 0 && roomReports.length !== rooms.length)
+                  }
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isSubmittingReport ? (
@@ -594,6 +598,7 @@ const PublicInspectionPage: NextPage = () => {
                 </Button>
               )}
             </div>
+
           </CardFooter>
         )}
       </Card>
