@@ -214,9 +214,20 @@ export function InspectionHistoryDialog({
   const handleDeleteReport = async () => {
     if (!reportToDelete) return;
     try {
+      // First, delete the report itself
       await deleteInspectionReport(reportToDelete.id, currentUserId);
+      
+      // Then, if it has an associated link ID, delete the link too
+      if (reportToDelete.tenantLinkId) {
+        await deleteTenantInspectionLink(homeId, reportToDelete.tenantLinkId, currentUserId);
+        // Refresh links list as well
+        setLinks((prev) => prev.filter((l) => l.id !== reportToDelete.tenantLinkId));
+      }
+
+      // Refresh reports list
       setReports((prev) => prev.filter((r) => r.id !== reportToDelete.id));
-      toast({ title: "Report Deleted", description: "The selected inspection report has been deleted." });
+
+      toast({ title: "Report and Link Deleted", description: "The inspection report and its associated link have been deleted." });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -227,9 +238,20 @@ export function InspectionHistoryDialog({
   const handleDeleteLink = async () => {
     if (!linkToDelete) return;
     try {
+      // First, delete the link itself
       await deleteTenantInspectionLink(homeId, linkToDelete.id, currentUserId);
+
+      // Then, if it has an associated report ID, delete the report too
+      if (linkToDelete.reportId) {
+        await deleteInspectionReport(linkToDelete.reportId, currentUserId);
+        // Refresh reports list as well
+        setReports((prev) => prev.filter((r) => r.id !== linkToDelete.reportId));
+      }
+      
+      // Refresh links list
       setLinks((prev) => prev.filter((l) => l.id !== linkToDelete.id));
-      toast({ title: "Link Deleted", description: "The inspection link has been deleted." });
+
+      toast({ title: "Link Deleted", description: "The inspection link and any associated report have been deleted." });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -406,44 +428,41 @@ export function InspectionHistoryDialog({
         </DialogContent>
       </Dialog>
       
-      {/* Confirmation Dialog for report deletion */}
       <AlertDialog open={!!reportToDelete} onOpenChange={(open) => !open && setReportToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this report?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the report from {reportToDelete?.inspectionDate.toDate().toLocaleDateString()} inspected by {reportToDelete?.inspectedBy}? This action cannot be undone.
+              Are you sure you want to delete the report from {reportToDelete?.inspectionDate.toDate().toLocaleDateString()} inspected by {reportToDelete?.inspectedBy}? This action cannot be undone and will also delete the original inspection link.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteReport} className="bg-destructive hover:bg-destructive/90">
-              Delete Report
+              Delete Report & Link
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirmation Dialog for link deletion */}
       <AlertDialog open={!!linkToDelete} onOpenChange={(open) => !open && setLinkToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this link?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the inspection link for {linkToDelete?.tenantName}? This action cannot be undone.
+              Are you sure you want to delete the inspection link for {linkToDelete?.tenantName}? This action cannot be undone. If a report was submitted using this link, it will also be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteLink} className="bg-destructive hover:bg-destructive/90">
-              Delete Link
+              Delete Link & Report
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
 
-      {/* Report Viewer Dialog */}
       <ReportViewerDialog
           report={reportToView}
           isOpen={isViewerOpen}
