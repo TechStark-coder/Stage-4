@@ -158,7 +158,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           </div>
           
           {user && (
-            <Button variant="outline" className="w-full" onClick={() => setIsHistoryDialogOpen(true)}>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => setIsHistoryDialogOpen(true)}>
               <History className="mr-2 h-4 w-4" />
               View Inspection History
             </Button>
