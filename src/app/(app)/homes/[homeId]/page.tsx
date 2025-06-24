@@ -114,14 +114,7 @@ export default function HomeDetailPage() {
 
       {rooms.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-card">
-          <Image
-            src="https://placehold.co/300x200.png"
-            alt="Empty rooms placeholder"
-            width={300}
-            height={200}
-            className="mx-auto mb-6 rounded-md opacity-70"
-            data-ai-hint="empty room illustration"
-          />
+          <DoorOpen className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
           <h2 className="text-2xl font-semibold mb-2">No Rooms Yet!</h2>
           <p className="text-muted-foreground mb-6">
             Add rooms to this home to start analyzing objects.
