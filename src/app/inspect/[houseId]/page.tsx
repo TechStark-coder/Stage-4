@@ -9,7 +9,7 @@ import type { Home, Room, InspectionReport, RoomInspectionReportData, TenantInsp
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, Info, Download, Send, XCircle, LinkIcon, MonitorOff } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, Home as HomeIcon, ArrowRight, Info, Download, Send, XCircle, LinkIcon, MonitorOff, ArrowLeft } from 'lucide-react';
 import { RoomInspectionStep } from '@/components/inspection/RoomInspectionStep';
 import { useToast } from '@/hooks/use-toast';
 import { identifyDiscrepancies } from '@/ai/flows/identify-discrepancies-flow';
@@ -161,6 +161,12 @@ const PublicInspectionPage: NextPage = () => {
   const handleNextRoom = () => {
     if (currentRoomIndex < rooms.length - 1) {
       setCurrentRoomIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousRoom = () => {
+    if (currentRoomIndex > 0) {
+      setCurrentRoomIndex(prev => prev - 1);
     }
   };
 
@@ -556,6 +562,16 @@ const PublicInspectionPage: NextPage = () => {
               Room {Math.min(currentRoomIndex + 1, rooms.length)} of {rooms.length}{currentRoom ? `: ${currentRoom.name}` : ''}
             </div>
             <div className="flex gap-3">
+              {currentRoomIndex > 0 && (
+                  <Button
+                      onClick={handlePreviousRoom}
+                      disabled={isSubmittingReport}
+                      variant="outline"
+                  >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Previous Room
+                  </Button>
+              )}
+
               {currentRoomIndex < rooms.length - 1 ? (
                 <Button
                   onClick={handleNextRoom}
