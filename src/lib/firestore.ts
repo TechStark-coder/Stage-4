@@ -434,6 +434,23 @@ export async function deactivateTenantInspectionLink(homeId: string, linkId: str
   });
 }
 
+export async function reactivateTenantInspectionLink(homeId: string, linkId: string, ownerId: string): Promise<void> {
+  const home = await getHome(homeId);
+  if (!home || home.ownerId !== ownerId) {
+    throw new Error("Permission denied or home not found.");
+  }
+  const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
+  const linkSnap = await getDoc(linkDocRef);
+  if (!linkSnap.exists()) {
+    console.warn(`Tenant inspection link ${linkId} not found for reactivation.`);
+    return;
+  }
+  await updateDoc(linkDocRef, {
+    isActive: true,
+    reportId: null, // Clear the association with the deleted report
+  });
+}
+
 export async function recordTenantInspectionLinkAccess(homeId: string, linkId: string): Promise<TenantInspectionLink | null> {
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
   try {

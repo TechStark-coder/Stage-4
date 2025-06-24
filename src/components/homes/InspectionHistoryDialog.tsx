@@ -31,7 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getInspectionReportsForHome, deleteInspectionReport, getTenantInspectionLinks, deleteTenantInspectionLink } from "@/lib/firestore";
+import { getInspectionReportsForHome, deleteInspectionReport, getTenantInspectionLinks, deleteTenantInspectionLink, reactivateTenantInspectionLink } from "@/lib/firestore";
 import type { InspectionReport, TenantInspectionLink } from "@/types";
 import { History, FileDown, Loader2, Info, Trash2, Eye, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -214,20 +214,29 @@ export function InspectionHistoryDialog({
   const handleDeleteReport = async () => {
     if (!reportToDelete) return;
     try {
+      const linkIdToReactivate = reportToDelete.tenantLinkId;
+
       // First, delete the report itself
       await deleteInspectionReport(reportToDelete.id, currentUserId);
-      
-      // Then, if it has an associated link ID, delete the link too
-      if (reportToDelete.tenantLinkId) {
-        await deleteTenantInspectionLink(homeId, reportToDelete.tenantLinkId, currentUserId);
-        // Refresh links list as well
-        setLinks((prev) => prev.filter((l) => l.id !== reportToDelete.tenantLinkId));
+
+      // Then, if it has an associated link ID, reactivate it
+      if (linkIdToReactivate) {
+        await reactivateTenantInspectionLink(homeId, linkIdToReactivate, currentUserId);
+        
+        // Refresh the links list in the UI to show its new "Active" state
+        setLinks((prevLinks) => 
+          prevLinks.map(link => 
+            link.id === linkIdToReactivate 
+              ? { ...link, isActive: true, reportId: null } 
+              : link
+          )
+        );
       }
 
-      // Refresh reports list
+      // Refresh reports list by removing the deleted one
       setReports((prev) => prev.filter((r) => r.id !== reportToDelete.id));
 
-      toast({ title: "Report and Link Deleted", description: "The inspection report and its associated link have been deleted." });
+      toast({ title: "Report Deleted", description: "The inspection report has been deleted and the original link has been reactivated." });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -433,13 +442,13 @@ export function InspectionHistoryDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this report?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the report from {reportToDelete?.inspectionDate.toDate().toLocaleDateString()} inspected by {reportToDelete?.inspectedBy}? This action cannot be undone and will also delete the original inspection link.
+              Are you sure you want to delete the report from {reportToDelete?.inspectionDate.toDate().toLocaleDateString()} inspected by {reportToDelete?.inspectedBy}? This action cannot be undone. The original inspection link will be reactivated.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteReport} className="bg-destructive hover:bg-destructive/90">
-              Delete Report & Link
+              Delete Report & Reactivate Link
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
