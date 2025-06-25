@@ -228,56 +228,43 @@ const PublicInspectionPage: NextPage = () => {
       }
 
       const discrepanciesMap = new Map(room.discrepancies.map(d => [d.name.toLowerCase(), d]));
-      const foundItemsText: string[] = [];
-      const discrepancyItemsText: string[] = [];
 
-      if (room.expectedItems) {
-          room.expectedItems.forEach(item => {
-              const discrepancy = discrepanciesMap.get(item.name.toLowerCase());
-              if (discrepancy) {
-                  discrepancyItemsText.push(`${discrepancy.name}: Expected ${discrepancy.expectedCount}, Found ${discrepancy.actualCount}. Note: ${discrepancy.note}`);
-              } else {
-                  foundItemsText.push(`${item.name} (Found: ${item.count})`);
-              }
-          });
-      }
+      if (room.expectedItems && room.expectedItems.length > 0) {
+        checkAndAddPage(lineHeight * 2);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text("Room Findings:", margin + 5, yPos);
+        doc.setFont(undefined, 'normal');
+        yPos += lineHeight;
 
-      if (foundItemsText.length > 0) {
-          checkAndAddPage(lineHeight * 2);
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
-          doc.text("Items Found:", margin + 5, yPos);
-          doc.setFont(undefined, 'normal');
-          yPos += lineHeight;
+        room.expectedItems.forEach(item => {
+          const discrepancy = discrepanciesMap.get(item.name.toLowerCase());
+          let itemText = '';
+          let isDiscrepancy = false;
+          
+          if (discrepancy) {
+            itemText = `- ${discrepancy.name}: Expected ${discrepancy.expectedCount}, Found ${discrepancy.actualCount}. Note: ${discrepancy.note}`;
+            isDiscrepancy = true;
+          } else {
+            itemText = `- ${item.name} (Found: ${item.count})`;
+            isDiscrepancy = false;
+          }
 
-          doc.setTextColor(0, 0, 0); // Black
-          foundItemsText.forEach(itemText => {
-              const itemLines = doc.splitTextToSize(`- ${itemText}`, maxLineWidth - 15);
-              checkAndAddPage(itemLines.length * (lineHeight * 0.8));
-              doc.text(itemLines, margin + 10, yPos);
-              yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
-          });
-      }
+          const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
+          checkAndAddPage(itemLines.length * (lineHeight * 0.8));
 
-      if (discrepancyItemsText.length > 0) {
-          checkAndAddPage(lineHeight * 2);
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
-          doc.text("Discrepancies:", margin + 5, yPos);
-          doc.setFont(undefined, 'normal');
-          yPos += lineHeight;
-
-          doc.setTextColor(255, 0, 0); // Red
-          discrepancyItemsText.forEach(itemText => {
-              const itemLines = doc.splitTextToSize(`- ${itemText}`, maxLineWidth - 15);
-              checkAndAddPage(itemLines.length * (lineHeight * 0.8));
-              doc.text(itemLines, margin + 10, yPos);
-              yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
-          });
-          doc.setTextColor(0, 0, 0); // Reset to black
-      }
-
-      if (foundItemsText.length === 0 && discrepancyItemsText.length === 0 && !room.tenantNotes) {
+          if (isDiscrepancy) {
+            doc.setTextColor(255, 0, 0); // Red
+          } else {
+            doc.setTextColor(0, 0, 0); // Black
+          }
+          
+          doc.text(itemLines, margin + 10, yPos);
+          yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
+        });
+        
+        doc.setTextColor(0, 0, 0); // Reset color to black after the loop
+      } else if (!room.tenantNotes) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.text("No items or notes were recorded for this room.", margin + 5, yPos);
