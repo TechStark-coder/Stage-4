@@ -71,15 +71,11 @@ You will be given:
 2. A new set of 'tenantPhotos' of the same room, taken by a tenant or inspector.
 
 Your task is to:
-A. **VERY IMPORTANT FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV", "Funko Pop Batman figure"). Exclude common structural elements like walls, floors, ceilings, windows, and doors unless they have distinct decorative features (e.g., 'ornate wooden doorframe'). Perform this inventory BEFORE looking at the 'expectedItems' list.
+A. **VERY IMPORTANT FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV"). When creating this inventory, you MUST EXCLUDE common structural elements; do NOT list 'WALL', 'FLOOR', 'DOOR', or 'WINDOW' as items. Focus on furniture, electronics, decorations, and personal belongings. Perform this inventory BEFORE looking at the 'expectedItems' list.
 
 B. **Compare your detailed inventory from the 'tenantPhotos' (from step A) against the provided 'expectedItems' list.**
 
-C. **Create a list of 'discrepancies'.** For each item in 'expectedItems' that is either:
-    - Entirely missing from your inventory of 'tenantPhotos'.
-    - Present in a lesser quantity in your inventory of 'tenantPhotos' than expected.
-    List it as a discrepancy. Include its name, the original expectedCount, the actualCount you found in 'tenantPhotos', and a brief 'note' (e.g., "Completely missing", "1 of 3 found", "2 less than expected").
-    If an expected item is found with the correct or higher count in your 'tenantPhotos' inventory, do NOT list it as a discrepancy.
+C. **Create a list of 'discrepancies'.** This list must ONLY contain items where the count you found is LESS THAN the expected count, or the item is completely missing (actual count is 0). For each such item, include its name, the expectedCount, the actualCount you found (which will be less than expected), and a brief 'note'. **DO NOT include items in the 'discrepancies' list if their count matches or exceeds the expectation.**
 
 D. **If there are discrepancies, especially if an item is completely missing or its count is significantly lower, formulate a single, polite 'missingItemSuggestion' string.** This suggestion should prompt the user to re-check for ONE SPECIFIC, clearly named item that seems to be missing or significantly undercounted from the 'expectedItems' list. For example: "The 'vintage wooden clock' seems to be missing. Could you please take another picture focusing on where it should be?" If multiple items are problematic, choose one prominent or high-value sounding item for the suggestion. If all items match the expected counts or if discrepancies are very minor (e.g., many items and only one is off by a small count), this 'missingItemSuggestion' can be an empty string or a very mild, general prompt like "Looks mostly good, but you might want to double-check the smaller items."
 
@@ -121,3 +117,4 @@ const identifyDiscrepanciesFlow = ai.defineFlow(
 
 // Add this flow to dev.ts
 // import '@/ai/flows/identify-discrepancies-flow.ts';
+
