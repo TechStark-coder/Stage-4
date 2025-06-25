@@ -165,7 +165,7 @@ const PublicInspectionPage: NextPage = () => {
 
   const handlePreviousRoom = () => {
     if (currentRoomIndex > 0) {
-      setCurrentRoomIndex(prev => prev - 1);
+      setCurrentRoomIndex(prev => prev + 1);
     }
   };
 
@@ -229,49 +229,55 @@ const PublicInspectionPage: NextPage = () => {
 
       // Create a map of the AI's findings for easy lookup.
       const findingsMap = new Map(room.discrepancies.map(d => [d.name.toLowerCase(), d]));
+      const allExpectedItems = room.expectedItems || [];
+      
+      const foundItems = allExpectedItems.filter(item => !findingsMap.has(item.name.toLowerCase()));
+      const missingItems = room.discrepancies;
 
-      if (room.expectedItems && room.expectedItems.length > 0) {
+      // --- Section for Found Items ---
+      if (foundItems.length > 0) {
         checkAndAddPage(lineHeight * 2);
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
         doc.text("Room Findings:", margin + 5, yPos);
+        yPos += lineHeight;
+        
         doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0); // Black
+        foundItems.forEach(item => {
+            const itemText = `- ${item.name}`;
+            const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
+            checkAndAddPage(itemLines.length * (lineHeight * 0.8));
+            doc.text(itemLines, margin + 10, yPos);
+            yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
+        });
+        yPos += lineHeight * 0.5;
+      }
+      
+      // --- Section for Missing Items ---
+      if (missingItems.length > 0) {
+        checkAndAddPage(lineHeight * 2);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text("Missing Items:", margin + 5, yPos);
         yPos += lineHeight;
 
-        // Iterate through what was *expected* to be in the room.
-        room.expectedItems.forEach(expectedItem => {
-          const finding = findingsMap.get(expectedItem.name.toLowerCase());
-          
-          const itemText = `- ${expectedItem.name}`;
-          let isMissing = false;
-
-          if (finding) {
-            // The AI reported on this item. Check if the count is less than expected.
-            if (finding.actualCount < finding.expectedCount) {
-              isMissing = true;
-            } else {
-              isMissing = false; // Found, so it's black.
-            }
-          } else {
-            // The AI did not report on this item at all, so it's missing.
-            isMissing = true;
-          }
-
-          const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
-          checkAndAddPage(itemLines.length * (lineHeight * 0.8));
-
-          if (isMissing) {
-            doc.setTextColor(255, 0, 0); // Red for missing/undercounted
-          } else {
-            doc.setTextColor(0, 0, 0); // Black for found
-          }
-          
-          doc.text(itemLines, margin + 10, yPos);
-          yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(255, 0, 0); // Red
+        missingItems.forEach(item => {
+            const itemText = `- ${item.name}`;
+            const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
+            checkAndAddPage(itemLines.length * (lineHeight * 0.8));
+            doc.text(itemLines, margin + 10, yPos);
+            yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
         });
         
-        doc.setTextColor(0, 0, 0); // Reset color to black after the loop
-      } else if (!room.tenantNotes) {
+        doc.setTextColor(0, 0, 0); // Reset color
+        yPos += lineHeight * 0.5;
+      }
+
+      // If no items at all, and no notes, show a message
+      if (foundItems.length === 0 && missingItems.length === 0 && !room.tenantNotes) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
         doc.text("No items or notes were recorded for this room.", margin + 5, yPos);

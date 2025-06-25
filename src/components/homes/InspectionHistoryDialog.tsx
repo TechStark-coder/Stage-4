@@ -151,45 +151,64 @@ export function InspectionHistoryDialog({
         doc.text(noteLines, margin + 5, yPos);
         yPos += noteLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
+
+      // Create a map of the AI's findings for easy lookup.
+      const findingsMap = new Map(room.discrepancies.map(d => [d.name.toLowerCase(), d]));
+      const allExpectedItems = room.expectedItems || [];
       
-      if (room.missingItemSuggestionForRoom) {
-        checkAndAddPage(lineHeight * 2);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'italic');
-        const ownerMessagePrefix = "Note for Room:";
-        doc.text(ownerMessagePrefix, margin + 5, yPos);
-        yPos += lineHeight * 0.8;
+      const foundItems = allExpectedItems.filter(item => !findingsMap.has(item.name.toLowerCase()));
+      const missingItems = room.discrepancies;
 
-        doc.setFont(undefined, 'normal');
-        const suggestionLines = doc.splitTextToSize(`  ${room.missingItemSuggestionForRoom}`, maxLineWidth - 10);
-        checkAndAddPage(suggestionLines.length * (lineHeight * 0.8));
-        doc.text(suggestionLines, margin + 5, yPos);
-        yPos += suggestionLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
-      }
-
-      if (room.discrepancies.length > 0) {
+      // --- Section for Found Items ---
+      if (foundItems.length > 0) {
         checkAndAddPage(lineHeight * 2);
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
-        doc.text("Discrepancies Found:", margin + 5, yPos);
+        doc.text("Room Findings:", margin + 5, yPos);
+        yPos += lineHeight;
+        
         doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0); // Black
+        foundItems.forEach(item => {
+            const itemText = `- ${item.name}`;
+            const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
+            checkAndAddPage(itemLines.length * (lineHeight * 0.8));
+            doc.text(itemLines, margin + 10, yPos);
+            yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
+        });
+        yPos += lineHeight * 0.5;
+      }
+      
+      // --- Section for Missing Items ---
+      if (missingItems.length > 0) {
+        checkAndAddPage(lineHeight * 2);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text("Missing Items:", margin + 5, yPos);
         yPos += lineHeight;
 
-        room.discrepancies.forEach(d => {
-          const discrepancyText = `- ${d.name}: Expected ${d.expectedCount}, Found ${d.actualCount}. Note: ${d.note}`;
-          const discrepancyLines = doc.splitTextToSize(discrepancyText, maxLineWidth - 10);
-          checkAndAddPage(discrepancyLines.length * (lineHeight*0.8));
-          doc.setTextColor(255, 0, 0); // Red color for discrepancies
-          doc.text(discrepancyLines, margin + 10, yPos);
-          doc.setTextColor(0, 0, 0); // Reset color to black
-          yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(255, 0, 0); // Red
+        missingItems.forEach(item => {
+            const itemText = `- ${item.name}`;
+            const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
+            checkAndAddPage(itemLines.length * (lineHeight * 0.8));
+            doc.text(itemLines, margin + 10, yPos);
+            yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
         });
-      } else if (!room.missingItemSuggestionForRoom && !room.tenantNotes) {
+        
+        doc.setTextColor(0, 0, 0); // Reset color
+        yPos += lineHeight * 0.5;
+      }
+
+      // If no items at all, and no notes, show a message
+      if (foundItems.length === 0 && missingItems.length === 0 && !room.tenantNotes) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
-        doc.text("No discrepancies or notes for this room.", margin + 5, yPos);
+        doc.text("No items or notes were recorded for this room.", margin + 5, yPos);
         yPos += lineHeight;
       }
+
       yPos += lineHeight * 0.5;
     });
 
