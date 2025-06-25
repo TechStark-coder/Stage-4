@@ -40,7 +40,6 @@ export function RoomInspectionStep({
   const [isLoading, setIsLoading] = React.useState(false);
   const [analysisResult, setAnalysisResult] = React.useState<IdentifyDiscrepanciesOutput | null>(null);
   const [analysisAttempted, setAnalysisAttempted] = React.useState(false);
-  const [showOwnerExpectedItems, setShowOwnerExpectedItems] = React.useState(false);
   const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showCameraDialog, setShowCameraDialog] = React.useState(false);
@@ -56,7 +55,6 @@ export function RoomInspectionStep({
     setTenantPhotos([]);
     setAnalysisResult(null);
     setAnalysisAttempted(false);
-    setShowOwnerExpectedItems(false);
     setIsLoading(false);
     setTenantNotes('');
     console.log(`RoomInspectionStep: Switched to room: ${room.name} (ID: ${room.id})`);
@@ -151,7 +149,6 @@ export function RoomInspectionStep({
     if (!room.analyzedObjects || room.analyzedObjects.length === 0) {
       toast({ title: "Owner Data Missing", description: "No initial items list from owner for comparison. Cannot perform discrepancy check.", variant: "destructive" });
       setAnalysisAttempted(true);
-      setShowOwnerExpectedItems(true);
       setAnalysisResult({ discrepancies: [], missingItemSuggestion: "Owner's initial list for this room was empty. Discrepancy check skipped." });
       return;
     }
@@ -159,7 +156,6 @@ export function RoomInspectionStep({
     showAiLoader();
     setIsLoading(true);
     setAnalysisAttempted(true);
-    setShowOwnerExpectedItems(true);
 
     try {
       const photoDataUris = await Promise.all(
@@ -219,10 +215,6 @@ export function RoomInspectionStep({
     toast({ title: `Report for ${room.name} Saved`, description: "Proceed to the next room or complete inspection.", duration: 3000});
   };
 
-  const ownerExpectedItemsList = room.analyzedObjects && room.analyzedObjects.length > 0
-    ? room.analyzedObjects.map(item => `${item.name} (Expected: ${item.count})`).join(', ')
-    : "No items pre-listed by owner for this room.";
-
   return (
     <Card className="w-full shadow-xl my-6 bg-card/90">
       <CardHeader>
@@ -232,13 +224,6 @@ export function RoomInspectionStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {analysisAttempted && showOwnerExpectedItems && (
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Owner's Expected Items:</h3>
-            <p className="text-xs p-2 bg-muted/50 rounded-md border">{ownerExpectedItemsList}</p>
-          </div>
-        )}
-
         <div className="space-y-3">
           <label className="block text-sm font-medium text-muted-foreground">
             Your Photos for {room.name} ({tenantPhotos.length} photo(s)):
@@ -341,8 +326,7 @@ export function RoomInspectionStep({
                           <AlertTriangle className="h-4 w-4" />
                           <AlertTitle>Discrepancies Found</AlertTitle>
                           <AlertDescription>
-                            <p className="font-semibold mb-2">{analysisResult.missingItemSuggestion}</p>
-                            These discrepancies will be noted in the report. You can add more photos and re-analyze, or confirm to continue.
+                            {analysisResult.missingItemSuggestion}
                           </AlertDescription>
                       </Alert>
                     ) : (
@@ -375,3 +359,5 @@ export function RoomInspectionStep({
     </Card>
   );
 }
+
+    

@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const host = (req.headers['x-forwarded-host'] as string) || req.headers.host; // Prioritize x-forwarded-host
-    const dashboardLink = `${protocol}://${host}/homes/${homeId}`;
+    const dashboardLink = `${protocol}://${host}/dashboard`;
 
     const mailjet = new Mailjet({
       apiKey: mailjetApiKey,
@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const formattedDate = new Date(inspectionDate).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        year: 'numeric', month: 'long', day: 'numeric'
     });
 
     const emailData = {
@@ -60,11 +60,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
           ],
           Subject: `Inspection Report for ${homeName} - ${formattedDate}`,
-          TextPart: `Dear ${ownerDisplayName},\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\nYou can also view this report and manage the home directly from your dashboard: ${dashboardLink}\n\nThank you,\nHomieStan Team`,
+          TextPart: `Dear ${ownerDisplayName},\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\nYou can manage your homes directly from your dashboard: ${dashboardLink}\n\nThank you,\nHomieStan Team`,
           HTMLPart: `<h3>Dear ${ownerDisplayName},</h3>
                        <p>Please find attached the inspection report for your property "<strong>${homeName}</strong>", conducted by <strong>${inspectedBy}</strong> on <strong>${formattedDate}</strong>.</p>
-                       <p>You can also view this report and manage the home directly from your dashboard:</p>
-                       <p><a href="${dashboardLink}" target="_blank">View Home in Dashboard</a></p>
+                       <p>You can manage your homes directly from your dashboard:</p>
+                       <p><a href="${dashboardLink}" target="_blank">Go to Your Dashboard</a></p>
                        <p>Thank you,<br/>HomieStan Team</p>`,
           Attachments: [
             {
@@ -94,3 +94,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: errorMessage });
   }
 }
+
+    

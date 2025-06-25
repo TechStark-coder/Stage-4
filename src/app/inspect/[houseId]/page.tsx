@@ -233,21 +233,6 @@ const PublicInspectionPage: NextPage = () => {
         doc.text(noteLines, margin + 5, yPos);
         yPos += noteLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
-      
-      if (room.missingItemSuggestionForRoom) {
-        checkAndAddPage(lineHeight * 2);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'italic');
-        const ownerMessagePrefix = "Note for Room:";
-        doc.text(ownerMessagePrefix, margin + 5, yPos);
-        yPos += lineHeight * 0.8;
-
-        doc.setFont(undefined, 'normal');
-        const suggestionLines = doc.splitTextToSize(`  ${room.missingItemSuggestionForRoom}`, maxLineWidth - 10);
-        checkAndAddPage(suggestionLines.length * (lineHeight * 0.8));
-        doc.text(suggestionLines, margin + 5, yPos);
-        yPos += suggestionLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
-      }
 
       if (room.discrepancies.length > 0) {
         checkAndAddPage(lineHeight * 2);
@@ -274,6 +259,20 @@ const PublicInspectionPage: NextPage = () => {
       }
       yPos += lineHeight * 0.5;
     });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            "HomieStan 2025 by ARC Stay",
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: "center" }
+        );
+    }
+    
     return doc;
   };
 
@@ -495,7 +494,6 @@ const PublicInspectionPage: NextPage = () => {
   }
 
   const currentRoom = rooms[currentRoomIndex];
-  const ownerDisplayNameForGreeting = home?.ownerDisplayName || "the Home Owner";
   const currentInspectorName = tenantNameFromLink || "Inspector";
 
 
@@ -508,7 +506,7 @@ const PublicInspectionPage: NextPage = () => {
             Property Inspection: {home?.name}
           </CardTitle>
           <CardDescription className="text-center text-base pt-2">
-             Hi {currentInspectorName}, you are inspecting on behalf of Owner {ownerDisplayNameForGreeting}. Please follow the steps below.
+             Hi {currentInspectorName}, Welcome, Please follow the steps below to complete the inspection.
           </CardDescription>
         </CardHeader>
 
@@ -607,3 +605,5 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
+
+    
