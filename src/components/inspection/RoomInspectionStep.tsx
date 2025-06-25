@@ -348,10 +348,11 @@ export function RoomInspectionStep({
           </div>
         )}
       </CardContent>
-      <CardFooter className="border-t pt-4 flex justify-end">
+      <CardFooter className="border-t pt-4 flex flex-col sm:flex-row justify-end items-center gap-4">
         <Button 
             onClick={handleCompleteStep} 
-            disabled={isLoading || !analysisAttempted} 
+            disabled={isLoading || !analysisAttempted}
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
         >
             <CheckCircle className="mr-2 h-4 w-4" />
             Confirm & Save for {room.name}
