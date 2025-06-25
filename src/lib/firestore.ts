@@ -492,10 +492,8 @@ export async function deleteTenantInspectionLink(homeId: string, linkId: string,
   const linkSnap = await getDoc(linkDocRef);
   
   if (linkSnap.exists()) {
-    const linkData = linkSnap.data() as TenantInspectionLink;
-    if (linkData.reportId) {
-        await deleteInspectionReport(linkData.reportId, ownerId).catch(err => console.error(`Could not delete associated report ${linkData.reportId}:`, err));
-    }
+    // This function is now only responsible for deleting the link document itself.
+    // The UI component orchestrates deleting the associated report.
     await deleteDoc(linkDocRef);
   } else {
     throw new Error("Link not found.");
@@ -551,11 +549,8 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
         const reportData = reportSnap.data() as InspectionReport;
         const home = await getHome(reportData.houseId); 
         if (home && home.ownerId === userId) {
-            // Find and delete the associated tenant link
-            if (reportData.tenantLinkId) {
-                const linkDocRef = doc(db, "homes", reportData.houseId, "tenantInspectionLinks", reportData.tenantLinkId);
-                await deleteDoc(linkDocRef).catch(err => console.error(`Could not delete associated link ${reportData.tenantLinkId}:`, err));
-            }
+            // The associated link is now handled by the UI component (e.g., to reactivate it)
+            // This function is now only responsible for deleting the report document itself.
             await deleteDoc(reportDocRef);
         } else {
             throw new Error("Permission denied to delete this inspection report.");
