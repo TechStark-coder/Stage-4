@@ -71,7 +71,7 @@ You will be given:
 2. A new set of 'tenantPhotos' of the same room, taken by a tenant or inspector.
 
 Your task is to:
-A. **VERY IMPORTANT FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV"). When creating this inventory, you MUST EXCLUDE common structural elements; do NOT list 'WALL', 'FLOOR', 'DOOR', or 'WINDOW' as items. Focus on furniture, electronics, decorations, and personal belongings. Perform this inventory BEFORE looking at the 'expectedItems' list.
+A. **VERY IMPORTANT FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV"). When creating this inventory, you MUST EXCLUDE common structural elements and their components. Specifically, do NOT list 'WALL', 'FLOOR', 'DOOR', or 'WINDOW' as items. This exclusion also applies to parts of these structures, such as 'door knobs', 'hinges', 'window frames', or 'light switches'. Focus on furniture, electronics, decorations, and personal belongings. Perform this inventory BEFORE looking at the 'expectedItems' list.
 
 B. **Compare your detailed inventory from the 'tenantPhotos' (from step A) against the provided 'expectedItems' list.**
 
@@ -117,4 +117,3 @@ const identifyDiscrepanciesFlow = ai.defineFlow(
 
 // Add this flow to dev.ts
 // import '@/ai/flows/identify-discrepancies-flow.ts';
-
