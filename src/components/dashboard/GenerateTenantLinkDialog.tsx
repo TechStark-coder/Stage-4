@@ -24,7 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { addTenantInspectionLink } from "@/lib/firestore";
+import { addTenantInspectionLink, createShortLink } from "@/lib/firestore";
 import { generateTenantLinkSchema, type GenerateTenantLinkFormData } from "@/schemas/tenantLinkSchema";
 import type { Home, TenantInspectionLink } from "@/types";
 import { Link2, Copy, CheckCircle, UserPlus } from "lucide-react";
@@ -59,9 +59,12 @@ export function GenerateTenantLinkDialog({ home, currentUserUid, onLinkGenerated
         tenantName: data.tenantName,
       });
       
-      const fullLink = `${window.location.origin}/inspect/${home.id}?linkId=${newLink.id}`;
-      setGeneratedLink(fullLink);
-      toast({ title: "Link Generated Successfully!", description: "The inspection link is ready to be shared." });
+      const longUrl = `${window.location.origin}/inspect/${home.id}?linkId=${newLink.id}`;
+      const shortCode = await createShortLink(longUrl);
+      const shortUrl = `${window.location.origin}/go/${shortCode}`;
+
+      setGeneratedLink(shortUrl);
+      toast({ title: "Link Generated Successfully!", description: "The shortened inspection link is ready to be shared." });
       form.reset(); // Reset form for next time
       if (onLinkGenerated) {
         onLinkGenerated(newLink);

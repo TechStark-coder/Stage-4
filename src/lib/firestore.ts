@@ -489,7 +489,17 @@ export async function deleteTenantInspectionLink(homeId: string, linkId: string,
     throw new Error("Permission denied or home not found.");
   }
   const linkDocRef = doc(db, "homes", homeId, "tenantInspectionLinks", linkId);
-  await deleteDoc(linkDocRef);
+  const linkSnap = await getDoc(linkDocRef);
+  
+  if (linkSnap.exists()) {
+    const linkData = linkSnap.data() as TenantInspectionLink;
+    if (linkData.reportId) {
+        await deleteInspectionReport(linkData.reportId, ownerId).catch(err => console.error(`Could not delete associated report ${linkData.reportId}:`, err));
+    }
+    await deleteDoc(linkDocRef);
+  } else {
+    throw new Error("Link not found.");
+  }
 }
 
 export async function getActiveTenantInspectionLinksCount(homeId: string): Promise<number> {
@@ -540,7 +550,12 @@ export async function deleteInspectionReport(reportId: string, userId: string): 
     if (reportSnap.exists()) {
         const reportData = reportSnap.data() as InspectionReport;
         const home = await getHome(reportData.houseId); 
-        if (home && home.ownerId === userId) { 
+        if (home && home.ownerId === userId) {
+            // Find and delete the associated tenant link
+            if (reportData.tenantLinkId) {
+                const linkDocRef = doc(db, "homes", reportData.houseId, "tenantInspectionLinks", reportData.tenantLinkId);
+                await deleteDoc(linkDocRef).catch(err => console.error(`Could not delete associated link ${reportData.tenantLinkId}:`, err));
+            }
             await deleteDoc(reportDocRef);
         } else {
             throw new Error("Permission denied to delete this inspection report.");
@@ -571,4 +586,51 @@ export async function deleteAllInspectionReportsForHome(homeId: string, userId: 
     });
 
     await batch.commit();
+}
+
+
+// URL Shortener
+// Function to generate a random string
+const generateShortCode = (length = 6): string => {
+    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+};
+
+// New function to create a short link
+export async function createShortLink(longUrl: string): Promise<string> {
+    const shortLinksCollectionRef = collection(db, "shortLinks");
+    let shortCode = '';
+    let isUnique = false;
+
+    // Loop to ensure the generated code is unique
+    while (!isUnique) {
+        shortCode = generateShortCode();
+        const shortLinkDocRef = doc(shortLinksCollectionRef, shortCode);
+        const docSnap = await getDoc(shortLinkDocRef);
+        if (!docSnap.exists()) {
+            isUnique = true;
+        }
+    }
+
+    const shortLinkDocRef = doc(shortLinksCollectionRef, shortCode);
+    await setDoc(shortLinkDocRef, {
+        longUrl: longUrl,
+        createdAt: serverTimestamp(),
+    });
+
+    return shortCode;
+}
+
+// New function to get the long URL from a short code
+export async function getShortLink(shortCode: string): Promise<string | null> {
+    const shortLinkDocRef = doc(db, "shortLinks", shortCode);
+    const docSnap = await getDoc(shortLinkDocRef);
+    if (docSnap.exists()) {
+        return docSnap.data().longUrl as string;
+    }
+    return null;
 }
