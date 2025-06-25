@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -324,11 +323,19 @@ export function RoomInspectionStep({
                  <>
                     {analysisResult.discrepancies.length > 0 ? (
                       <Alert variant="destructive">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertTitle>Discrepancies Found</AlertTitle>
-                          <AlertDescription>
-                            {analysisResult.missingItemSuggestion}
-                          </AlertDescription>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Discrepancies Found</AlertTitle>
+                        <AlertDescription>
+                          <p className="mb-2">The AI identified the following issues:</p>
+                          <ul className="list-disc list-inside pl-2 space-y-1 text-sm">
+                            {analysisResult.discrepancies.map((item, index) => (
+                              <li key={index}>
+                                <strong>{item.name}:</strong> Found {item.actualCount} of {item.expectedCount} expected.
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-3 text-xs">You can add more photos and re-analyze to correct this, or confirm to save the report.</p>
+                        </AlertDescription>
                       </Alert>
                     ) : (
                       <Alert variant="default" className="border-green-500 bg-green-500/10">
