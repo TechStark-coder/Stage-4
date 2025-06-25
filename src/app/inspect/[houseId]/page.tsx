@@ -227,7 +227,8 @@ const PublicInspectionPage: NextPage = () => {
         yPos += noteLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
 
-      const discrepanciesMap = new Map(room.discrepancies.map(d => [d.name.toLowerCase(), d]));
+      // Create a map of the AI's findings for easy lookup.
+      const findingsMap = new Map(room.discrepancies.map(d => [d.name.toLowerCase(), d]));
 
       if (room.expectedItems && room.expectedItems.length > 0) {
         checkAndAddPage(lineHeight * 2);
@@ -237,26 +238,32 @@ const PublicInspectionPage: NextPage = () => {
         doc.setFont(undefined, 'normal');
         yPos += lineHeight;
 
-        room.expectedItems.forEach(item => {
-          const discrepancy = discrepanciesMap.get(item.name.toLowerCase());
-          let itemText = '';
-          let isDiscrepancy = false;
+        // Iterate through what was *expected* to be in the room.
+        room.expectedItems.forEach(expectedItem => {
+          const finding = findingsMap.get(expectedItem.name.toLowerCase());
           
-          if (discrepancy) {
-            itemText = `- ${discrepancy.name}: Expected ${discrepancy.expectedCount}, Found ${discrepancy.actualCount}. Note: ${discrepancy.note}`;
-            isDiscrepancy = true;
+          const itemText = `- ${expectedItem.name}`;
+          let isMissing = false;
+
+          if (finding) {
+            // The AI reported on this item. Check if the count is less than expected.
+            if (finding.actualCount < finding.expectedCount) {
+              isMissing = true;
+            } else {
+              isMissing = false; // Found, so it's black.
+            }
           } else {
-            itemText = `- ${item.name} (Found: ${item.count})`;
-            isDiscrepancy = false;
+            // The AI did not report on this item at all, so it's missing.
+            isMissing = true;
           }
 
           const itemLines = doc.splitTextToSize(itemText, maxLineWidth - 15);
           checkAndAddPage(itemLines.length * (lineHeight * 0.8));
 
-          if (isDiscrepancy) {
-            doc.setTextColor(255, 0, 0); // Red
+          if (isMissing) {
+            doc.setTextColor(255, 0, 0); // Red for missing/undercounted
           } else {
-            doc.setTextColor(0, 0, 0); // Black
+            doc.setTextColor(0, 0, 0); // Black for found
           }
           
           doc.text(itemLines, margin + 10, yPos);
@@ -594,3 +601,5 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
+
+    
