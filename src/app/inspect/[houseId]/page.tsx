@@ -35,7 +35,6 @@ const PublicInspectionPage: NextPage = () => {
 
   const [pageLoading, setPageLoading] = React.useState(true);
   const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
-  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
   const [inspectionComplete, setInspectionComplete] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [generatedReport, setGeneratedReport] = React.useState<InspectionReport | null>(null);
@@ -196,16 +195,10 @@ const PublicInspectionPage: NextPage = () => {
     yPos += lineHeight;
     
     const inspectionDate = reportDetails.inspectionDate instanceof Date ? reportDetails.inspectionDate : reportDetails.inspectionDate.toDate();
-    const formattedDateIST = inspectionDate.toLocaleString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    }) + ' (IST)';
-    doc.text(`Date: ${formattedDateIST}`, margin, yPos);
+    const formattedDate = inspectionDate.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+    doc.text(`Date: ${formattedDate}`, margin, yPos);
     yPos += lineHeight * 1.5;
 
     doc.setFontSize(14);
@@ -234,29 +227,63 @@ const PublicInspectionPage: NextPage = () => {
         yPos += noteLines.length * (lineHeight * 0.8) + (lineHeight * 0.5);
       }
 
-      if (room.discrepancies.length > 0) {
-        checkAndAddPage(lineHeight * 2);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
-        doc.text("Discrepancies Found:", margin + 5, yPos);
-        doc.setFont(undefined, 'normal');
-        yPos += lineHeight;
+      const discrepanciesMap = new Map(room.discrepancies.map(d => [d.name.toLowerCase(), d]));
+      const foundItemsText: string[] = [];
+      const discrepancyItemsText: string[] = [];
 
-        room.discrepancies.forEach(d => {
-          const discrepancyText = `- ${d.name}: Expected ${d.expectedCount}, Found ${d.actualCount}. Note: ${d.note}`;
-          const discrepancyLines = doc.splitTextToSize(discrepancyText, maxLineWidth - 10);
-          checkAndAddPage(discrepancyLines.length * (lineHeight*0.8));
+      if (room.expectedItems) {
+          room.expectedItems.forEach(item => {
+              const discrepancy = discrepanciesMap.get(item.name.toLowerCase());
+              if (discrepancy) {
+                  discrepancyItemsText.push(`${discrepancy.name}: Expected ${discrepancy.expectedCount}, Found ${discrepancy.actualCount}. Note: ${discrepancy.note}`);
+              } else {
+                  foundItemsText.push(`${item.name} (Found: ${item.count})`);
+              }
+          });
+      }
+
+      if (foundItemsText.length > 0) {
+          checkAndAddPage(lineHeight * 2);
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'bold');
+          doc.text("Items Found:", margin + 5, yPos);
+          doc.setFont(undefined, 'normal');
+          yPos += lineHeight;
+
+          doc.setTextColor(0, 0, 0); // Black
+          foundItemsText.forEach(itemText => {
+              const itemLines = doc.splitTextToSize(`- ${itemText}`, maxLineWidth - 15);
+              checkAndAddPage(itemLines.length * (lineHeight * 0.8));
+              doc.text(itemLines, margin + 10, yPos);
+              yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
+          });
+      }
+
+      if (discrepancyItemsText.length > 0) {
+          checkAndAddPage(lineHeight * 2);
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'bold');
+          doc.text("Discrepancies:", margin + 5, yPos);
+          doc.setFont(undefined, 'normal');
+          yPos += lineHeight;
+
           doc.setTextColor(255, 0, 0); // Red
-          doc.text(discrepancyLines, margin + 10, yPos);
+          discrepancyItemsText.forEach(itemText => {
+              const itemLines = doc.splitTextToSize(`- ${itemText}`, maxLineWidth - 15);
+              checkAndAddPage(itemLines.length * (lineHeight * 0.8));
+              doc.text(itemLines, margin + 10, yPos);
+              yPos += itemLines.length * (lineHeight * 0.8) + (lineHeight * 0.3);
+          });
           doc.setTextColor(0, 0, 0); // Reset to black
-          yPos += discrepancyLines.length * (lineHeight*0.8) + (lineHeight * 0.3);
-        });
-      } else if (!room.missingItemSuggestionForRoom && !room.tenantNotes) {
+      }
+
+      if (foundItemsText.length === 0 && discrepancyItemsText.length === 0 && !room.tenantNotes) {
         checkAndAddPage(lineHeight);
         doc.setFontSize(10);
-        doc.text("No discrepancies or notes for this room.", margin + 5, yPos);
+        doc.text("No items or notes were recorded for this room.", margin + 5, yPos);
         yPos += lineHeight;
       }
+
       yPos += lineHeight * 0.5;
     });
 
@@ -329,26 +356,51 @@ const PublicInspectionPage: NextPage = () => {
       };
 
       const newReportId = await saveInspectionReport(reportToSave);
-      const fullReportForPdf: InspectionReport = {
+      
+      const fullReportForEmailAndPdf: InspectionReport = {
         ...reportToSave,
         id: newReportId,
         inspectionDate: new Date() as any, 
       };
-      setGeneratedReport(fullReportForPdf);
+      setGeneratedReport(fullReportForEmailAndPdf);
 
-      const pdfDoc = await generatePdfDocument(fullReportForPdf);
+      const pdfDoc = await generatePdfDocument(fullReportForEmailAndPdf);
       setGeneratedPdfForEmail(pdfDoc);
 
-      // With open rules, this deactivation should succeed if the linkId is correct.
       await deactivateTenantInspectionLink(home.id, activeLinkId, newReportId);
 
+      // Automatically send the report email
+      const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
+      const emailResponse = await fetch('/api/send-inspection-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeId: home.id, 
+          homeName: fullReportForEmailAndPdf.homeName,
+          inspectedBy: fullReportForEmailAndPdf.inspectedBy,
+          pdfBase64: pdfBase64,
+          inspectionDate: fullReportForEmailAndPdf.inspectionDate instanceof Date ? fullReportForEmailAndPdf.inspectionDate.toISOString() : fullReportForEmailAndPdf.inspectionDate.toDate().toISOString(),
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        console.error("Failed to auto-send email:", errorData.message);
+        toast({
+          title: "Inspection Completed, Email Failed",
+          description: "Report saved, but we couldn't email the owner. You can still download it.",
+          variant: "destructive",
+          duration: 10000,
+        });
+      } else {
+        toast({
+          title: "Report Sent!",
+          description: "Thank you for the inspection. The report has been sent to the owner.",
+          duration: 7000,
+        });
+      }
 
       setInspectionComplete(true);
-      toast({
-        title: "Inspection Completed!",
-        description: "Report has been generated. You can now send it to the owner or download it.",
-        duration: 7000,
-      });
 
     } catch (err: any) {
       console.error("Error submitting inspection report:", err);
@@ -359,47 +411,6 @@ const PublicInspectionPage: NextPage = () => {
       });
     } finally {
       setIsSubmittingReport(false);
-      hideAiLoader();
-    }
-  };
-
-  const handleSendReportToOwner = async () => {
-    if (!generatedReport || !generatedPdfForEmail || !home?.id) { 
-      toast({ title: "Error", description: "Report data not available or home ID not identified.", variant: "destructive" });
-      return;
-    }
-    setIsSendingEmail(true);
-    showAiLoader();
-
-    try {
-      const pdfBase64 = generatedPdfForEmail.output('datauristring').split(',')[1];
-
-      const response = await fetch('/api/send-inspection-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          homeId: home.id, 
-          homeName: generatedReport.homeName,
-          inspectedBy: generatedReport.inspectedBy,
-          pdfBase64: pdfBase64,
-          inspectionDate: generatedReport.inspectionDate instanceof Date ? generatedReport.inspectionDate.toISOString() : generatedReport.inspectionDate.toDate().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to send email (${response.status})`);
-      }
-
-      toast({ title: "Report Sent", description: "The inspection report has been emailed to the owner." });
-    } catch (err: any)
-       {
-      console.error("Error sending report:", err);
-      // With open rules, this error is less likely to be Firestore permission for getting owner email.
-      // More likely Mailjet config, network, or issue with the API route itself.
-      toast({ title: "Email Sending Failed", description: err.message || "Could not send the report.", variant: "destructive" });
-    } finally {
-      setIsSendingEmail(false);
       hideAiLoader();
     }
   };
@@ -456,27 +467,18 @@ const PublicInspectionPage: NextPage = () => {
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
                 <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Inspection Completed!</CardTitle>
+            <CardTitle className="text-2xl">Inspection Submitted!</CardTitle>
             <CardDescription>
-              Thank you, <strong>{tenantNameFromLink || "Inspector"}</strong>. The report for <strong>{home?.name}</strong> has been generated.
+              Thank you, <strong>{tenantNameFromLink || "Inspector"}</strong>. The report for <strong>{home?.name}</strong> has been sent to the owner.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
                 onClick={() => triggerPdfDownload(generatedReport)}
                 className="w-full"
-                disabled={!generatedReport || isSendingEmail}
+                disabled={!generatedReport}
             >
-              <Download className="mr-2 h-4 w-4" /> Download Report
-            </Button>
-            <Button
-              variant="default"
-              className="w-full"
-              onClick={handleSendReportToOwner}
-              disabled={isSendingEmail || !home?.id || !generatedPdfForEmail}
-            >
-              {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              {isSendingEmail ? "Sending..." : "Send Report to Owner"}
+              <Download className="mr-2 h-4 w-4" /> Download My Copy
             </Button>
              <Button
               variant="ghost"
@@ -559,7 +561,7 @@ const PublicInspectionPage: NextPage = () => {
             <div className="text-sm text-muted-foreground">
               Room {Math.min(currentRoomIndex + 1, rooms.length)} of {rooms.length}{currentRoom ? `: ${currentRoom.name}` : ''}
             </div>
-            <div className="flex gap-3 flex-wrap items-center justify-center sm:justify-end w-full">
+            <div className="flex gap-3 flex-wrap items-center justify-center sm:justify-end w-full sm:w-auto">
               {currentRoomIndex > 0 && (
                 <Button
                   onClick={handlePreviousRoom}
@@ -605,5 +607,3 @@ const PublicInspectionPage: NextPage = () => {
 };
 
 export default PublicInspectionPage;
-
-    

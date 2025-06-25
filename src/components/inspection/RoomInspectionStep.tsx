@@ -207,6 +207,7 @@ export function RoomInspectionStep({
       roomId: room.id,
       roomName: room.name,
       tenantPhotoUrls: [], // This is handled server-side now
+      expectedItems: room.analyzedObjects || [],
       discrepancies: analysisResult?.discrepancies || [],
       missingItemSuggestionForRoom: analysisResult?.missingItemSuggestion || "",
       tenantNotes: tenantNotes,
@@ -359,5 +360,3 @@ export function RoomInspectionStep({
     </Card>
   );
 }
-
-    

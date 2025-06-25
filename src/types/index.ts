@@ -60,6 +60,7 @@ export interface RoomInspectionReportData {
   roomId: string;
   roomName: string;
   tenantPhotoUrls: string[];
+  expectedItems: Array<{ name: string; count: number }>;
   discrepancies: InspectionDiscrepancy[];
   missingItemSuggestionForRoom: string;
   tenantNotes?: string;
