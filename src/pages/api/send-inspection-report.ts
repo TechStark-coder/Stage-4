@@ -122,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                       <tr>
                         <td style="padding: 40px 20px 20px 20px; text-align: center; font-size: 12px; color: #88889a;">
                           <p>Thank you,<br/>The HomieStan Team</p>
-                          <p>&copy; 2024 HomieStan by ARC Stay. All rights reserved.</p>
+                          <p>&copy; 2025 HomieStan by ARC Stay. All rights reserved.</p>
                         </td>
                       </tr>
                     </table>
