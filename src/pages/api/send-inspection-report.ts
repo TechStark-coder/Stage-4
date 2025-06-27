@@ -48,10 +48,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const statusMessageHtml = overallStatus === 'Completed - All Clear'
       ? '<p style="color: #2e7d32; font-weight: bold;">Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.</p>'
+      : overallStatus.includes('discrepancies')
+      ? '<p style="color: #d32f2f; font-weight: bold;">Some items seem to be missing. Please check the PDF file attached to this mail.</p>'
       : '';
 
     const statusMessageText = overallStatus === 'Completed - All Clear'
       ? "Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.\\n\\n"
+      : overallStatus.includes('discrepancies')
+      ? "Some items seem to be missing. Please check the PDF file attached to this mail.\\n\\n"
       : '';
 
     const emailData = {
@@ -103,5 +107,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: errorMessage });
   }
 }
-
     
