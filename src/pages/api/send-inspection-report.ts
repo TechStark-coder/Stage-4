@@ -9,9 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { homeId, homeName, inspectedBy, pdfBase64, inspectionDate } = req.body; // Expect homeId
+  const { homeId, homeName, inspectedBy, pdfBase64, inspectionDate, overallStatus } = req.body; // Expect homeId and overallStatus
 
-  if (!homeId || !homeName || !inspectedBy || !pdfBase64 || !inspectionDate) {
+  if (!homeId || !homeName || !inspectedBy || !pdfBase64 || !inspectionDate || !overallStatus) {
     return res.status(400).json({ message: 'Missing required fields for sending report.' });
   }
 
@@ -46,6 +46,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    const statusMessageHtml = overallStatus === 'Completed - All Clear'
+      ? '<p style="color: #2e7d32; font-weight: bold;">Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.</p>'
+      : '';
+
+    const statusMessageText = overallStatus === 'Completed - All Clear'
+      ? "Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.\\n\\n"
+      : '';
+
     const emailData = {
       Messages: [
         {
@@ -60,9 +68,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
           ],
           Subject: `Inspection Report for ${homeName} - ${formattedDate}`,
-          TextPart: `Dear ${ownerDisplayName},\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\nYou can manage your homes directly from your dashboard: ${dashboardLink}\n\nThank you,\nHomieStan Team`,
+          TextPart: `Dear ${ownerDisplayName},\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\n${statusMessageText}You can manage your homes directly from your dashboard: ${dashboardLink}\n\nThank you,\nHomieStan Team`,
           HTMLPart: `<h3>Dear ${ownerDisplayName},</h3>
                        <p>Please find attached the inspection report for your property "<strong>${homeName}</strong>", conducted by <strong>${inspectedBy}</strong> on <strong>${formattedDate}</strong>.</p>
+                       ${statusMessageHtml}
                        <p>You can manage your homes directly from your dashboard:</p>
                        <p><a href="${dashboardLink}" target="_blank">Go to Your Dashboard</a></p>
                        <p>Thank you,<br/>HomieStan Team</p>`,

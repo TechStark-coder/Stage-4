@@ -380,6 +380,7 @@ const PublicInspectionPage: NextPage = () => {
           inspectedBy: fullReportForEmailAndPdf.inspectedBy,
           pdfBase64: pdfBase64,
           inspectionDate: fullReportForEmailAndPdf.inspectionDate instanceof Date ? fullReportForEmailAndPdf.inspectionDate.toISOString() : fullReportForEmailAndPdf.inspectionDate.toDate().toISOString(),
+          overallStatus: fullReportForEmailAndPdf.overallStatus,
         }),
       });
 
