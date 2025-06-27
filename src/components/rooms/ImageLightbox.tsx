@@ -76,16 +76,7 @@ export function ImageLightbox({
             />
           </div>
 
-          {/* Close Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white bg-black/30 hover:bg-black/60 rounded-full z-50"
-            aria-label="Close lightbox"
-          >
-            <X className="h-6 w-6" />
-          </Button>
+          {/* NOTE: Removed the extra close button. The DialogContent component provides its own. */}
 
           {/* Navigation Buttons */}
           {images.length > 1 && (
