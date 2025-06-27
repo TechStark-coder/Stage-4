@@ -29,6 +29,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       apiKey: mailjetApiKey,
       apiSecret: mailjetApiSecret,
     });
+    
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = (req.headers['x-forwarded-host'] as string) || req.headers.host;
+    const dashboardLink = `${protocol}://${host}/dashboard`;
+
 
     const emailData = {
       Messages: [
@@ -44,12 +49,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
           ],
           Subject: `Welcome to HomieStan, ${displayName}!`,
-          TextPart: `Dear ${displayName},\n\nWelcome to HomieStan! We're thrilled to have you join our community. Get ready to explore, manage, and analyze your properties like never before.\n\nYou can start by visiting your dashboard to create your first home.\n\nIf you have any questions or need assistance, please feel free to reach out.\n\nBest and regards,\nTeam ARC Stay`,
-          HTMLPart: `<h3>Dear ${displayName},</h3>
-                       <p>Welcome to HomieStan! We're thrilled to have you join our community. Get ready to explore, manage, and analyze your properties like never before.</p>
-                       <p>You can start by visiting your dashboard to create your first home.</p>
-                       <p>If you have any questions or need assistance, please feel free to reach out.</p>
-                       <p>Best and regards,<br/>Team ARC Stay</p>`,
+          TextPart: `Dear ${displayName},\n\nWelcome to HomieStan! We're thrilled to have you join our community. Get ready to explore, manage, and analyze your properties like never before.\n\nYou can start by visiting your dashboard to create your first home: ${dashboardLink}\n\nIf you have any questions or need assistance, please feel free to reach out.\n\nBest and regards,\nTeam ARC Stay`,
+          HTMLPart: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Welcome to HomieStan</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; background-color: #1a1a2e;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a2e;">
+                <tr>
+                  <td align="center">
+                    <table width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 20px auto; background-color: #2a2a3e; border-radius: 8px; color: #e0e0e0; overflow: hidden;">
+                      <!-- Header -->
+                      <tr>
+                        <td align="center" style="padding: 40px 20px 20px 20px;">
+                          <img src="https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media" alt="HomieStan Logo" width="180" style="display: block;">
+                        </td>
+                      </tr>
+                      <!-- Body -->
+                      <tr>
+                        <td style="padding: 20px 40px;">
+                          <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 0 0 20px 0;">Welcome, ${displayName}!</h1>
+                          <p style="font-size: 16px; line-height: 1.5; margin: 0 0 16px 0;">We're thrilled to have you join our community. Get ready to explore, manage, and analyze your properties like never before with HomieStan.</p>
+                          <p style="font-size: 16px; line-height: 1.5; margin: 0 0 30px 0;">You can start by visiting your dashboard to create your first home.</p>
+                          <!-- Button -->
+                          <table border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                            <tr>
+                              <td align="center" bgcolor="#C33764" style="border-radius: 6px;">
+                                <a href="${dashboardLink}" target="_blank" style="font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; display: inline-block;">Go to Dashboard</a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Footer -->
+                      <tr>
+                        <td style="padding: 40px 20px 20px 20px; text-align: center; font-size: 12px; color: #88889a;">
+                          <p>If you have any questions, please feel free to reach out.</p>
+                          <p>&copy; 2024 HomieStan by ARC Stay. All rights reserved.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+          `,
         },
       ],
     };

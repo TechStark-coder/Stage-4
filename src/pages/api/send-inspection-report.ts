@@ -45,17 +45,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const formattedDate = new Date(inspectionDate).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
-
+    
     const statusMessageHtml = overallStatus === 'Completed - All Clear'
-      ? '<p style="color: #2e7d32; font-weight: bold;">Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.</p>'
+      ? `<div style="background-color: #1e3a30; border-left: 4px solid #34d399; padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+           <p style="margin: 0; font-size: 15px; color: #d1fae5; font-weight: 500;">All Clear!</p>
+           <p style="margin: 8px 0 0 0; font-size: 14px; color: #a7f3d0;">Good news! The AI analysis found no discrepancies during this inspection.</p>
+         </div>`
       : overallStatus.includes('discrepancies')
-      ? '<p style="color: #d32f2f; font-weight: bold;">Some items seem to be missing. Please check the PDF file attached to this mail.</p>'
+      ? `<div style="background-color: #451a24; border-left: 4px solid #f87171; padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+           <p style="margin: 0; font-size: 15px; color: #fee2e2; font-weight: 500;">Discrepancies Found</p>
+           <p style="margin: 8px 0 0 0; font-size: 14px; color: #fecaca;">Some items seem to be missing. Please check the PDF file attached to this mail for details.</p>
+         </div>`
       : '';
-
+      
     const statusMessageText = overallStatus === 'Completed - All Clear'
-      ? "Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.\\n\\n"
+      ? "Good news! The AI analysis found no discrepancies during this inspection. All items were accounted for.\n\n"
       : overallStatus.includes('discrepancies')
-      ? "Some items seem to be missing. Please check the PDF file attached to this mail.\\n\\n"
+      ? "Some items seem to be missing. Please check the PDF file attached to this mail.\n\n"
       : '';
 
     const emailData = {
@@ -73,12 +79,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ],
           Subject: `Inspection Report for ${homeName} - ${formattedDate}`,
           TextPart: `Dear ${ownerDisplayName},\n\nPlease find attached the inspection report for your property "${homeName}", conducted by ${inspectedBy} on ${formattedDate}.\n\n${statusMessageText}You can manage your homes directly from your dashboard: ${dashboardLink}\n\nThank you,\nHomieStan Team`,
-          HTMLPart: `<h3>Dear ${ownerDisplayName},</h3>
-                       <p>Please find attached the inspection report for your property "<strong>${homeName}</strong>", conducted by <strong>${inspectedBy}</strong> on <strong>${formattedDate}</strong>.</p>
-                       ${statusMessageHtml}
-                       <p>You can manage your homes directly from your dashboard:</p>
-                       <p><a href="${dashboardLink}" target="_blank">Go to Your Dashboard</a></p>
-                       <p>Thank you,<br/>HomieStan Team</p>`,
+          HTMLPart: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Inspection Report for ${homeName}</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; background-color: #1a1a2e;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a2e;">
+                <tr>
+                  <td align="center">
+                    <table width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 20px auto; background-color: #2a2a3e; border-radius: 8px; color: #e0e0e0; overflow: hidden;">
+                      <!-- Header -->
+                      <tr>
+                        <td align="center" style="padding: 40px 20px 20px 20px;">
+                          <img src="https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media" alt="HomieStan Logo" width="180" style="display: block;">
+                        </td>
+                      </tr>
+                      <!-- Body -->
+                      <tr>
+                        <td style="padding: 20px 40px;">
+                          <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 0 0 20px 0;">Inspection Report Ready</h1>
+                          <p style="font-size: 16px; line-height: 1.5; margin: 0 0 16px 0;">Dear ${ownerDisplayName},</p>
+                          <p style="font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">Please find attached the inspection report for your property "<strong>${homeName}</strong>", conducted by <strong>${inspectedBy}</strong> on <strong>${formattedDate}</strong>.</p>
+                          
+                          <!-- Status Message -->
+                          ${statusMessageHtml}
+                          
+                          <!-- Button -->
+                          <table border="0" cellspacing="0" cellpadding="0" style="margin: 30px auto 0 auto;">
+                            <tr>
+                              <td align="center" bgcolor="#C33764" style="border-radius: 6px;">
+                                <a href="${dashboardLink}" target="_blank" style="font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; display: inline-block;">View on Dashboard</a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Footer -->
+                      <tr>
+                        <td style="padding: 40px 20px 20px 20px; text-align: center; font-size: 12px; color: #88889a;">
+                          <p>Thank you,<br/>The HomieStan Team</p>
+                          <p>&copy; 2024 HomieStan by ARC Stay. All rights reserved.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+          `,
           Attachments: [
             {
               ContentType: 'application/pdf',
