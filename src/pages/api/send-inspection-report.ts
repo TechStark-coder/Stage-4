@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                       <!-- Header -->
                       <tr>
                         <td align="center" style="padding: 40px 20px 20px 20px;">
-                          <img src="https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media" alt="HomieStan Logo" width="180" style="display: block;">
+                          <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 28px; font-weight: bold; color: #ffffff; margin: 0;">HomieStan</h1>
                         </td>
                       </tr>
                       <!-- Body -->
