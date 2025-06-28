@@ -74,7 +74,9 @@ CRITICAL INSTRUCTIONS FOR OBJECT IDENTIFICATION AND COUNTING:
 
 5.  **BE EXHAUSTIVE FOR DISTINCT TYPES:** Ensure every distinct type of object and its count is included.
 
-6.  **EXCLUSIONS:** You MUST EXCLUDE common structural elements and their components from your list. Specifically, do NOT include 'WALL', 'FLOOR', 'CEILING', 'WINDOW', or 'DOOR' as items. This exclusion also applies to parts of these structures, such as 'door knobs', 'hinges', 'window frames', or 'light switches'. Focus only on movable objects, furniture, decorations, and personal belongings within the room.
+6.  **STRICT EXCLUSIONS:** You MUST EXCLUDE common structural elements and their components from your list. Focus only on movable objects, furniture, decorations, and personal belongings within the room.
+    *   **DO NOT INCLUDE:** 'WALL', 'FLOOR', 'CEILING', 'WINDOW', 'DOOR', or 'CABINETS' as items.
+    *   **ALSO EXCLUDE THEIR PARTS:** This exclusion also applies to all parts of these structures, such as 'door knobs', 'hinges', 'window frames', 'light switches', 'power outlets', 'baseboards', or 'cabinet handles'.
 
 Your output MUST be a JSON object structured exactly like this: { "objects": [ { "name": "object_name_1", "count": N1 }, { "name": "object_name_2", "count": N2 }, ... ] }.
 Do not provide any other information or formatting.
@@ -96,6 +98,7 @@ const describeRoomObjectsFlow = ai.defineFlow(
     return output;
   }
 );
+
 
 
 

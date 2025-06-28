@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ImageLightboxProps {
   images: string[];
@@ -23,6 +24,8 @@ export function ImageLightbox({
   onClose,
   onNavigate,
 }: ImageLightboxProps) {
+  const [imageLoading, setImageLoading] = React.useState(true);
+
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen || currentIndex === null) return;
@@ -45,6 +48,13 @@ export function ImageLightbox({
     };
   }, [isOpen, currentIndex, images, onClose, onNavigate]);
 
+  React.useEffect(() => {
+    // Reset loading state whenever the image source changes
+    if (images[currentIndex ?? -1]) {
+      setImageLoading(true);
+    }
+  }, [images, currentIndex]);
+
   if (!isOpen || currentIndex === null || !images[currentIndex]) {
     return null;
   }
@@ -65,12 +75,21 @@ export function ImageLightbox({
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Image Display */}
           <div className="relative max-w-full max-h-full flex items-center justify-center">
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Skeleton className="w-[85vw] h-[85vh] max-w-[1200px] max-h-[800px] rounded-md" />
+              </div>
+            )}
             <Image
               src={currentImageSrc}
               alt={`Lightbox image ${currentIndex + 1} of ${images.length}`}
               width={1200} // Max width, will scale down
               height={800} // Max height, will scale down
-              className="object-contain max-w-[85vw] max-h-[85vh] rounded-md shadow-2xl"
+              className={cn(
+                  "object-contain max-w-[85vw] max-h-[85vh] rounded-md shadow-2xl transition-opacity duration-300",
+                  imageLoading ? "opacity-0" : "opacity-100"
+              )}
+              onLoadingComplete={() => setImageLoading(false)}
               priority // Load current image quickly
               data-ai-hint="gallery enlarged photo"
             />
