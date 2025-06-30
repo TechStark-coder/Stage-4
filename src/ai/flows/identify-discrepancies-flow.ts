@@ -65,17 +65,18 @@ const prompt = ai.definePrompt({
   name: 'identifyDiscrepanciesPrompt',
   input: {schema: IdentifyDiscrepanciesInputSchema},
   output: {schema: IdentifyDiscrepanciesOutputSchema},
-  prompt: `You are an advanced inventory and discrepancy detection AI.
+  prompt: `You are an advanced inventory and discrepancy detection AI. Your analysis must be extremely precise.
 You will be given:
 1. A list of 'expectedItems' with their names and expected counts, which were identified from a reference image of a room by the homeowner.
 2. A new set of 'tenantPhotos' of the same room, taken by a tenant or inspector.
 
 Your task is to:
-A. **VERY IMPORTANT FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV"). When creating this inventory, you must strictly follow these exclusion rules:
-    *   **DO NOT INCLUDE:** 'WALL', 'FLOOR', 'CEILING', 'WINDOW', 'DOOR', or 'CABINETS' as items.
+A. **CRITICAL FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV"). When creating this inventory, you must strictly follow these exclusion rules:
+    *   **ABSOLUTELY DO NOT INCLUDE:** 'WALL', 'FLOOR', 'CEILING', 'WINDOW', 'DOOR', or 'CABINETS'.
     *   **ALSO EXCLUDE THEIR PARTS:** This exclusion also applies to all parts of these structures, such as 'door knobs', 'hinges', 'window frames', 'light switches', 'power outlets', 'baseboards', or 'cabinet handles'.
+    *   **ADDITIONALLY, EXCLUDE:** 'cables' and 'wires'. Only list the electronic device they are connected to, not the cables themselves.
     *   Focus ONLY on movable objects, furniture, electronics, decorations, and personal belongings.
-    *   Perform this inventory BEFORE looking at the 'expectedItems' list.
+    *   Perform this independent inventory BEFORE comparing against the 'expectedItems' list.
 
 B. **Compare your detailed inventory from the 'tenantPhotos' (from step A) against the provided 'expectedItems' list.**
 
