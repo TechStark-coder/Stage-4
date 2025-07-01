@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const DescribeRoomObjectsOutputSchema = z.object({
@@ -42,6 +43,7 @@ export async function describeRoomObjectsFromVideo(
 
 const prompt = ai.definePrompt({
   name: 'describeRoomObjectsFromVideoPrompt',
+  model: googleAI.model('gemini-1.5-flash-preview-0514'),
   input: {schema: DescribeRoomObjectsFromVideoInputSchema},
   output: {schema: DescribeRoomObjectsOutputSchema},
   prompt: `You are an expert visual inspector AI specializing in meticulously identifying and listing objects visible in videos of rooms, and COUNTING distinct items.
