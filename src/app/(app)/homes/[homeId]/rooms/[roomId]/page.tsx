@@ -13,7 +13,7 @@ import { ImageGallery } from "@/components/rooms/ImageGallery";
 import { ImageLightbox } from "@/components/rooms/ImageLightbox"; // Import the new lightbox component
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, DoorOpen, Home as HomeIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, DoorOpen, Home as HomeIcon, Loader2, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 import { describeRoomObjects } from "@/ai/flows/describe-room-objects";
@@ -337,11 +337,18 @@ export default function RoomDetailPage() {
   return (
     <>
     <div className="space-y-8">
-      <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent">
-        <Link href={`/homes/${homeId}`}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to {home?.name || "Home"}
-        </Link>
-      </Button>
+       <div className="flex justify-between items-center mb-2">
+         <Button variant="ghost" size="sm" asChild className="hover:bg-accent">
+          <Link href={`/homes/${homeId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to {home?.name || "Home"}
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+            <Link href={`/homes/${homeId}/rooms/${roomId}/video`}>
+              <Video className="mr-2 h-4 w-4" /> Upload Video
+            </Link>
+        </Button>
+       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-card/70 rounded-lg shadow">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
