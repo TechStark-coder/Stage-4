@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoaderProvider } from "@/contexts/LoaderContext";
 import { AiAnalysisLoaderProvider } from "@/contexts/AiAnalysisLoaderContext"; // Import the provider
+import { VideoAnalysisProvider } from "@/contexts/VideoAnalysisContext"; // Import the provider
 import { Toaster } from "@/components/ui/toaster";
 
 const queryClient = new QueryClient();
@@ -20,8 +21,10 @@ export function Providers({ children }: ProvidersProps) {
       <AuthProvider>
         <LoaderProvider>
           <AiAnalysisLoaderProvider> {/* Wrap children with the AI loader provider */}
-            {children}
-            <Toaster />
+            <VideoAnalysisProvider>
+              {children}
+              <Toaster />
+            </VideoAnalysisProvider>
           </AiAnalysisLoaderProvider>
         </LoaderProvider>
       </AuthProvider>

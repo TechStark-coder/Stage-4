@@ -14,7 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Video, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { describeRoomObjectsFromVideo } from "@/ai/flows/describe-room-objects-from-video";
-import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects";
+import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects-from-video";
+import { useVideoAnalysis } from "@/contexts/VideoAnalysisContext";
 
 export default function VideoAnalysisPage() {
   const { user } = useAuthContext();
@@ -22,13 +23,14 @@ export default function VideoAnalysisPage() {
   const homeId = params.homeId as string;
   const roomId = params.roomId as string;
   const { toast } = useToast();
+  const { getRoomState, setRoomState, clearRoomState } = useVideoAnalysis();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<DescribeRoomObjectsOutput | null>(null);
+  const { videoFile, analysisResult } = getRoomState(roomId) || { videoFile: null, analysisResult: null };
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const fetchDetails = useCallback(async () => {
@@ -59,10 +61,7 @@ export default function VideoAnalysisPage() {
   }, [fetchDetails]);
 
   const handleVideoChange = (file: File | null) => {
-    setVideoFile(file);
-    if (file) {
-      setAnalysisResult(null); // Clear previous results when a new video is selected
-    }
+    setRoomState(roomId, { videoFile: file, analysisResult: null });
   };
 
   const handleAnalyzeVideo = async (fileToAnalyze: File) => {
@@ -72,7 +71,7 @@ export default function VideoAnalysisPage() {
     }
 
     setIsAnalyzing(true);
-    setAnalysisResult(null);
+    setRoomState(roomId, { analysisResult: null });
     try {
       toast({ title: "Starting Analysis", description: "Preparing video for AI... This may take a moment."});
       const reader = new FileReader();
@@ -82,7 +81,7 @@ export default function VideoAnalysisPage() {
         toast({ title: "Analyzing Video", description: "AI is now processing your video. Please wait."});
         const result = await describeRoomObjectsFromVideo({ videoDataUri });
         if (result && result.objects) {
-          setAnalysisResult(result);
+          setRoomState(roomId, { analysisResult: result });
           toast({ title: "Analysis Complete!", description: `Found ${result.objects.length} types of objects.`});
         } else {
            throw new Error("AI analysis did not return the expected object structure.");
@@ -102,8 +101,7 @@ export default function VideoAnalysisPage() {
   };
   
   const handleClearResults = () => {
-    setAnalysisResult(null);
-    setVideoFile(null);
+    clearRoomState(roomId);
     toast({ title: "Results Cleared", description: "Ready for a new video analysis."});
   };
 
