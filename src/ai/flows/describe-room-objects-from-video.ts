@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Describes objects present in a room based on an uploaded video,
@@ -11,8 +10,19 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { DescribeRoomObjectsOutput } from './describe-room-objects';
-import { DescribeRoomObjectsOutputSchema } from './describe-room-objects';
+
+const DescribeRoomObjectsOutputSchema = z.object({
+  objects: z
+    .array(
+      z.object({
+        name: z.string().describe('The name of the distinct object type identified.'),
+        count: z.number().int().min(1).describe('The number of times this specific object type appears in the images (must be at least 1).'),
+      })
+    )
+    .describe('A list of distinct objects, each with its name and count.'),
+});
+export type DescribeRoomObjectsOutput = z.infer<typeof DescribeRoomObjectsOutputSchema>;
+
 
 const DescribeRoomObjectsFromVideoInputSchema = z.object({
   videoDataUri: z
