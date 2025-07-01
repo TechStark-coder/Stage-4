@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Describes objects present in a room based on an uploaded video,
@@ -43,7 +44,7 @@ export async function describeRoomObjectsFromVideo(
 
 const prompt = ai.definePrompt({
   name: 'describeRoomObjectsFromVideoPrompt',
-  model: googleAI.model('gemini-1.5-flash-preview-0514'),
+  model: googleAI.model('gemini-1.5-flash-latest'),
   input: {schema: DescribeRoomObjectsFromVideoInputSchema},
   output: {schema: DescribeRoomObjectsOutputSchema},
   prompt: `You are an expert visual inspector AI specializing in meticulously identifying and listing objects visible in videos of rooms, and COUNTING distinct items.
