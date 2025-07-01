@@ -22,7 +22,7 @@ const DescribeRoomObjectsInputSchema = z.object({
 });
 export type DescribeRoomObjectsInput = z.infer<typeof DescribeRoomObjectsInputSchema>;
 
-const DescribeRoomObjectsOutputSchema = z.object({
+export const DescribeRoomObjectsOutputSchema = z.object({
   objects: z
     .array(
       z.object({
@@ -99,6 +99,8 @@ const describeRoomObjectsFlow = ai.defineFlow(
     return output;
   }
 );
+
+
 
 
 
