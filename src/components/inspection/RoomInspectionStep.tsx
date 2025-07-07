@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -6,16 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Camera, FileImage, CheckCircle, Info, AlertTriangle, X, Eye } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter as DialogModalFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Loader2, FileImage, CheckCircle, Info, AlertTriangle, X, Eye } from 'lucide-react';
 import type { IdentifyDiscrepanciesInput, IdentifyDiscrepanciesOutput } from '@/ai/flows/identify-discrepancies-flow';
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 import { Textarea } from '@/components/ui/textarea';
@@ -42,12 +34,6 @@ export function RoomInspectionStep({
   const [analysisAttempted, setAnalysisAttempted] = React.useState(false);
   const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [showCameraDialog, setShowCameraDialog] = React.useState(false);
-  const [cameraStream, setCameraStream] = React.useState<MediaStream | null>(null);
-  const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
-  const [cameraError, setCameraError] = React.useState<string | null>(null);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [tenantNotes, setTenantNotes] = React.useState('');
 
   // State for owner's pictures lightbox
@@ -92,59 +78,6 @@ export function RoomInspectionStep({
   };
 
   const triggerFileInput = () => fileInputRef.current?.click();
-
-  const openCamera = async () => {
-    setHasCameraPermission(null);
-    setCameraError(null);
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        setCameraStream(stream);
-        setHasCameraPermission(true);
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err: any) {
-        setHasCameraPermission(false);
-        let message = "Could not access the camera.";
-        if (err.name === "NotAllowedError") message = "Camera permission denied. Please enable it in browser settings.";
-        else if (err.name === "NotFoundError") message = "No camera found.";
-        setCameraError(message);
-        toast({ title: "Camera Error", description: message, variant: "destructive" });
-      }
-    } else {
-      setCameraError("Camera access not supported by your browser.");
-      toast({ title: "Unsupported Browser", description: "Camera access not supported.", variant: "destructive" });
-    }
-  };
-
-  const closeCamera = () => {
-    cameraStream?.getTracks().forEach(track => track.stop());
-    setCameraStream(null);
-    setShowCameraDialog(false);
-  };
-
-  const handleSnapPhoto = () => {
-    if (videoRef.current && canvasRef.current && cameraStream) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
-        if (blob) {
-          addNewFiles([new File([blob], `capture_${Date.now()}.png`, { type: 'image/png' })]);
-          closeCamera();
-        } else {
-          toast({ title: "Capture Failed", description: "Could not capture image.", variant: "destructive" });
-        }
-      }, 'image/png');
-    }
-  };
-
-  React.useEffect(() => {
-    if (showCameraDialog) openCamera();
-    return () => { cameraStream?.getTracks().forEach(track => track.stop()); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCameraDialog]);
 
   const handleAnalyze = async () => {
     if (tenantPhotos.length === 0) {
@@ -248,7 +181,7 @@ export function RoomInspectionStep({
           <CardTitle>Inspecting: {room.name}</CardTitle>
           <div className="flex justify-between items-start flex-wrap gap-2">
             <CardDescription className="flex-1 min-w-[200px]">
-              Provide photos of the room as it currently is. The AI will compare these with the owner's initial list.
+              {`Upload current photos of the ${room.name}. These will be automatically compared with the owner’s reference images.`}
             </CardDescription>
             <Button
               variant="secondary"
@@ -262,7 +195,7 @@ export function RoomInspectionStep({
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-muted-foreground">
+            <label className="block text-sm font-medium text-muted-foreground mb-3">
               Your Photos for {room.name} ({tenantPhotos.length} photo(s)):
             </label>
             <div className="flex flex-wrap gap-2">
@@ -298,44 +231,11 @@ export function RoomInspectionStep({
               <Button type="button" variant="outline" onClick={triggerFileInput} disabled={isLoading}>
                 <FileImage className="mr-2 h-4 w-4" /> Add File(s)
               </Button>
-              <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
-                <DialogTrigger asChild>
-                  <Button type="button" variant="outline" disabled={isLoading}>
-                    <Camera className="mr-2 h-4 w-4" /> Use Camera
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>Capture Image</DialogTitle>
-                    <DialogDescription>Position the camera and click "Snap Photo".</DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <video ref={videoRef} autoPlay muted playsInline className="w-full aspect-video rounded-md bg-black" />
-                    <canvas ref={canvasRef} className="hidden"></canvas>
-                    {hasCameraPermission === false && cameraError && (
-                      <Alert variant="destructive">
-                        <Camera className="h-4 w-4" />
-                        <AlertTitle>Camera Access Error</AlertTitle>
-                        <AlertDescription>{cameraError}</AlertDescription>
-                      </Alert>
-                    )}
-                    {hasCameraPermission === null && !cameraError && (
-                      <div className="flex items-center justify-center text-muted-foreground">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting camera access...
-                      </div>
-                    )}
-                  </div>
-                  <DialogModalFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                    <Button variant="outline" onClick={closeCamera}>Cancel</Button>
-                    <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>Snap Photo</Button>
-                  </DialogModalFooter>
-                </DialogContent>
-              </Dialog>
             </div>
             <div className="mt-4">
               <Button onClick={handleAnalyze} disabled={isLoading || tenantPhotos.length === 0}>
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                  {analysisAttempted ? 'Re-analyze Photos' : 'Analyze My Photos'}
+                  {analysisAttempted ? 'Re-compare' : 'Compare'}
               </Button>
             </div>
           </div>

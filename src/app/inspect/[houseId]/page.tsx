@@ -516,10 +516,10 @@ const PublicInspectionPage: NextPage = () => {
         <CardContent className="p-4 sm:p-6 space-y-6">
           {currentRoom && !inspectionComplete && (
             <>
-              <Alert variant="default" className="my-4 bg-primary/10 border-primary/30 text-primary-foreground">
-                <Info className="h-4 w-4 text-primary" />
-                <AlertTitle className="text-primary">Current Room</AlertTitle>
-                <AlertDescription className="text-primary/90">
+              <Alert variant="default" className="my-4 bg-primary/10 border-primary/30">
+                <Info className="h-4 w-4 text-white" />
+                <AlertTitle className="text-white">Current Room</AlertTitle>
+                <AlertDescription className="text-white/90">
                   You are now inspecting the: <strong>{currentRoom.name}</strong>. ({currentRoomIndex + 1} of {rooms.length})
                   Ensure all photos are for this room.
                 </AlertDescription>
