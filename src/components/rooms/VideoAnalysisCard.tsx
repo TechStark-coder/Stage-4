@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects";
+import { ForestLoader } from "./ForestLoader"; // Import the new loader
 
 interface VideoAnalysisCardProps {
   analysisResult: DescribeRoomObjectsOutput | null;
@@ -86,8 +87,8 @@ export function VideoAnalysisCard({ analysisResult, isAnalyzing, onClearResults,
       <CardContent className="flex-grow">
         {isAnalyzing ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="font-semibold text-lg text-foreground">AI is analyzing the video...</p>
+            <ForestLoader />
+            <p className="font-semibold text-lg text-foreground -mt-10">AI is analyzing the video...</p>
             <p className="text-sm text-muted-foreground">This may take a few moments. Results will appear here.</p>
           </div>
         ) : hasResults ? (

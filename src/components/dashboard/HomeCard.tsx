@@ -118,7 +118,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             {user && (
               <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsHistoryDialogOpen(true)}>
                 <History className="mr-1 h-3 w-3" />
-                View History
+                Inspection History
               </Button>
             )}
           </div>
