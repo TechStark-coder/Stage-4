@@ -12,8 +12,9 @@ import { CreateRoomDialog } from "@/components/homes/CreateRoomDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
-import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
+import { ArrowLeft, DoorOpen, Home as HomeIcon, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GenerateTenantLinkDialog } from "@/components/dashboard/GenerateTenantLinkDialog";
 
 export default function HomeDetailPage() {
   const { user } = useAuthContext();
@@ -101,6 +102,13 @@ export default function HomeDetailPage() {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
           </Link>
         </Button>
+        {user && home && home.ownerId === user.uid && (
+          <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
+            <Button variant="default" size="sm">
+              <Link2 className="mr-2 h-4 w-4" /> Generate Link
+            </Button>
+          </GenerateTenantLinkDialog>
+        )}
       </div>
 
 

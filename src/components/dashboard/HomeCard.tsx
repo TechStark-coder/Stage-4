@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Home } from "@/types";
-import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, Link2, History } from "lucide-react";
+import { ArrowRight, CalendarDays, Home as HomeIcon, ImageOff, MapPin, Trash2, History } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import * as React from 'react';
@@ -25,7 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { EditHomeDialog } from "./EditHomeDialog";
 import { useLoader } from "@/contexts/LoaderContext";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { GenerateTenantLinkDialog } from "./GenerateTenantLinkDialog"; // Import the new dialog
 import { InspectionHistoryDialog } from "@/components/homes/InspectionHistoryDialog";
 
 interface HomeCardProps {
@@ -114,19 +113,16 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-4 p-4 border-t">
-          {/* Row 1: Edit button, Generate Link button */}
           <div className="flex w-full gap-2">
             <EditHomeDialog home={home} onHomeUpdated={onHomeAction} />
-            {user && home.ownerId === user.uid && (
-              <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Link2 className="mr-1 h-3 w-3" /> Generate Link
-                </Button>
-              </GenerateTenantLinkDialog>
+            {user && (
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsHistoryDialogOpen(true)}>
+                <History className="mr-1 h-3 w-3" />
+                View History
+              </Button>
             )}
           </div>
 
-          {/* Row 2: Manage Rooms button, Delete button */}
           <div className="flex w-full gap-2">
             <Button asChild variant="default" size="sm" className="flex-1">
               <Link href={`/homes/${home.id}`}>
@@ -136,7 +132,7 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" className="flex-1">
-                  <Trash2 /> Delete
+                  <Trash2 className="mr-1 h-3 w-3" /> Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -156,13 +152,6 @@ export function HomeCard({ home, onHomeAction }: HomeCardProps) {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          
-          {user && (
-            <Button variant="outline" size="sm" className="w-full" onClick={() => setIsHistoryDialogOpen(true)}>
-              <History className="mr-2 h-4 w-4" />
-              View Inspection History
-            </Button>
-          )}
         </CardFooter>
       </Card>
       {user && (
