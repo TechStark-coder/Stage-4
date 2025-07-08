@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Describes objects present in a room based on an uploaded video,
@@ -47,34 +46,15 @@ const prompt = ai.definePrompt({
   model: googleAI.model('gemini-1.5-flash-latest'),
   input: {schema: DescribeRoomObjectsFromVideoInputSchema},
   output: {schema: DescribeRoomObjectsOutputSchema},
-  prompt: `You are an expert visual inspector AI specializing in meticulously identifying and listing objects visible in videos of rooms, and COUNTING distinct items.
-Your task is to analyze the provided video of a room with extreme attention to detail, processing it frame by frame to build a comprehensive inventory.
+  prompt: `Analyze the provided video of a room to identify and count distinct objects.
 
-CRITICAL INSTRUCTIONS FOR OBJECT IDENTIFICATION AND COUNTING:
+Follow these rules precisely:
+1.  **Identify & Count:** List each distinct type of object and its total count. For example, if you see three identical chairs, return { "name": "chair", "count": 3 }.
+2.  **Be Specific:** If an object's brand, character, or title is clear (e.g., "Batman Funko Pop"), use that specific name. Otherwise, use a descriptive name (e.g., "blue coffee mug").
+3.  **Differentiate:** Group identical items, but list visually distinct items separately. For example, one red chair and two blue chairs are two separate entries: { "name": "red chair", "count": 1 } and { "name": "blue chair", "count": 2 }.
+4.  **Strictly Exclude:** You MUST NOT include common structural elements like 'walls', 'floors', 'ceilings', 'windows', 'doors', 'cabinets', or any of their parts (e.g., 'door knobs', 'light switches', 'baseboards'). Also, do not list 'cables' or 'wires'.
 
-1.  **DISTINCT OBJECT TYPES AND COUNTS:** Your primary goal is to identify *distinct types* of objects. For each distinct type, you must provide its name and the *total count* of how many instances of that specific object type are visible across the entire video. The count must be at least 1.
-    *   Example: If there are six identical white ceramic plates shown, your output for this item should be: { "name": "white ceramic plate", "count": 6 }.
-    *   Example: If there is one red chair and two blue chairs, your output should include two separate entries: { "name": "red chair", "count": 1 } and { "name": "blue chair", "count": 2 }.
-
-2.  **SPECIFICITY IN NAMING:** Be as specific as possible with the object name.
-    *   If an item's specific name, character, title, or unique identifier is legible or clearly visually identifiable from its features, you MUST use that specific identifier in its name.
-        *   Example: "Batman Funko Pop figure", "The Great Gatsby book".
-    *   If the specific name is not clear, use a descriptive name based on its category and visual characteristics.
-        *   Example: "blue coffee mug", "red Funko Pop figure holding sword".
-
-3.  **NO INDIVIDUAL LISTING OF IDENTICAL ITEMS:** Do NOT list identical items as separate entries if they are of the same distinct type. Instead, provide the single name for that type and its total count.
-
-4.  **DIFFERENTIATION FOR SIMILAR BUT DISTINCT ITEMS:** If items are of the same general category but are visually distinct (e.g., different characters, colors, poses), they should be listed as *separate distinct object types* with their respective counts.
-
-5.  **BE EXHAUSTIVE FOR DISTINCT TYPES:** Ensure every distinct type of object and its count is included.
-
-6.  **EXTREMELY STRICT EXCLUSIONS:** This is the most important rule. You MUST EXCLUDE common structural elements and their components from your list. Focus only on movable objects, furniture, decorations, electronics, and personal belongings within the room.
-    *   **ABSOLUTELY DO NOT INCLUDE:** 'WALL', 'FLOOR', 'CEILING', 'WINDOW', 'DOOR', or 'CABINETS'.
-    *   **ALSO EXCLUDE THEIR PARTS:** This exclusion also applies to all parts of these structures, such as 'door knobs', 'hinges', 'window frames', 'light switches', 'power outlets', 'baseboards', or 'cabinet handles'.
-    *   **ADDITIONALLY, EXCLUDE:** 'cables' and 'wires'. Only list the electronic device they are connected to.
-
-Your output MUST be a JSON object structured exactly like this: { "objects": [ { "name": "object_name_1", "count": N1 }, { "name": "object_name_2", "count": N2 }, ... ] }.
-Do not provide any other information or formatting.
+Your output must be ONLY the JSON object, structured exactly like this: { "objects": [ { "name": "object_name_1", "count": N1 }, ... ] }.
 
 Video for analysis:
 {{media url=videoDataUri}}
