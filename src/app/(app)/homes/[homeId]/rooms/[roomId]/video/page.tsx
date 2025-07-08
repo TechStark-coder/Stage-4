@@ -66,36 +66,55 @@ export default function VideoAnalysisPage() {
 
   const handleAnalyzeVideo = async (fileToAnalyze: File) => {
     if (!fileToAnalyze) {
-      toast({ title: "No Video", description: "Please select a video to analyze.", variant: "destructive" });
+      toast({
+        title: 'No Video',
+        description: 'Please select a video to analyze.',
+        variant: 'destructive',
+      });
       return;
     }
 
     setIsAnalyzing(true);
     setRoomState(roomId, { analysisResult: null });
+    toast({
+      title: 'Starting Analysis',
+      description: 'Preparing video... This can take a moment for large files.',
+    });
+
     try {
-      toast({ title: "Starting Analysis", description: "Preparing video for AI... This may take a moment."});
-      const reader = new FileReader();
-      reader.readAsDataURL(fileToAnalyze);
-      reader.onload = async () => {
-        const videoDataUri = reader.result as string;
-        toast({ title: "Analyzing Video", description: "AI is now processing your video. Please wait."});
-        const result = await describeRoomObjectsFromVideo({ videoDataUri });
-        if (result && result.objects) {
-          setRoomState(roomId, { analysisResult: result });
-          toast({ title: "Analysis Complete!", description: `Found ${result.objects.length} types of objects.`});
-        } else {
-           throw new Error("AI analysis did not return the expected object structure.");
-        }
-        setIsAnalyzing(false);
-      };
-      reader.onerror = (error) => {
-        console.error("Error reading video file:", error);
-        toast({ title: "File Read Error", description: "Could not process the video file.", variant: "destructive" });
-        setIsAnalyzing(false);
-      };
+      const videoDataUri = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(fileToAnalyze);
+      });
+
+      toast({
+        title: 'Analyzing Video',
+        description: 'AI is now processing your video. Please wait.',
+      });
+      const result = await describeRoomObjectsFromVideo({ videoDataUri });
+
+      if (result && result.objects) {
+        setRoomState(roomId, { analysisResult: result });
+        toast({
+          title: 'Analysis Complete!',
+          description: `Found ${result.objects.length} types of objects.`,
+        });
+      } else {
+        throw new Error(
+          'AI analysis did not return the expected object structure.'
+        );
+      }
     } catch (error: any) {
-      console.error("Error during video analysis:", error);
-      toast({ title: "Analysis Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+      console.error('Error during video analysis:', error);
+      toast({
+        title: 'Analysis Failed',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+      setRoomState(roomId, { analysisResult: null });
+    } finally {
       setIsAnalyzing(false);
     }
   };
