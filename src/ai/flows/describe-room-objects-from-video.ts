@@ -68,7 +68,13 @@ Video {{@index}}:
 const describeRoomObjectsFromVideoFlow = ai.defineFlow(
   {name: 'describeRoomObjectsFromVideoFlow', inputSchema: DescribeRoomObjectsFromVideoInputSchema, outputSchema: DescribeRoomObjectsOutputSchema},
   async input => {
-    const {output} = await prompt(input);
+    // Sanitize URIs to replace the unsupported 'application/octet-stream' mime type.
+    const sanitizedUris = input.videoDataUris.map(uri =>
+      uri.replace('data:application/octet-stream;', 'data:video/mp4;')
+    );
+    const sanitizedInput = { ...input, videoDataUris: sanitizedUris };
+    
+    const {output} = await prompt(sanitizedInput);
     if (!output || !output.objects) {
       return { objects: [] };
     }
