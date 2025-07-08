@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Video, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { describeRoomObjectsFromVideo } from "@/ai/flows/describe-room-objects-from-video";
-import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects-from-video";
 import { useVideoAnalysis } from "@/contexts/VideoAnalysisContext";
 
 export default function VideoAnalysisPage() {
@@ -29,7 +28,7 @@ export default function VideoAnalysisPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
-  const { videoFile, analysisResult } = getRoomState(roomId) || { videoFile: null, analysisResult: null };
+  const { videoFiles, analysisResult } = getRoomState(roomId) || { videoFiles: [], analysisResult: null };
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -60,15 +59,15 @@ export default function VideoAnalysisPage() {
     fetchDetails();
   }, [fetchDetails]);
 
-  const handleVideoChange = (file: File | null) => {
-    setRoomState(roomId, { videoFile: file, analysisResult: null });
+  const handleVideoChange = (files: File[]) => {
+    setRoomState(roomId, { videoFiles: files, analysisResult: analysisResult });
   };
 
-  const handleAnalyzeVideo = async (fileToAnalyze: File) => {
-    if (!fileToAnalyze) {
+  const handleAnalyzeVideo = async (filesToAnalyze: File[]) => {
+    if (!filesToAnalyze || filesToAnalyze.length === 0) {
       toast({
-        title: 'No Video',
-        description: 'Please select a video to analyze.',
+        title: 'No Videos',
+        description: 'Please select one or more videos to analyze.',
         variant: 'destructive',
       });
       return;
@@ -78,22 +77,26 @@ export default function VideoAnalysisPage() {
     setRoomState(roomId, { analysisResult: null });
     toast({
       title: 'Starting Analysis',
-      description: 'Preparing video... This can take a moment for large files.',
+      description: 'Preparing videos... This can take a moment for large files.',
     });
 
     try {
-      const videoDataUri = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-        reader.readAsDataURL(fileToAnalyze);
-      });
+      const videoDataUris = await Promise.all(
+        filesToAnalyze.map(file => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+          });
+        })
+      );
 
       toast({
-        title: 'Analyzing Video',
-        description: 'AI is now processing your video. Please wait.',
+        title: 'Analyzing Videos',
+        description: `AI is now processing your ${videoDataUris.length} video(s). Please wait.`,
       });
-      const result = await describeRoomObjectsFromVideo({ videoDataUri });
+      const result = await describeRoomObjectsFromVideo({ videoDataUris });
 
       if (result && result.objects) {
         setRoomState(roomId, { analysisResult: result });
@@ -176,7 +179,7 @@ export default function VideoAnalysisPage() {
           onVideoChange={handleVideoChange}
           onAnalyze={handleAnalyzeVideo}
           isAnalyzing={isAnalyzing}
-          videoFile={videoFile}
+          videoFiles={videoFiles || []}
         />
         <VideoAnalysisCard
           analysisResult={analysisResult}

@@ -6,7 +6,7 @@ import { createContext, useContext, useState, useCallback } from "react";
 import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects-from-video";
 
 interface RoomAnalysisState {
-  videoFile: File | null;
+  videoFiles: File[];
   analysisResult: DescribeRoomObjectsOutput | null;
 }
 
@@ -29,7 +29,7 @@ export function VideoAnalysisProvider({ children }: { children: ReactNode }) {
     setAnalysisData(prev => ({
       ...prev,
       [roomId]: {
-        ...(prev[roomId] || { videoFile: null, analysisResult: null }),
+        ...(prev[roomId] || { videoFiles: [], analysisResult: null }),
         ...state,
       },
     }));
