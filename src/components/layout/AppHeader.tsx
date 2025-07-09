@@ -49,24 +49,24 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 mr-auto">
+        <Link href="/dashboard" className="flex items-center gap-2 mr-4">
           <Image
             src={logoUrl}
             alt="HomieStan"
-            width={150}
-            height={38} // Approximate height based on 4:1 aspect ratio of 980x245
+            width={120}
+            height={30} // Approximate height based on 4:1 aspect ratio
             className="object-contain" // Ensures aspect ratio is maintained
             unoptimized // if using external URLs not in next.config.js images.domains
           />
         </Link>
-        <div className="flex-grow text-center">
+        <div className="flex-grow text-center overflow-hidden whitespace-nowrap text-ellipsis">
           {user && (
             <span className="text-sm font-medium text-foreground sm:text-base welcome-text-shine">
               Welcome, {userName}!
             </span>
           )}
         </div>
-        <nav className="flex items-center gap-2 sm:gap-4 ml-auto">
+        <nav className="flex items-center gap-2 sm:gap-4 ml-4">
           {user && (
             <AlertDialog>
               <AlertDialogTrigger asChild>

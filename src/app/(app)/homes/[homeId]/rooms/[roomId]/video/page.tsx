@@ -158,18 +158,18 @@ export default function VideoAnalysisPage() {
 
   return (
     <div className="space-y-8">
-      <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent">
+      <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent -ml-2 sm:ml-0">
         <Link href={`/homes/${homeId}/rooms/${roomId}`}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to {room.name}
         </Link>
       </Button>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-card/70 rounded-lg shadow">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <Video className="h-8 w-8 text-primary" />
           Video Analysis for: {room.name}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-left sm:text-right">
           Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
         </p>
       </div>

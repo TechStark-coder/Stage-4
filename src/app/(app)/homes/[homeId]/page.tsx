@@ -57,9 +57,9 @@ export default function HomeDetailPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-20 mb-4" /> {/* Back button skele */}
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-10 w-36" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-full sm:w-36" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -96,35 +96,39 @@ export default function HomeDetailPage() {
 
   return (
     <div className="space-y-8">
-       <div className="flex justify-between items-center mb-6">
+       <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <Button variant="outline" size="sm" asChild>
           <Link href="/dashboard">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
           </Link>
         </Button>
         {user && home && home.ownerId === user.uid && (
-          <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
-            <Button variant="default" size="sm">
-              <Link2 className="mr-2 h-4 w-4" /> Generate Link
-            </Button>
-          </GenerateTenantLinkDialog>
+          <div className="w-full sm:w-auto flex justify-end">
+            <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
+              <Button variant="default" size="sm">
+                <Link2 className="mr-2 h-4 w-4" /> Generate Tenant Link
+              </Button>
+            </GenerateTenantLinkDialog>
+          </div>
         )}
       </div>
 
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <HomeIcon className="h-8 w-8 text-primary" />
           {home.name} - Rooms
         </h1>
-        <CreateRoomDialog homeId={homeId} onRoomCreated={fetchHomeAndRooms} />
+        <div className="w-full sm:w-auto">
+            <CreateRoomDialog homeId={homeId} onRoomCreated={fetchHomeAndRooms} />
+        </div>
       </div>
 
       {rooms.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-card">
           <DoorOpen className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
           <h2 className="text-2xl font-semibold mb-2">No Rooms Yet!</h2>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-6 px-4">
             Add rooms to this home to start analyzing objects.
           </p>
           <CreateRoomDialog homeId={homeId} onRoomCreated={fetchHomeAndRooms} />

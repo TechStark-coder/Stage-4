@@ -318,7 +318,7 @@ export default function RoomDetailPage() {
 
   if (!home || !room) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 px-4">
         <h2 className="text-2xl font-semibold mb-2">Room Not Found</h2>
         <p className="text-muted-foreground mb-6">
           The room you are looking for does not exist or you may not have access.
@@ -337,8 +337,8 @@ export default function RoomDetailPage() {
   return (
     <>
     <div className="space-y-8">
-       <div className="flex justify-between items-center mb-2">
-         <Button variant="ghost" size="sm" asChild className="hover:bg-accent">
+       <div className="flex flex-col sm:flex-row justify-between items-center mb-2 gap-2">
+         <Button variant="ghost" size="sm" asChild className="hover:bg-accent -ml-2 sm:ml-0">
           <Link href={`/homes/${homeId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to {home?.name || "Home"}
           </Link>
@@ -351,12 +351,12 @@ export default function RoomDetailPage() {
        </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-card/70 rounded-lg shadow">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <DoorOpen className="h-8 w-8 text-primary" />
           {room.name}
           {displayAnalyzing && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-left sm:text-right">
           Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
         </p>
       </div>

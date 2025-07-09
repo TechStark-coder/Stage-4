@@ -150,7 +150,7 @@ export function CreateHomeDialog({ onHomeCreated }: CreateHomeDialogProps) {
       }
     }}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="w-full">
           <PlusCircle className="mr-2 h-4 w-4" /> Create New Home
         </Button>
       </DialogTrigger>

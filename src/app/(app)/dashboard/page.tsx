@@ -86,9 +86,9 @@ export default function DashboardPage() {
   if (authLoading || pageLoading) { // Check both authLoading and page-specific loading
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-10 w-full sm:w-36" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -102,11 +102,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <HomeIcon className="h-8 w-8 text-primary" />
           My Homes
         </h1>
-        <CreateHomeDialog onHomeCreated={handleHomesUpdated} />
+        <div className="w-full sm:w-auto">
+            <CreateHomeDialog onHomeCreated={handleHomesUpdated} />
+        </div>
       </div>
 
       {homes.length === 0 ? (
@@ -120,7 +122,7 @@ export default function DashboardPage() {
             data-ai-hint="empty house illustration"
           />
           <h2 className="text-2xl font-semibold mb-2 text-foreground">No Homes Yet!</h2>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-6 px-4">
             Get started by creating your first home.
           </p>
           <CreateHomeDialog onHomeCreated={handleHomesUpdated} />

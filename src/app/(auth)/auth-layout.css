@@ -1,0 +1,141 @@
+
+/* New file for auth layout specific styles */
+.auth-card-yashasvi-wrapper { /* New wrapper for centering */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+ /* min-height: calc(100vh - 150px); /* Adjust based on header/footer height */
+  padding: 20px;
+}
+
+.auth-card-yashasvi {
+  background-image: linear-gradient(163deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%); /* Themed gradient */
+  border-radius: 22px;
+  transition: all 0.3s;
+  width: 350px; /* Fixed width */
+  max-width: 100%;
+}
+
+.auth-card-yashasvi-inner {
+  border-radius: 0; /* Will be overridden by parent's border-radius effectively */
+  transition: all 0.2s;
+  background-color: hsl(var(--card)); /* Form background, use theme card color */
+  border-radius: 20px; /* Inner radius */
+  padding: 1px; /* For border gradient effect if parent has padding */
+}
+
+.auth-card-yashasvi-inner:hover { /* This hover was on card2, now on inner */
+  /* transform: scale(0.98); /* This might be too much if card also scales */
+  /* border-radius: 20px; */
+}
+
+.auth-card-yashasvi:hover {
+  box-shadow: 0px 0px 30px 1px hsla(var(--primary-hsl-values), 0.4); /* Themed shadow */
+}
+
+.auth-form-yashasvi {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Adjusted gap */
+  padding: 2em; /* Adjusted padding */
+  background-color: hsl(var(--card)); /* Form background, matches inner card, use theme */
+  border-radius: 20px; /* Matches inner card */
+  transition: 0.4s ease-in-out;
+}
+
+.auth-heading-yashasvi {
+  text-align: center;
+  margin: 1em 0; /* Adjusted margin */
+  color: hsl(var(--card-foreground)); /* Use theme card foreground */
+  font-size: 1.5em; /* Adjusted size */
+  font-weight: 600;
+}
+
+.auth-field-yashasvi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border-radius: 25px;
+  padding: 0.8em 1em; /* Adjusted padding */
+  border: none;
+  outline: none;
+  color: hsl(var(--input-foreground)); /* Use theme input foreground */
+  background-color: hsl(var(--input)); /* Darker field background from theme */
+  box-shadow: inset 2px 5px 10px hsla(var(--card-hsl-values), 0.5); /* Adjusted shadow */
+}
+
+.auth-input-icon-yashasvi {
+  height: 1.3em;
+  width: 1.3em;
+  fill: hsl(var(--input-foreground)); /* Use theme input foreground */
+}
+
+.auth-input-field-yashasvi {
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+  color: hsl(var(--input-foreground)); /* Use theme input foreground */
+  font-size: 0.9rem; /* Adjusted size */
+}
+.auth-input-field-yashasvi::placeholder {
+  color: hsl(var(--muted-foreground)); /* Darker placeholder from theme */
+}
+
+
+.auth-buttons-yashasvi {
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically on small screens */
+  gap: 1em; /* Gap between buttons */
+  margin-top: 2em;
+}
+
+@media (min-width: 640px) { /* sm breakpoint */
+    .auth-buttons-yashasvi {
+        flex-direction: row; /* Horizontal on larger screens */
+        justify-content: space-between;
+    }
+}
+
+
+.auth-button-yashasvi { /* Generic button style */
+  padding: 0.7em 1em;
+  border-radius: 8px; /* Slightly larger radius */
+  border: none;
+  outline: none;
+  transition: 0.3s ease-in-out;
+  background-color: hsl(var(--primary)); /* Use theme primary for main action */
+  color: hsl(var(--primary-foreground)); /* Use theme primary foreground */
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  flex-grow: 1; /* Make buttons take available space */
+  text-align: center;
+}
+.auth-button-yashasvi:hover {
+  background-color: hsla(var(--primary-hsl-values), 0.8); /* Slightly darker primary on hover */
+  color: hsl(var(--primary-foreground));
+}
+
+.auth-button-yashasvi.signup-link { /* Specific for "Sign Up" / "Sign In" link-like button */
+  background-color: transparent;
+  color: hsl(var(--primary)); /* Primary color text */
+  padding: 0.7em 0.5em;
+  font-weight: normal;
+}
+.auth-button-yashasvi.signup-link:hover {
+  background-color: transparent;
+  color: hsla(var(--primary-hsl-values), 0.8); /* Brighter primary on hover */
+  text-decoration: underline;
+}
+
+/* Error message styling */
+.auth-error-message {
+  color: hsl(var(--destructive));
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  text-align: left;
+  width: 100%;
+}

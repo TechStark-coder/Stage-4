@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import "./auth-layout.css";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const logoUrl = "https://firebasestorage.googleapis.com/v0/b/arc-stay.firebasestorage.app/o/Homiestan.png?alt=media";
