@@ -1,0 +1,108 @@
+
+.fullscreen-camera-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  z-index: 5000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.fullscreen-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fullscreen-camera-controls {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 5001;
+}
+
+.fullscreen-camera-controls.top {
+  top: 0;
+}
+
+.fullscreen-camera-controls.bottom {
+  bottom: 0;
+  padding-bottom: 2rem; /* More padding on bottom for easier access */
+}
+
+.control-button {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.control-button:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.control-button.record-button {
+  width: 72px;
+  height: 72px;
+}
+.control-button.record-button > svg {
+  width: 36px;
+  height: 36px;
+}
+
+.control-button.close-button {
+  width: 48px;
+  height: 48px;
+}
+.control-button.close-button > svg {
+    width: 24px;
+    height: 24px;
+}
+
+.control-placeholder {
+  width: 56px; /* Match width of switch camera button */
+  height: 56px;
+}
+
+.timer {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-family: monospace;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.camera-error-container,
+.camera-loading-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    z-index: 5002;
+    padding: 1rem;
+    max-width: 90%;
+    text-align: center;
+}
+
+.camera-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.2rem;
+}

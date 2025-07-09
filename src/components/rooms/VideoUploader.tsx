@@ -1,22 +1,13 @@
 
 "use client";
 
-import { useState, useRef, useEffect, type DragEvent } from "react";
+import { useState, useRef, type DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, Film, Sparkles, Loader2, XCircle, Camera, Video as VideoIcon, Radio, RefreshCw } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
+import { UploadCloud, Film, Sparkles, Loader2, XCircle, Camera, Video as VideoIcon } from "lucide-react";
+import { FullScreenCamera } from "./FullScreenCamera"; // Import the new component
 
 interface VideoUploaderProps {
   onVideoChange: (files: File[]) => void;
@@ -31,22 +22,10 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-
-  // State for camera recording dialog
-  const [showCameraDialog, setShowCameraDialog] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
-
+  const [showCamera, setShowCamera] = useState(false);
 
   const handleNewFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
-      // Allow files with no MIME type (common with .mov) but reject if type exists and is not video
       if (file.type && !file.type.startsWith("video/")) {
         toast({ title: "Invalid File Type", description: `${file.name} is not a valid video file.`, variant: "destructive" });
         return false;
@@ -99,89 +78,11 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
       handleNewFiles(Array.from(files));
     }
   };
-
-  // Camera and Recording Logic
-  const openCamera = async () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-    }
-    setHasCameraPermission(null);
-    setCameraError(null);
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: true });
-        setCameraStream(stream);
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err: any) {
-        console.error("Error accessing camera:", err);
-        setHasCameraPermission(false);
-        const message = `Could not access the ${facingMode} camera. Please check permissions or try the other camera.`;
-        setCameraError(message);
-        toast({ title: "Camera Error", description: message, variant: "destructive" });
-      }
-    } else {
-      setCameraError("Camera access is not supported by your browser.");
-    }
-  };
-
-  const closeCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-    }
-    setCameraStream(null);
-    setShowCameraDialog(false);
-    setHasCameraPermission(null);
-    setCameraError(null);
-    setIsRecording(false);
-  };
-
-  const handleToggleCamera = () => {
-    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-  }
-
-  const handleStartRecording = () => {
-    if (!cameraStream) return;
-    setIsRecording(true);
-    recordedChunksRef.current = [];
-    // Prefer webm for broad compatibility, but browser may fall back
-    const options = { mimeType: 'video/webm; codecs=vp9' }; 
-    mediaRecorderRef.current = new MediaRecorder(cameraStream, options);
-
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        recordedChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorderRef.current.onstop = () => {
-      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      const file = new File([blob], `recording-${Date.now()}.webm`, { type: 'video/webm' });
-      handleNewFiles([file]);
-      closeCamera();
-    };
-
-    mediaRecorderRef.current.start();
-  };
-
-  const handleStopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
   
-  useEffect(() => {
-    if (showCameraDialog) {
-      openCamera();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCameraDialog, facingMode]);
+  const handleVideoRecorded = (videoFile: File) => {
+    handleNewFiles([videoFile]);
+    setShowCamera(false); // Close the full-screen camera view
+  };
 
   return (
     <>
@@ -218,7 +119,7 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
               <Button type="button" onClick={triggerFileInput} variant="outline" disabled={isAnalyzing}>
                 <VideoIcon className="mr-2 h-4 w-4" /> Select Files
               </Button>
-               <Button type="button" onClick={() => setShowCameraDialog(true)} variant="outline" disabled={isAnalyzing}>
+               <Button type="button" onClick={() => setShowCamera(true)} variant="outline" disabled={isAnalyzing}>
                 <Camera className="mr-2 h-4 w-4" /> Record Video
               </Button>
             </div>
@@ -256,52 +157,12 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
         </CardFooter>
       </Card>
       
-      {/* Camera Dialog */}
-       <Dialog open={showCameraDialog} onOpenChange={(isOpen) => { if (!isOpen) closeCamera(); else setShowCameraDialog(true);}}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Record Video</DialogTitle>
-            <DialogDescription>
-              {isRecording ? "Recording in progress..." : "Position the camera and click record."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="relative">
-              <video ref={videoRef} autoPlay muted playsInline className="w-full aspect-video rounded-md bg-black" />
-              {!isRecording && hasCameraPermission && (
-                  <Button variant="outline" size="icon" onClick={handleToggleCamera} className="absolute top-2 right-2 bg-black/30 hover:bg-black/60 border-none text-white">
-                      <RefreshCw className="h-5 w-5"/>
-                  </Button>
-              )}
-            </div>
-            {hasCameraPermission === false && cameraError && (
-              <Alert variant="destructive">
-                <Camera className="h-4 w-4" />
-                <AlertTitle>Camera Access Error</AlertTitle>
-                <AlertDescription>{cameraError}</AlertDescription>
-              </Alert>
-            )}
-            {hasCameraPermission === null && !cameraError && (
-              <div className="flex items-center justify-center text-muted-foreground"> 
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Requesting camera access...
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-between">
-            <Button variant="outline" onClick={closeCamera}>Cancel</Button>
-            {!isRecording ? (
-              <Button onClick={handleStartRecording} disabled={!cameraStream}>
-                <Radio className="mr-2 h-4 w-4 text-red-500 animate-pulse" /> Record
-              </Button>
-            ) : (
-              <Button onClick={handleStopRecording} variant="destructive">
-                Stop Recording
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {showCamera && (
+        <FullScreenCamera
+          onClose={() => setShowCamera(false)}
+          onVideoRecorded={handleVideoRecorded}
+        />
+      )}
     </>
   );
 }
