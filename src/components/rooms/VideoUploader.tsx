@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, Film, Sparkles, Loader2, XCircle, Camera, Video as VideoIcon, Radio } from "lucide-react";
+import { UploadCloud, Film, Sparkles, Loader2, XCircle, Camera, Video as VideoIcon, Radio, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,7 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
 
   const handleNewFiles = (newFiles: File[]) => {
@@ -101,11 +102,14 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
 
   // Camera and Recording Logic
   const openCamera = async () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
     setHasCameraPermission(null);
     setCameraError(null);
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: true });
         setCameraStream(stream);
         setHasCameraPermission(true);
         if (videoRef.current) {
@@ -114,7 +118,7 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
       } catch (err: any) {
         console.error("Error accessing camera:", err);
         setHasCameraPermission(false);
-        const message = "Could not access the camera. Please enable permissions in your browser settings.";
+        const message = `Could not access the ${facingMode} camera. Please check permissions or try the other camera.`;
         setCameraError(message);
         toast({ title: "Camera Error", description: message, variant: "destructive" });
       }
@@ -136,6 +140,10 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
     setCameraError(null);
     setIsRecording(false);
   };
+
+  const handleToggleCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  }
 
   const handleStartRecording = () => {
     if (!cameraStream) return;
@@ -172,13 +180,8 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
     if (showCameraDialog) {
       openCamera();
     }
-    return () => {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-      }
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCameraDialog]);
+  }, [showCameraDialog, facingMode]);
 
   return (
     <>
@@ -254,7 +257,7 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
       </Card>
       
       {/* Camera Dialog */}
-       <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+       <Dialog open={showCameraDialog} onOpenChange={(isOpen) => { if (!isOpen) closeCamera(); else setShowCameraDialog(true);}}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Record Video</DialogTitle>
@@ -263,7 +266,14 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            <video ref={videoRef} autoPlay muted playsInline className="w-full aspect-video rounded-md bg-black" />
+            <div className="relative">
+              <video ref={videoRef} autoPlay muted playsInline className="w-full aspect-video rounded-md bg-black" />
+              {!isRecording && hasCameraPermission && (
+                  <Button variant="outline" size="icon" onClick={handleToggleCamera} className="absolute top-2 right-2 bg-black/30 hover:bg-black/60 border-none text-white">
+                      <RefreshCw className="h-5 w-5"/>
+                  </Button>
+              )}
+            </div>
             {hasCameraPermission === false && cameraError && (
               <Alert variant="destructive">
                 <Camera className="h-4 w-4" />
