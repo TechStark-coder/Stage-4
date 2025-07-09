@@ -5,7 +5,7 @@
 - User Authentication: User account creation and secure login functionality.
 - Home and Room Management: Ability for users to create and manage multiple 'Homes' and 'Rooms' within each home.
 - Photo Upload: Interface to upload multiple reference photos for each room.
-- AI-Powered Object Detection: Utilize a Gemini tool to analyze uploaded photos and generate a detailed description of objects present in each room. Use API Key: AIzaSyDM9Hbb2b4fLdEfVUmIKUxUzUVJPwEgfqM
+- AI-Powered Object Detection: Utilize a Gemini tool to analyze uploaded photos and generate a detailed description of objects present in each room. Use API Key:
 - Object List Display: Display the detected objects in a clear and organized list for each room.
 
 ## Style Guidelines:
