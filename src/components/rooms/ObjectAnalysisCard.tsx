@@ -178,3 +178,5 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     </Card>
   );
 }
+
+    

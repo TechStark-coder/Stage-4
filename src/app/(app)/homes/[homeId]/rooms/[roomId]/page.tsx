@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { storage } from "@/config/firebase";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
-import { ForestLoader } from "@/components/rooms/ForestLoader";
 
 export default function RoomDetailPage() {
   const { user } = useAuthContext();
@@ -477,6 +476,8 @@ export default function RoomDetailPage() {
     </>
   );
 }
+
+    
 
     
 

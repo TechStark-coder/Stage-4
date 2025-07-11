@@ -44,12 +44,12 @@ export function ImageGallery({
     // URLs are revoked via onLoad in the Image component or handled by the lightbox
   };
 
-  const handleAnalyzedPhotoClick = (index: number) => {
-    onMediaClick(analyzedPhotoUrls, index, false);
-  };
+  const allAnalyzedMedia = [...analyzedPhotoUrls, ...analyzedVideoUrls];
 
-  const handleAnalyzedVideoClick = (index: number) => {
-    onMediaClick(analyzedVideoUrls, index, true);
+  const handleAnalyzedMediaClick = (index: number) => {
+      const url = allAnalyzedMedia[index];
+      const isVideo = analyzedVideoUrls.includes(url);
+      onMediaClick(allAnalyzedMedia, index, isVideo);
   };
   
   const renderMediaGrid = (files: (File | string)[], isPending: boolean) => {
@@ -58,7 +58,7 @@ export function ImageGallery({
         {files.map((media, index) => {
           const isFile = media instanceof File;
           const url = isFile ? URL.createObjectURL(media) : media;
-          const isVideo = isFile ? media.type.startsWith('video/') : (url.includes('.mov') || url.includes('.mp4') || url.includes('.webm'));
+          const isVideo = isFile ? media.type.startsWith('video/') : (analyzedVideoUrls.includes(url as string));
           const key = isFile ? `pending-${index}-${media.name}` : `analyzed-${index}-${url}`;
 
           return (
@@ -67,8 +67,7 @@ export function ImageGallery({
               className="relative group aspect-square rounded-md overflow-hidden border border-border shadow-sm cursor-pointer bg-black"
               onClick={() => {
                 if(isPending) handlePendingMediaClick(index);
-                else if(isVideo) handleAnalyzedVideoClick(analyzedVideoUrls.indexOf(url));
-                else handleAnalyzedPhotoClick(analyzedPhotoUrls.indexOf(url));
+                else handleAnalyzedMediaClick(index);
               }}
               role="button"
               tabIndex={0}
@@ -148,25 +147,14 @@ export function ImageGallery({
           <div>
              <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Analyzed Media ({analyzedPhotoUrls.length + analyzedVideoUrls.length})
+                Analyzed Media ({allAnalyzedMedia.length})
               </h3>
               <Button variant="destructive-outline" size="sm" onClick={onClearAnalyzedMedia}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Clear Analyzed Media
               </Button>
              </div>
-            {hasAnalyzedPhotos && (
-              <div className="mb-4">
-                <h4 className="text-xs font-semibold uppercase text-muted-foreground/80 mb-2">Photos</h4>
-                {renderMediaGrid(analyzedPhotoUrls, false)}
-              </div>
-            )}
-            {hasAnalyzedVideos && (
-              <div>
-                <h4 className="text-xs font-semibold uppercase text-muted-foreground/80 mb-2">Videos</h4>
-                {renderMediaGrid(analyzedVideoUrls, false)}
-              </div>
-            )}
+             {renderMediaGrid(allAnalyzedMedia, false)}
           </div>
         )}
 
@@ -174,3 +162,5 @@ export function ImageGallery({
     </Card>
   );
 }
+
+    
