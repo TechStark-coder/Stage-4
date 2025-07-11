@@ -53,8 +53,11 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   const handleNewFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       if (file.type && !file.type.startsWith("video/")) {
-        toast({ title: "Invalid File Type", description: `${file.name} is not a valid video file.`, variant: "destructive" });
-        return false;
+        // Allow .mov files that might have 'application/octet-stream' type
+        if (file.type !== 'application/octet-stream' || !file.name.toLowerCase().endsWith('.mov')) {
+            toast({ title: "Invalid File Type", description: `${file.name} is not a valid video file.`, variant: "destructive" });
+            return false;
+        }
       }
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
         toast({ title: "File Too Large", description: `${file.name} exceeds the ${MAX_FILE_SIZE_MB}MB size limit.`, variant: "destructive" });
@@ -79,6 +82,11 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   const handleRemoveFile = (indexToRemove: number) => {
     const updatedFiles = videoFiles.filter((_, index) => index !== indexToRemove);
     onVideoChange(updatedFiles);
+  };
+  
+  const handleClearAllFiles = () => {
+    onVideoChange([]);
+    toast({ title: "Selection Cleared", description: "All selected videos have been removed."});
   };
 
   const triggerFileInput = () => fileInputRef.current?.click();
@@ -153,7 +161,12 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
           
           {videoFiles.length > 0 && (
             <div className="mt-4 space-y-2 pt-4 border-t">
-              <h4 className="text-sm font-medium text-muted-foreground">Selected Videos ({videoFiles.length}):</h4>
+              <div className="flex justify-between items-center">
+                 <h4 className="text-sm font-medium text-muted-foreground">Selected Videos ({videoFiles.length}):</h4>
+                 <Button variant="link" size="sm" className="text-destructive h-auto p-0" onClick={handleClearAllFiles}>
+                    Clear
+                 </Button>
+              </div>
               <ul className="space-y-2 max-h-40 overflow-y-auto pr-2">
                 {videoFiles.map((file, index) => (
                   <li key={`${file.name}-${index}`} className="flex items-center justify-between bg-muted/50 p-2 rounded-md group">
