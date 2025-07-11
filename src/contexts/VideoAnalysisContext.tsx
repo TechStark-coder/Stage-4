@@ -74,7 +74,11 @@ export function VideoAnalysisProvider({ children }: { children: ReactNode }) {
                      };
                 }
             }
-            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToStore));
+            if (Object.keys(dataToStore).length > 0) {
+                sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToStore));
+            } else {
+                sessionStorage.removeItem(SESSION_STORAGE_KEY);
+            }
         } catch (error) {
             console.error("Could not save video analysis state to sessionStorage:", error);
         }

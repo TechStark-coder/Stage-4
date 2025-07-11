@@ -64,7 +64,7 @@ export default function VideoAnalysisPage() {
 
   const handleVideoChange = (files: File[]) => {
     // When files are changed, we keep the old analysis result for now
-    setRoomState(roomId, { videoFiles: files });
+    setRoomState(roomId, { videoFiles: files, analysisResult });
   };
 
   const handleAnalyzeVideo = async (filesToAnalyze: File[]) => {
