@@ -37,14 +37,14 @@ export default function RoomDetailPage() {
   const homeId = params.homeId as string;
   const roomId = params.roomId as string;
   const { toast } = useToast();
-  const { showAiLoader, hideAiLoader, isAiAnalyzing } = useAiAnalysisLoader();
+  const { showAiLoader, hideAiLoader, isAiAnalyzing: isGlobalAiAnalyzing } = useAiAnalysisLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
   const [mediaToUpload, setMediaToUpload] = useState<File[]>([]);
-  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
+  const [mediaToDelete, setMediaToDelete] = useState<{url: string; isAnalyzed: boolean} | null>(null);
 
   // State for lightbox
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
@@ -298,7 +298,7 @@ export default function RoomDetailPage() {
     }
   };
 
-  const handleClearResults = async () => {
+  const handleClearAnalyzedResults = async () => {
     if (!homeId || !roomId || !user?.uid) {
       toast({ title: "Error", description: "Cannot clear results. Missing required information.", variant: "destructive" });
       return;
@@ -317,36 +317,49 @@ export default function RoomDetailPage() {
     }
   };
 
-  const confirmRemoveAnalyzedPhoto = async () => {
-    if (!photoToDelete || !homeId || !roomId || !user?.uid) {
-      toast({ title: "Error", description: "Cannot delete photo. Missing required information.", variant: "destructive" });
-      setPhotoToDelete(null);
+  const confirmRemoveMedia = async () => {
+    if (!mediaToDelete || !homeId || !roomId || !user?.uid) {
+      toast({ title: "Error", description: "Cannot delete media. Missing required information.", variant: "destructive" });
+      setMediaToDelete(null);
       return;
     }
     
-    showAiLoader();
-    let photoSuccessfullyRemoved = false;
+    if (mediaToDelete.isAnalyzed) {
+        showAiLoader();
+        let mediaSuccessfullyRemoved = false;
+        try {
+          await removeAnalyzedRoomPhoto(homeId, roomId, mediaToDelete.url, user.uid);
+          toast({ title: "Media Removed", description: "Media deleted. Re-analyzing remaining files..." });
+          mediaSuccessfullyRemoved = true;
+        } catch (error: any) {
+          console.error("Failed to delete media from Firestore/Storage:", error);
+          toast({ title: "Error Deleting Media", description: error.message, variant: "destructive" });
+        } finally {
+          setMediaToDelete(null); 
+        }
 
-    try {
-      await removeAnalyzedRoomPhoto(homeId, roomId, photoToDelete, user.uid);
-      toast({ title: "Media Removed", description: "Media deleted. Re-analyzing remaining files for the room..." });
-      photoSuccessfullyRemoved = true;
-    } catch (error: any) {
-      console.error("Failed to delete media from Firestore/Storage:", error);
-      toast({ title: "Error Deleting Media", description: error.message, variant: "destructive" });
-    } finally {
-      setPhotoToDelete(null); 
-    }
-
-    if (photoSuccessfullyRemoved) {
-      const updatedRoomData = await getRoom(homeId, roomId); 
-      setRoom(updatedRoomData); 
-      
-      if (updatedRoomData) {
-        await performFullRoomAnalysis(updatedRoomData.analyzedPhotoUrls || [], updatedRoomData.analyzedVideoUrls || []);
-      } else {
-        await performFullRoomAnalysis([], []);
-      }
+        if (mediaSuccessfullyRemoved) {
+          const updatedRoomData = await getRoom(homeId, roomId); 
+          setRoom(updatedRoomData); 
+          
+          if (updatedRoomData) {
+            await performFullRoomAnalysis(updatedRoomData.analyzedPhotoUrls || [], updatedRoomData.analyzedVideoUrls || []);
+          } else {
+            await performFullRoomAnalysis([], []);
+          }
+        }
+    } else {
+        // This is a pending file, just remove it from the state
+        const urlToRemove = mediaToDelete.url;
+        setMediaToUpload(prevFiles => {
+            const indexToRemove = prevFiles.findIndex(file => URL.createObjectURL(file) === urlToRemove);
+            if(indexToRemove > -1) {
+                return prevFiles.filter((_, i) => i !== indexToRemove);
+            }
+            return prevFiles;
+        });
+        URL.revokeObjectURL(urlToRemove); // Clean up object URL
+        setMediaToDelete(null);
     }
   };
 
@@ -381,7 +394,7 @@ export default function RoomDetailPage() {
     );
   }
 
-  const displayAnalyzing = room.isAnalyzing || isAiAnalyzing;
+  const displayAnalyzing = room.isAnalyzing || isGlobalAiAnalyzing;
 
   return (
     <>
@@ -414,7 +427,7 @@ export default function RoomDetailPage() {
         />
         <ObjectAnalysisCard
          room={{...room, isAnalyzing: displayAnalyzing }}
-         onClearResults={handleClearResults}
+         onClearResults={handleClearAnalyzedResults}
          homeName={home.name}
         />
       </div>
@@ -424,27 +437,28 @@ export default function RoomDetailPage() {
           analyzedPhotoUrls={room.analyzedPhotoUrls || []}
           analyzedVideoUrls={room.analyzedVideoUrls || []}
           onRemovePendingMedia={handleRemovePendingMedia}
-          onRemoveAnalyzedMedia={(url) => setPhotoToDelete(url)}
+          onRemoveAnalyzedMedia={(url) => setMediaToDelete({url, isAnalyzed: true})}
           onMediaClick={(urls, index, isVideo) => {
             openLightbox(urls, index, isVideo);
           }}
           onClearPendingMedia={handleClearPendingMedia}
+          onClearAnalyzedMedia={handleClearAnalyzedResults}
         />
 
     </div>
-    <AlertDialog open={!!photoToDelete} onOpenChange={(open) => !open && setPhotoToDelete(null)}>
+    <AlertDialog open={!!mediaToDelete} onOpenChange={(open) => !open && setMediaToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Delete Media</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to permanently delete this file? 
-              This will remove the file and trigger a re-analysis of the remaining media for this room. This action cannot be undone.
+              {mediaToDelete?.isAnalyzed && " This will remove the file and trigger a re-analysis of the remaining media for this room. This action cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPhotoToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRemoveAnalyzedPhoto} className="bg-destructive hover:bg-destructive/90">
-              Delete & Re-analyze
+            <AlertDialogCancel onClick={() => setMediaToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveMedia} className="bg-destructive hover:bg-destructive/90">
+              {mediaToDelete?.isAnalyzed ? 'Delete & Re-analyze' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

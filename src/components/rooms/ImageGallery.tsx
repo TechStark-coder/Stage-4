@@ -15,6 +15,7 @@ interface ImageGalleryProps {
   onRemoveAnalyzedMedia: (mediaUrl: string) => void;
   onMediaClick: (urls: string[], startIndex: number, isVideo?: boolean) => void;
   onClearPendingMedia: () => void;
+  onClearAnalyzedMedia: () => void;
 }
 
 export function ImageGallery({ 
@@ -25,12 +26,14 @@ export function ImageGallery({
   onRemoveAnalyzedMedia,
   onMediaClick,
   onClearPendingMedia,
+  onClearAnalyzedMedia,
 }: ImageGalleryProps) {
   const hasPendingFiles = pendingFiles.length > 0;
   const hasAnalyzedPhotos = analyzedPhotoUrls.length > 0;
   const hasAnalyzedVideos = analyzedVideoUrls.length > 0;
+  const hasAnalyzedMedia = hasAnalyzedPhotos || hasAnalyzedVideos;
 
-  if (!hasPendingFiles && !hasAnalyzedPhotos && !hasAnalyzedVideos) {
+  if (!hasPendingFiles && !hasAnalyzedMedia) {
     return null; // Don't render anything if there's no media at all
   }
 
@@ -91,8 +94,11 @@ export function ImageGallery({
                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-destructive/80 z-10"
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  if (isPending) onRemovePendingMedia(index);
-                  else onRemoveAnalyzedMedia(url);
+                  if (isPending) {
+                    onRemovePendingMedia(index);
+                  } else {
+                    onRemoveAnalyzedMedia(url);
+                  }
                 }}
                 aria-label={`Remove ${isVideo ? 'video' : 'photo'}`}
               >
@@ -118,30 +124,37 @@ export function ImageGallery({
             Review current and analyzed media. Click to view.
           </CardDescription>
         </div>
-        {hasPendingFiles && (
-          <Button variant="outline" size="sm" onClick={onClearPendingMedia}>
-            <X className="mr-2 h-4 w-4" />
-            Clear All
-          </Button>
-        )}
+        
       </CardHeader>
       <CardContent className="flex-grow space-y-6">
         {hasPendingFiles && (
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Pending Media for Analysis ({pendingFiles.length})
-            </h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Pending Media for Analysis ({pendingFiles.length})
+              </h3>
+              <Button variant="outline" size="sm" onClick={onClearPendingMedia}>
+                <X className="mr-2 h-4 w-4" />
+                Clear All
+              </Button>
+            </div>
             {renderMediaGrid(pendingFiles, true)}
           </div>
         )}
 
-        {(hasPendingFiles && (hasAnalyzedPhotos || hasAnalyzedVideos)) && <Separator />}
+        {(hasPendingFiles && hasAnalyzedMedia) && <Separator />}
 
-        {(hasAnalyzedPhotos || hasAnalyzedVideos) && (
+        {hasAnalyzedMedia && (
           <div>
-             <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Analyzed Media ({analyzedPhotoUrls.length + analyzedVideoUrls.length})
-            </h3>
+             <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Analyzed Media ({analyzedPhotoUrls.length + analyzedVideoUrls.length})
+              </h3>
+              <Button variant="destructive-outline" size="sm" onClick={onClearAnalyzedMedia}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear Analyzed Media
+              </Button>
+             </div>
             {hasAnalyzedPhotos && (
               <div className="mb-4">
                 <h4 className="text-xs font-semibold uppercase text-muted-foreground/80 mb-2">Photos</h4>
