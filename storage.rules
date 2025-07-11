@@ -1,11 +1,28 @@
+
 rules_version = '2';
 
+// Allow read access by all, but only allow write access for authenticated users to their own folders.
 service firebase.storage {
   match /b/{bucket}/o {
-    // WARNING: Allows anyone to read, write, and delete any file.
-    // This is highly insecure and for temporary debugging ONLY.
+
+    // Match any file in the root and subdirectories
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read: if true; // Public read access
+    }
+
+    // Rules for Home Cover Images
+    match /homeCovers/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for Room Photo Analysis
+    match /roomAnalysisPhotos/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for Room Video Analysis
+    match /roomAnalysisVideos/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

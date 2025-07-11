@@ -44,13 +44,14 @@ Replace `YOUR_...` placeholders with your actual credentials.
 1. Clone the repository.
 2. Install dependencies: `npm install` or `yarn install`.
 3. Create a `.env` file in the project root and populate it with your Firebase and Google API keys (see "Environment Variables" section above).
-4. Configure Firebase Storage:
-    - Ensure your Firebase project is on the Blaze (pay-as-you-go) plan.
-    - Enable Storage in the Firebase console.
-    - Set up CORS rules for your Storage bucket to allow requests from your development and production origins.
-    - Set up Firebase Storage Security Rules to allow authenticated users to read/write files.
-5. Run the Genkit development server (if using local Genkit flows, optional if using cloud-deployed flows): `npm run genkit:dev`
-6. Run the Next.js development server: `npm run dev`
+4. **Configure Firebase Storage Security Rules**:
+    - Go to your Firebase project console.
+    - Navigate to the **Storage** section.
+    - Click on the **Rules** tab.
+    - **Replace** the existing rules with the content from the `storage.rules` file in this project.
+    - Click **Publish**. This step is crucial to allow users to upload files.
+5. Configure CORS for your Storage bucket to allow requests from your development and production origins if you encounter CORS issues.
+6. Run the Genkit development server (if using local Genkit flows, optional if using cloud-deployed flows): `npm run genkit:dev`
+7. Run the Next.js development server: `npm run dev`
 
 The application should now be running, typically on `http://localhost:9002` (or your configured port).
-```
