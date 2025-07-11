@@ -1,13 +1,20 @@
 
 "use client";
 
-import { useState, useRef, type DragEvent } from "react";
+import { useState, useRef, type DragEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, Film, Sparkles, Loader2, XCircle, Camera, Video as VideoIcon } from "lucide-react";
+import { UploadCloud, Film, Sparkles, Loader2, XCircle, Camera, Video as VideoIcon, PlayCircle } from "lucide-react";
 import { FullScreenCamera } from "./FullScreenCamera"; // Import the new component
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface VideoUploaderProps {
   onVideoChange: (files: File[]) => void;
@@ -23,6 +30,25 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+
+  // State for video preview
+  const [videoToPreview, setVideoToPreview] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (videoToPreview) {
+      const url = URL.createObjectURL(videoToPreview);
+      setPreviewUrl(url);
+    } else {
+      // Clean up the object URL when the dialog is closed
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl("");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoToPreview]);
+
 
   const handleNewFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
@@ -130,8 +156,11 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
               <h4 className="text-sm font-medium text-muted-foreground">Selected Videos ({videoFiles.length}):</h4>
               <ul className="space-y-2 max-h-40 overflow-y-auto pr-2">
                 {videoFiles.map((file, index) => (
-                  <li key={`${file.name}-${index}`} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
-                    <span className="text-sm truncate pr-2">{file.name}</span>
+                  <li key={`${file.name}-${index}`} className="flex items-center justify-between bg-muted/50 p-2 rounded-md group">
+                    <button type="button" className="flex items-center gap-2 text-sm truncate pr-2 text-left" onClick={() => setVideoToPreview(file)}>
+                      <PlayCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      {file.name}
+                    </button>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveFile(index)}>
                       <XCircle className="h-4 w-4" />
                     </Button>
@@ -163,6 +192,18 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
           onVideoRecorded={handleVideoRecorded}
         />
       )}
+
+      <Dialog open={!!videoToPreview} onOpenChange={(isOpen) => !isOpen && setVideoToPreview(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Video Preview</DialogTitle>
+            <DialogDescription>{videoToPreview?.name}</DialogDescription>
+          </DialogHeader>
+          {previewUrl && (
+             <video src={previewUrl} controls autoPlay className="w-full rounded-md bg-black" />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
