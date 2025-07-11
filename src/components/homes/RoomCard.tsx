@@ -145,16 +145,15 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
           )}
         </div>
         {canDownload && (
-           <button 
+           <Button 
              onClick={handleDownloadRoomPdf} 
              disabled={_isDownloading}
-             className="download-button-card"
+             variant="ghost"
+             size="icon"
              aria-label="Download room analysis PDF"
            >
-             <svg className="svgIcon" viewBox="0 0 384 512" height="1em" xmlns="http://www.w3.org/2000/svg"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8 224 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path></svg>
-             <span className="icon2"></span>
-             <span className="tooltip">Download</span>
-           </button>
+             {_isDownloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+           </Button>
         )}
       </CardHeader>
 
@@ -178,7 +177,7 @@ export function RoomCard({ room, homeId, homeName, onRoomAction }: RoomCardProps
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm">
-                <Trash2 /> Delete
+                <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
