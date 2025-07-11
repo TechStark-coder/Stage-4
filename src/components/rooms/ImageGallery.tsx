@@ -108,7 +108,7 @@ export function ImageGallery({
 
   return (
     <Card className="shadow-lg h-full flex flex-col">
-      <CardHeader className="flex flex-row justify-between items-center">
+      <CardHeader className="flex flex-row justify-between items-start">
         <div>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-6 w-6 text-primary" /> 
