@@ -46,18 +46,16 @@ export function PhotoUploader({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const addNewFiles = (newFilesArray: File[]) => {
-    const validMediaTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm'];
-    
     const filteredNewFiles = newFilesArray.filter(file => {
-      // Allow .mov files which might have 'application/octet-stream' type
-      if (file.type === 'application/octet-stream' && file.name.toLowerCase().endsWith('.mov')) {
-        return true;
-      }
-      // Check for any image or video type
+      // Allow standard image and video types
       if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
         return true;
       }
-      return false;
+      // Specifically allow .mov files, which can have a generic 'application/octet-stream' MIME type
+      if (file.name.toLowerCase().endsWith('.mov')) {
+        return true;
+      }
+      return false; // Reject other files
     });
 
     if (filteredNewFiles.length !== newFilesArray.length) {
@@ -243,7 +241,7 @@ export function PhotoUploader({
               id="media-input"
               type="file"
               multiple
-              accept="image/*,video/*,.mov,.mp4" 
+              accept="image/*,video/*"
               onChange={handleFileChange}
               ref={fileInputRef}
               className="hidden" 

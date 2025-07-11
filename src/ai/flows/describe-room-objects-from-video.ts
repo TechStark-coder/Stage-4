@@ -68,9 +68,10 @@ Video {{@index}}:
 const describeRoomObjectsFromVideoFlow = ai.defineFlow(
   {name: 'describeRoomObjectsFromVideoFlow', inputSchema: DescribeRoomObjectsFromVideoInputSchema, outputSchema: DescribeRoomObjectsOutputSchema},
   async input => {
-    // Sanitize URIs to replace the unsupported 'application/octet-stream' mime type.
+    // Sanitize URIs to replace unsupported MIME types with a generic video type the model can handle.
     const sanitizedUris = input.videoDataUris.map(uri =>
-      uri.replace('data:application/octet-stream;', 'data:video/mp4;')
+      uri.replace(/^data:application\/octet-stream;/, 'data:video/mp4;')
+         .replace(/^data:video\/quicktime;/, 'data:video/mp4;')
     );
     const sanitizedInput = { ...input, videoDataUris: sanitizedUris };
     
