@@ -53,13 +53,17 @@ export function PhotoUploader({
       if (file.type === 'application/octet-stream' && file.name.toLowerCase().endsWith('.mov')) {
         return true;
       }
-      return validMediaTypes.includes(file.type);
+      // Check for any image or video type
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        return true;
+      }
+      return false;
     });
 
     if (filteredNewFiles.length !== newFilesArray.length) {
       toast({
-        title: "Invalid File Type",
-        description: "Some files were not valid image or video types and were not added.",
+        title: "Unsupported File Type",
+        description: "Some files were not valid image or video types and were ignored.",
         variant: "destructive",
       });
     }
@@ -239,7 +243,7 @@ export function PhotoUploader({
               id="media-input"
               type="file"
               multiple
-              accept="image/*,video/*,.mov" 
+              accept="image/*,video/*,.mov,.mp4" 
               onChange={handleFileChange}
               ref={fileInputRef}
               className="hidden" 

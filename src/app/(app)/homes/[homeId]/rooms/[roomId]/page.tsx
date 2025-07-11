@@ -13,7 +13,7 @@ import { ImageGallery } from "@/components/rooms/ImageGallery";
 import { ImageLightbox } from "@/components/rooms/ImageLightbox"; // Import the new lightbox component
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, DoorOpen, Home as HomeIcon, Loader2, Video } from "lucide-react";
+import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
 import { describeRoomObjects } from "@/ai/flows/describe-room-objects";
@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { storage } from "@/config/firebase";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
-import { ForestLoader } from "@/components/rooms/ForestLoader";
 
 export default function RoomDetailPage() {
   const { user } = useAuthContext();
@@ -399,7 +398,6 @@ export default function RoomDetailPage() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <DoorOpen className="h-8 w-8 text-primary" />
           {room.name}
-          {displayAnalyzing && <ForestLoader />}
         </h1>
         <p className="text-sm text-muted-foreground text-left sm:text-right">
           Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
