@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, removeAnalyzedRoomPhoto, setRoomAnalyzingStatus } from "@/lib/firestore";
 import type { Home, Room, DescribeRoomObjectsOutput } from "@/types";
-import { MediaUploader } from "@/components/rooms/PhotoUploader";
+import { MediaUploader } from "@/components/rooms/MediaUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
 import { ImageGallery } from "@/components/rooms/ImageGallery";
 import { ImageLightbox } from "@/components/rooms/ImageLightbox";
@@ -395,7 +395,7 @@ export default function RoomDetailPage() {
     );
   }
 
-  const displayAnalyzing = isGlobalAiAnalyzing;
+  const displayAnalyzing = isGlobalAiAnalyzing || room.isAnalyzing;
 
   return (
     <>
@@ -423,12 +423,12 @@ export default function RoomDetailPage() {
           onAnalysisComplete={handleAnalysisComplete}
           currentFiles={mediaToUpload}
           onFilesChange={handleFilesChange}
-          isAnalyzing={displayAnalyzing}
+          isAnalyzing={!!displayAnalyzing}
           userId={user?.uid || ""}
           onClearPendingMedia={handleClearPendingMedia}
         />
         <ObjectAnalysisCard
-         room={{...room, isAnalyzing: displayAnalyzing }}
+         room={{...room, isAnalyzing: !!displayAnalyzing }}
          onClearResults={handleClearAnalyzedResults}
          homeName={home.name}
         />
@@ -477,5 +477,7 @@ export default function RoomDetailPage() {
     </>
   );
 }
+
+    
 
     
