@@ -29,9 +29,7 @@ export function ImageGallery({
   onClearAnalyzedMedia,
 }: ImageGalleryProps) {
   const hasPendingFiles = pendingFiles.length > 0;
-  const hasAnalyzedPhotos = analyzedPhotoUrls.length > 0;
-  const hasAnalyzedVideos = analyzedVideoUrls.length > 0;
-  const hasAnalyzedMedia = hasAnalyzedPhotos || hasAnalyzedVideos;
+  const hasAnalyzedMedia = (analyzedPhotoUrls?.length || 0) > 0 || (analyzedVideoUrls?.length || 0) > 0;
 
   if (!hasPendingFiles && !hasAnalyzedMedia) {
     return null; // Don't render anything if there's no media at all
@@ -39,16 +37,17 @@ export function ImageGallery({
 
   const handlePendingMediaClick = (index: number) => {
     const urls = pendingFiles.map(file => URL.createObjectURL(file));
-    const isVideo = pendingFiles[index].type.startsWith('video/');
+    const isFile = pendingFiles[index];
+    const isVideo = isFile.type.startsWith('video/') || isFile.name.toLowerCase().endsWith('.mov');
     onMediaClick(urls, index, isVideo);
     // URLs are revoked via onLoad in the Image component or handled by the lightbox
   };
-
-  const allAnalyzedMedia = [...analyzedPhotoUrls, ...analyzedVideoUrls];
+  
+  const allAnalyzedMedia = [...(analyzedPhotoUrls || []), ...(analyzedVideoUrls || [])];
 
   const handleAnalyzedMediaClick = (index: number) => {
       const url = allAnalyzedMedia[index];
-      const isVideo = analyzedVideoUrls.includes(url);
+      const isVideo = (analyzedVideoUrls || []).includes(url) || url.toLowerCase().endsWith('.mov');
       onMediaClick(allAnalyzedMedia, index, isVideo);
   };
   
@@ -58,7 +57,9 @@ export function ImageGallery({
         {files.map((media, index) => {
           const isFile = media instanceof File;
           const url = isFile ? URL.createObjectURL(media) : media;
-          const isVideo = isFile ? media.type.startsWith('video/') : (analyzedVideoUrls.includes(url as string));
+          const isVideo = isFile 
+              ? media.type.startsWith('video/') || media.name.toLowerCase().endsWith('.mov')
+              : (analyzedVideoUrls || []).includes(url) || url.toLowerCase().endsWith('.mov');
           const key = isFile ? `pending-${index}-${media.name}` : `analyzed-${index}-${url}`;
 
           return (
@@ -73,12 +74,16 @@ export function ImageGallery({
               tabIndex={0}
             >
               {isVideo ? (
-                <video src={url} className="w-full h-full object-cover" preload="metadata" />
+                <video preload="metadata" className="w-full h-full object-cover">
+                  {/* Provide a more compatible type for .mov files for broader browser support */}
+                  <source src={url} type={url.toLowerCase().endsWith('.mov') ? 'video/mp4' : (isFile ? media.type : 'video/mp4')} />
+                </video>
               ) : (
                 <Image
                   src={url}
                   alt={`Media ${index + 1}`}
-                  layout="fill"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                   objectFit="cover"
                   data-ai-hint="analyzed room"
                   onLoad={isFile ? (e) => URL.revokeObjectURL((e.target as HTMLImageElement).src) : undefined}
@@ -123,7 +128,6 @@ export function ImageGallery({
             Review current and analyzed media. Click to view.
           </CardDescription>
         </div>
-        
       </CardHeader>
       <CardContent className="flex-grow space-y-6">
         {hasPendingFiles && (
@@ -134,7 +138,7 @@ export function ImageGallery({
               </h3>
               <Button variant="outline" size="sm" onClick={onClearPendingMedia}>
                 <X className="mr-2 h-4 w-4" />
-                Clear All
+                Clear Pending
               </Button>
             </div>
             {renderMediaGrid(pendingFiles, true)}
@@ -151,7 +155,7 @@ export function ImageGallery({
               </h3>
               <Button variant="destructive-outline" size="sm" onClick={onClearAnalyzedMedia}>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Clear Analyzed Media
+                  Clear Analyzed
               </Button>
              </div>
              {renderMediaGrid(allAnalyzedMedia, false)}
@@ -162,5 +166,3 @@ export function ImageGallery({
     </Card>
   );
 }
-
-    
