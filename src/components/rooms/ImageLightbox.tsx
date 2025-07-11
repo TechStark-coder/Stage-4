@@ -15,6 +15,7 @@ interface ImageLightboxProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (newIndex: number) => void;
+  isVideos?: boolean;
 }
 
 export function ImageLightbox({
@@ -23,8 +24,9 @@ export function ImageLightbox({
   isOpen,
   onClose,
   onNavigate,
+  isVideos = false,
 }: ImageLightboxProps) {
-  const [imageLoading, setImageLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -49,9 +51,8 @@ export function ImageLightbox({
   }, [isOpen, currentIndex, images, onClose, onNavigate]);
 
   React.useEffect(() => {
-    // Reset loading state whenever the image source changes
     if (images[currentIndex ?? -1]) {
-      setImageLoading(true);
+      setLoading(true);
     }
   }, [images, currentIndex]);
 
@@ -59,45 +60,54 @@ export function ImageLightbox({
     return null;
   }
 
-  const currentImageSrc = images[currentIndex];
+  const currentSrc = images[currentIndex];
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
         className="p-0 m-0 max-w-[90vw] max-h-[90vh] w-auto h-auto bg-transparent border-none shadow-none flex items-center justify-center overflow-hidden"
-        onInteractOutside={(e) => {
-           onClose(); 
-        }}
+        onInteractOutside={onClose}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Enlarged Image Viewer</DialogTitle>
+          <DialogTitle>Enlarged Media Viewer</DialogTitle>
         </DialogHeader>
         <div className="relative w-full h-full flex items-center justify-center">
-          {/* Image Display */}
           <div className="relative max-w-full max-h-full flex items-center justify-center">
-            {imageLoading && (
+            {loading && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Skeleton className="w-[85vw] h-[85vh] max-w-[1200px] max-h-[800px] rounded-md" />
               </div>
             )}
-            <Image
-              src={currentImageSrc}
-              alt={`Lightbox image ${currentIndex + 1} of ${images.length}`}
-              width={1200} // Max width, will scale down
-              height={800} // Max height, will scale down
-              className={cn(
+            
+            {isVideos ? (
+              <video
+                src={currentSrc}
+                controls
+                autoPlay
+                className={cn(
                   "object-contain max-w-[85vw] max-h-[85vh] rounded-md shadow-2xl transition-opacity duration-300",
-                  imageLoading ? "opacity-0" : "opacity-100"
-              )}
-              onLoadingComplete={() => setImageLoading(false)}
-              priority // Load current image quickly
-              data-ai-hint="gallery enlarged photo"
-            />
+                  loading ? "opacity-0" : "opacity-100"
+                )}
+                onLoadedData={() => setLoading(false)}
+                onCanPlay={() => setLoading(false)}
+              />
+            ) : (
+              <Image
+                src={currentSrc}
+                alt={`Lightbox image ${currentIndex + 1} of ${images.length}`}
+                width={1200}
+                height={800}
+                className={cn(
+                    "object-contain max-w-[85vw] max-h-[85vh] rounded-md shadow-2xl transition-opacity duration-300",
+                    loading ? "opacity-0" : "opacity-100"
+                )}
+                onLoadingComplete={() => setLoading(false)}
+                priority
+                data-ai-hint="gallery enlarged photo"
+              />
+            )}
           </div>
 
-          {/* NOTE: Removed the extra close button. The DialogContent component provides its own. */}
-
-          {/* Navigation Buttons */}
           {images.length > 1 && (
             <>
               <Button
@@ -129,7 +139,6 @@ export function ImageLightbox({
             </>
           )}
           
-          {/* Image Counter */}
           {images.length > 1 && (
             <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-1 rounded-md z-50">
               {currentIndex + 1} / {images.length}

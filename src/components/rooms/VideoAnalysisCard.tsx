@@ -9,15 +9,19 @@ import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects";
 import { ForestLoader } from "./ForestLoader"; // Import the new loader
+import { format } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
+
 
 interface VideoAnalysisCardProps {
   analysisResult: DescribeRoomObjectsOutput | null;
   isAnalyzing: boolean;
   onClearResults: () => void; 
   title: string;
+  lastAnalyzedAt?: Timestamp | null;
 }
 
-export function VideoAnalysisCard({ analysisResult, isAnalyzing, onClearResults, title }: VideoAnalysisCardProps) {
+export function VideoAnalysisCard({ analysisResult, isAnalyzing, onClearResults, title, lastAnalyzedAt }: VideoAnalysisCardProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = _React.useState(false);
 
@@ -37,7 +41,7 @@ export function VideoAnalysisCard({ analysisResult, isAnalyzing, onClearResults,
       doc.text(title, 14, 22);
       
       doc.setFontSize(12);
-      doc.text(`Analyzed on: ${new Date().toLocaleDateString()}`, 14, 30);
+      doc.text(`Analyzed on: ${lastAnalyzedAt ? format(lastAnalyzedAt.toDate(), "PPP 'at' p") : new Date().toLocaleDateString()}`, 14, 30);
 
       doc.setFontSize(14);
       doc.text("Identified Objects:", 14, 45);
@@ -80,9 +84,16 @@ export function VideoAnalysisCard({ analysisResult, isAnalyzing, onClearResults,
         <CardTitle className="flex items-center gap-2">
           <Eye className="h-6 w-6 text-primary" /> AI Analysis Results
         </CardTitle>
-        <CardDescription>
-          Objects identified from the video will appear here.
-        </CardDescription>
+        {lastAnalyzedAt && !isAnalyzing ? (
+           <CardDescription className="flex items-center gap-1 text-xs pt-1">
+            <Sparkles className="h-3 w-3" />
+            Last analyzed on {format(lastAnalyzedAt.toDate(), "PPP 'at' p")}
+          </CardDescription>
+        ) : (
+          <CardDescription>
+            Objects identified from the video will appear here.
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="flex-grow">
         {isAnalyzing ? (

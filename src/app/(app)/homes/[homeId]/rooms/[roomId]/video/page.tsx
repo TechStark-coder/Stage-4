@@ -2,42 +2,46 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { getHome, getRoom } from "@/lib/firestore";
-import type { Home, Room } from "@/types";
+import { getHome, getRoom, clearRoomVideoAnalysisData, setRoomVideoAnalyzingStatus, updateRoomVideoAnalysisData } from "@/lib/firestore";
+import type { Home, Room, DescribeRoomObjectsOutput } from "@/types";
 import { VideoUploader } from "@/components/rooms/VideoUploader";
 import { VideoAnalysisCard } from "@/components/rooms/VideoAnalysisCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Video, Home as HomeIcon, Info } from "lucide-react";
+import { ArrowLeft, Video, Home as HomeIcon, Info, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { describeRoomObjectsFromVideo } from "@/ai/flows/describe-room-objects-from-video";
-import { useVideoAnalysis } from "@/contexts/VideoAnalysisContext";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
+import { storage } from "@/config/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ImageGallery } from "@/components/rooms/ImageGallery";
+import { ImageLightbox } from "@/components/rooms/ImageLightbox";
 
 
 export default function VideoAnalysisPage() {
   const { user } = useAuthContext();
   const params = useParams();
+  const router = useRouter();
   const homeId = params.homeId as string;
   const roomId = params.roomId as string;
   const { toast } = useToast();
-  const { getRoomState, setRoomState, clearRoomState } = useVideoAnalysis();
+  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
-  
-  // Directly use the state from context. It now handles persistence.
-  const { videoFiles, analysisResult } = getRoomState(roomId) || { videoFiles: [], analysisResult: null };
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // For lightbox
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const fetchDetails = useCallback(async () => {
+  const fetchDetails = useCallback(async (showLoadingIndicator = true) => {
     if (user && homeId && roomId) {
-      setPageLoading(true);
+      if (showLoadingIndicator) setPageLoading(true);
       try {
         const currentHome = await getHome(homeId);
         if (currentHome && currentHome.ownerId === user.uid) {
@@ -53,7 +57,7 @@ export default function VideoAnalysisPage() {
         console.error("Failed to fetch details:", error);
         toast({ title: "Error", description: "Failed to fetch room details.", variant: "destructive" });
       } finally {
-        setPageLoading(false);
+        if (showLoadingIndicator) setPageLoading(false);
       }
     }
   }, [user, homeId, roomId, toast]);
@@ -62,30 +66,48 @@ export default function VideoAnalysisPage() {
     fetchDetails();
   }, [fetchDetails]);
 
-  const handleVideoChange = (files: File[]) => {
-    // When files are changed, we keep the old analysis result for now
-    setRoomState(roomId, { videoFiles: files, analysisResult });
+  // Lightbox handlers
+  const handleOpenLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setIsLightboxOpen(true);
+  };
+  
+  const handleCloseLightbox = () => {
+    setIsLightboxOpen(false);
+  };
+
+  const handleNavigateLightbox = (newIndex: number) => {
+    if (room?.analyzedVideoUrls && newIndex >= 0 && newIndex < room.analyzedVideoUrls.length) {
+      setLightboxIndex(newIndex);
+    }
   };
 
   const handleAnalyzeVideo = async (filesToAnalyze: File[]) => {
-    if (!filesToAnalyze || filesToAnalyze.length === 0) {
-      toast({
-        title: 'No Videos',
-        description: 'Please select one or more videos to analyze.',
-        variant: 'destructive',
-      });
+    if (!user || !filesToAnalyze || filesToAnalyze.length === 0) {
+      toast({ title: 'No Videos', description: 'Please select one or more videos to analyze.', variant: 'destructive' });
       return;
     }
 
-    setIsAnalyzing(true);
-    // Clear previous results before starting a new analysis
-    setRoomState(roomId, { videoFiles: filesToAnalyze, analysisResult: null });
-    toast({
-      title: 'Starting Analysis',
-      description: 'Preparing videos... This can take a moment for large files.',
-    });
+    setIsProcessing(true);
+    showAiLoader();
+    let uploadedUrls: string[] = [];
 
     try {
+      await setRoomVideoAnalyzingStatus(homeId, roomId, true);
+      fetchDetails(false); // Refresh UI to show analyzing state
+
+      toast({ title: 'Uploading Videos...', description: 'Preparing videos for analysis.' });
+
+      uploadedUrls = await Promise.all(
+        filesToAnalyze.map(async file => {
+          const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+          const videoPath = `roomAnalysisVideos/${user.uid}/${roomId}/${uniqueFileName}`;
+          const storageRef = ref(storage, videoPath);
+          await uploadBytes(storageRef, file);
+          return await getDownloadURL(storageRef);
+        })
+      );
+      
       const videoDataUris = await Promise.all(
         filesToAnalyze.map(file => {
           return new Promise<string>((resolve, reject) => {
@@ -97,41 +119,66 @@ export default function VideoAnalysisPage() {
         })
       );
 
-      toast({
-        title: 'Analyzing Videos',
-        description: `AI is now processing your ${videoDataUris.length} video(s). Please wait.`,
-      });
+
+      toast({ title: 'Analyzing Videos', description: `AI is now processing ${uploadedUrls.length} video(s). Please wait.` });
       const result = await describeRoomObjectsFromVideo({ videoDataUris });
 
       if (result && result.objects) {
-        // Save the new result, keeping the files that were analyzed
-        setRoomState(roomId, { videoFiles: filesToAnalyze, analysisResult: result });
-        toast({
-          title: 'Analysis Complete!',
-          description: `Found ${result.objects.length} types of objects.`,
+        // Merge with existing results if any
+        const existingResult = room?.videoAnalysisResult?.objects || [];
+        const mergedObjectsMap = new Map<string, number>();
+        const nameMap = new Map<string, string>();
+
+        existingResult.forEach(obj => {
+            const key = obj.name.toLowerCase().trim();
+            mergedObjectsMap.set(key, obj.count);
+            nameMap.set(key, obj.name);
         });
+
+        result.objects.forEach(newObj => {
+            const key = newObj.name.toLowerCase().trim();
+            const currentCount = mergedObjectsMap.get(key) || 0;
+            mergedObjectsMap.set(key, currentCount + newObj.count);
+            if (!nameMap.has(key)) {
+                nameMap.set(key, newObj.name);
+            }
+        });
+
+        const finalObjects: DescribeRoomObjectsOutput = {
+            objects: Array.from(mergedObjectsMap.entries()).map(([key, count]) => ({
+                name: nameMap.get(key)!,
+                count: count
+            })).sort((a, b) => a.name.localeCompare(b.name))
+        };
+
+        await updateRoomVideoAnalysisData(homeId, roomId, finalObjects, uploadedUrls, user.uid);
+        toast({ title: 'Analysis Complete!', description: `Found ${result.objects.length} new types of objects.` });
       } else {
-        throw new Error(
-          'AI analysis did not return the expected object structure.'
-        );
+        throw new Error('AI analysis did not return the expected object structure.');
       }
     } catch (error: any) {
       console.error('Error during video analysis:', error);
-      toast({
-        title: 'Analysis Failed',
-        description: error.message || 'An unexpected error occurred.',
-        variant: 'destructive',
-      });
-      // On failure, keep the files but clear the result
-      setRoomState(roomId, { videoFiles: filesToAnalyze, analysisResult: null });
+      toast({ title: 'Analysis Failed', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
+      await setRoomVideoAnalyzingStatus(homeId, roomId, false);
     } finally {
-      setIsAnalyzing(false);
+      setIsProcessing(false);
+      hideAiLoader();
+      fetchDetails(false); // Refresh to show final state
     }
   };
   
-  const handleClearResults = () => {
-    clearRoomState(roomId);
-    toast({ title: "Results & Selection Cleared", description: "Ready for a new video analysis."});
+  const handleClearResults = async () => {
+    if (!user) return;
+    setIsProcessing(true);
+    try {
+      await clearRoomVideoAnalysisData(homeId, roomId, user.uid);
+      toast({ title: "Results & Videos Cleared", description: "Ready for a new video analysis." });
+    } catch (error: any) {
+      toast({ title: "Error", description: `Could not clear results: ${error.message}`, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+      fetchDetails(false);
+    }
   };
 
   if (pageLoading) {
@@ -163,51 +210,63 @@ export default function VideoAnalysisPage() {
     );
   }
 
-  // Determine if there are persisted results but no files (after a refresh)
-  const hasPersistedResults = analysisResult && videoFiles.length === 0;
+  const displayAnalyzing = room.isVideoAnalyzing || isProcessing;
 
   return (
-    <div className="space-y-8">
-      <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent -ml-2 sm:ml-0">
-        <Link href={`/homes/${homeId}/rooms/${roomId}`}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to {room.name}
-        </Link>
-      </Button>
+    <>
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-2 gap-2">
+            <Button variant="ghost" size="sm" asChild className="hover:bg-accent -ml-2 sm:ml-0">
+                <Link href={`/homes/${homeId}/rooms/${roomId}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to {room.name} (Photos)
+                </Link>
+            </Button>
+        </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-card/70 rounded-lg shadow">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Video className="h-8 w-8 text-primary" />
-          Video Analysis for: {room.name}
-        </h1>
-        <p className="text-sm text-muted-foreground text-left sm:text-right">
-          Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
-        </p>
+
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-card/70 rounded-lg shadow">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Video className="h-8 w-8 text-primary" />
+            Video Analysis for: {room.name}
+          </h1>
+          <p className="text-sm text-muted-foreground text-left sm:text-right">
+            Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <VideoUploader
+            onAnalyze={handleAnalyzeVideo}
+            isAnalyzing={displayAnalyzing}
+          />
+          <VideoAnalysisCard
+            analysisResult={room.videoAnalysisResult}
+            isAnalyzing={displayAnalyzing}
+            onClearResults={handleClearResults}
+            title={`${home.name} - ${room.name} (Video Analysis)`}
+            lastAnalyzedAt={room.lastVideoAnalyzedAt}
+          />
+        </div>
+
+        {room.analyzedVideoUrls && room.analyzedVideoUrls.length > 0 && (
+           <ImageGallery 
+              analyzedPhotoUrls={room.analyzedVideoUrls}
+              galleryTitle="Analyzed Videos"
+              emptyStateMessage="No videos have been analyzed for this room yet."
+              onImageClick={handleOpenLightbox}
+              isVideos={true}
+            />
+        )}
       </div>
 
-      {hasPersistedResults && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Viewing Previous Analysis</AlertTitle>
-          <AlertDescription>
-            Showing results from your last analysis. To re-analyze or analyze new videos, please select the video files again.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <VideoUploader
-          onVideoChange={handleVideoChange}
-          onAnalyze={handleAnalyzeVideo}
-          isAnalyzing={isAnalyzing}
-          videoFiles={videoFiles || []}
-        />
-        <VideoAnalysisCard
-          analysisResult={analysisResult}
-          isAnalyzing={isAnalyzing}
-          onClearResults={handleClearResults}
-          title={`${home.name} - ${room.name} (Video Analysis)`}
-        />
-      </div>
-    </div>
+      <ImageLightbox
+        images={room.analyzedVideoUrls || []}
+        currentIndex={lightboxIndex}
+        isOpen={isLightboxOpen}
+        onClose={handleCloseLightbox}
+        onNavigate={handleNavigateLightbox}
+        isVideos={true}
+      />
+    </>
   );
 }

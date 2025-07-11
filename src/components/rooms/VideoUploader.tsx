@@ -17,17 +17,16 @@ import {
 } from "@/components/ui/dialog";
 
 interface VideoUploaderProps {
-  onVideoChange: (files: File[]) => void;
   onAnalyze: (files: File[]) => void;
   isAnalyzing: boolean;
-  videoFiles: File[];
 }
 
 const MAX_FILE_SIZE_MB = 100;
 
-export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFiles }: VideoUploaderProps) {
+export function VideoUploader({ onAnalyze, isAnalyzing }: VideoUploaderProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
 
@@ -40,7 +39,6 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
       const url = URL.createObjectURL(videoToPreview);
       setPreviewUrl(url);
     } else {
-      // Clean up the object URL when the dialog is closed
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl("");
@@ -53,7 +51,6 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   const handleNewFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       if (file.type && !file.type.startsWith("video/")) {
-        // Allow .mov files that might have 'application/octet-stream' type
         if (file.type !== 'application/octet-stream' || !file.name.toLowerCase().endsWith('.mov')) {
             toast({ title: "Invalid File Type", description: `${file.name} is not a valid video file.`, variant: "destructive" });
             return false;
@@ -67,7 +64,7 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
     });
 
     if (validFiles.length > 0) {
-      onVideoChange([...videoFiles, ...validFiles]);
+      setVideoFiles(prev => [...prev, ...validFiles]);
     }
   };
 
@@ -80,12 +77,11 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   };
   
   const handleRemoveFile = (indexToRemove: number) => {
-    const updatedFiles = videoFiles.filter((_, index) => index !== indexToRemove);
-    onVideoChange(updatedFiles);
+    setVideoFiles(prev => prev.filter((_, index) => index !== indexToRemove));
   };
   
   const handleClearAllFiles = () => {
-    onVideoChange([]);
+    setVideoFiles([]);
     toast({ title: "Selection Cleared", description: "All selected videos have been removed."});
   };
 
@@ -115,7 +111,12 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
   
   const handleVideoRecorded = (videoFile: File) => {
     handleNewFiles([videoFile]);
-    setShowCamera(false); // Close the full-screen camera view
+    setShowCamera(false);
+  };
+
+  const handleAnalyzeClick = () => {
+    onAnalyze(videoFiles);
+    setVideoFiles([]); // Clear selection after starting analysis
   };
 
   return (
@@ -185,7 +186,7 @@ export function VideoUploader({ onVideoChange, onAnalyze, isAnalyzing, videoFile
         </CardContent>
         <CardFooter className="p-6 border-t">
           <Button
-            onClick={() => onAnalyze(videoFiles)}
+            onClick={handleAnalyzeClick}
             className="w-full"
             disabled={isAnalyzing || videoFiles.length === 0}
           >
