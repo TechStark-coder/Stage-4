@@ -11,10 +11,12 @@ import { VideoUploader } from "@/components/rooms/VideoUploader";
 import { VideoAnalysisCard } from "@/components/rooms/VideoAnalysisCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Video, Home as HomeIcon } from "lucide-react";
+import { ArrowLeft, Video, Home as HomeIcon, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { describeRoomObjectsFromVideo } from "@/ai/flows/describe-room-objects-from-video";
 import { useVideoAnalysis } from "@/contexts/VideoAnalysisContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 export default function VideoAnalysisPage() {
   const { user } = useAuthContext();
@@ -28,6 +30,7 @@ export default function VideoAnalysisPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
+  // Directly use the state from context. It now handles persistence.
   const { videoFiles, analysisResult } = getRoomState(roomId) || { videoFiles: [], analysisResult: null };
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,7 +63,8 @@ export default function VideoAnalysisPage() {
   }, [fetchDetails]);
 
   const handleVideoChange = (files: File[]) => {
-    setRoomState(roomId, { videoFiles: files, analysisResult: analysisResult });
+    // When files are changed, we keep the old analysis result for now
+    setRoomState(roomId, { videoFiles: files });
   };
 
   const handleAnalyzeVideo = async (filesToAnalyze: File[]) => {
@@ -74,7 +78,8 @@ export default function VideoAnalysisPage() {
     }
 
     setIsAnalyzing(true);
-    setRoomState(roomId, { analysisResult: null });
+    // Clear previous results before starting a new analysis
+    setRoomState(roomId, { videoFiles: filesToAnalyze, analysisResult: null });
     toast({
       title: 'Starting Analysis',
       description: 'Preparing videos... This can take a moment for large files.',
@@ -99,7 +104,8 @@ export default function VideoAnalysisPage() {
       const result = await describeRoomObjectsFromVideo({ videoDataUris });
 
       if (result && result.objects) {
-        setRoomState(roomId, { analysisResult: result });
+        // Save the new result, keeping the files that were analyzed
+        setRoomState(roomId, { videoFiles: filesToAnalyze, analysisResult: result });
         toast({
           title: 'Analysis Complete!',
           description: `Found ${result.objects.length} types of objects.`,
@@ -116,7 +122,8 @@ export default function VideoAnalysisPage() {
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
-      setRoomState(roomId, { analysisResult: null });
+      // On failure, keep the files but clear the result
+      setRoomState(roomId, { videoFiles: filesToAnalyze, analysisResult: null });
     } finally {
       setIsAnalyzing(false);
     }
@@ -124,7 +131,7 @@ export default function VideoAnalysisPage() {
   
   const handleClearResults = () => {
     clearRoomState(roomId);
-    toast({ title: "Results Cleared", description: "Ready for a new video analysis."});
+    toast({ title: "Results & Selection Cleared", description: "Ready for a new video analysis."});
   };
 
   if (pageLoading) {
@@ -156,6 +163,9 @@ export default function VideoAnalysisPage() {
     );
   }
 
+  // Determine if there are persisted results but no files (after a refresh)
+  const hasPersistedResults = analysisResult && videoFiles.length === 0;
+
   return (
     <div className="space-y-8">
       <Button variant="ghost" size="sm" asChild className="mb-2 hover:bg-accent -ml-2 sm:ml-0">
@@ -173,6 +183,16 @@ export default function VideoAnalysisPage() {
           Part of <HomeIcon className="inline h-4 w-4 mr-1" /> {home.name}
         </p>
       </div>
+
+      {hasPersistedResults && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Viewing Previous Analysis</AlertTitle>
+          <AlertDescription>
+            Showing results from your last analysis. To re-analyze or analyze new videos, please select the video files again.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         <VideoUploader
