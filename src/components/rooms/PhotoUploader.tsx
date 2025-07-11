@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface PhotoUploaderProps {
+interface MediaUploaderProps {
   onAnalysisComplete: () => void;
   currentFiles: File[];
   onFilesChange: (photos: File[]) => void;
@@ -28,13 +28,13 @@ interface PhotoUploaderProps {
 
 const MAX_FILES = 10;
 
-export function PhotoUploader({
+export function MediaUploader({
   onAnalysisComplete,
   currentFiles,
   onFilesChange,
   isAnalyzing,
   userId
-}: PhotoUploaderProps) {
+}: MediaUploaderProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);

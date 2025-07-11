@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, removeAnalyzedRoomPhoto, setRoomAnalyzingStatus } from "@/lib/firestore";
 import type { Home, Room, DescribeRoomObjectsOutput } from "@/types";
-import { MediaUploader } from "@/components/rooms/MediaUploader";
+import { MediaUploader } from "@/components/rooms/PhotoUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
 import { ImageGallery } from "@/components/rooms/ImageGallery";
 import { ImageLightbox } from "@/components/rooms/ImageLightbox";
@@ -98,11 +98,11 @@ export default function RoomDetailPage() {
     }, 300);
   };
 
-  const navigateLightbox = (newIndex: number) => {
+  const navigateLightbox = ( (newIndex: number) => {
     if (newIndex >= 0 && newIndex < lightboxImages.length) {
       setLightboxCurrentIndex(newIndex);
     }
-  };
+  });
 
 
   const handleFilesChange = (newFiles: File[]) => {
@@ -443,6 +443,8 @@ export default function RoomDetailPage() {
           onMediaClick={(urls, index, isVideo) => {
             openLightbox(urls, index, isVideo);
           }}
+          onClearPendingMedia={handleClearPendingMedia}
+          onClearAnalyzedMedia={handleClearAnalyzedResults}
         />
 
     </div>
@@ -475,3 +477,5 @@ export default function RoomDetailPage() {
     </>
   );
 }
+
+    
