@@ -2,19 +2,11 @@
 "use client";
 
 import { useState, useRef, useEffect, type DragEvent, type FormEvent } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-// describeRoomObjects is no longer called directly from here
-import { photoUploadSchema, type PhotoUploadFormData } from "@/schemas/roomSchemas";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadCloud, ImagePlus, Camera, Sparkles, Loader2 } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
-import { storage } from "@/config/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   Dialog,
   DialogContent,
@@ -27,31 +19,24 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PhotoUploaderProps {
-  homeId: string;
-  roomId: string;
+  onAnalysisComplete: () => void;
+  currentFiles: File[];
+  onFilesChange: (photos: File[]) => void;
+  isAnalyzing: boolean;
   userId: string;
-  onAnalysisComplete: ( // MODIFIED: Only passes back new URLs or undefined
-    newlyUploadedPhotoUrls?: string[]
-  ) => void;
-  currentPhotos: File[];
-  onPhotosChange: (photos: File[]) => void;
 }
 
-const MAX_PHOTOS = 10;
+const MAX_FILES = 10;
 
 export function PhotoUploader({
-  homeId,
-  roomId,
-  userId,
   onAnalysisComplete,
-  currentPhotos,
-  onPhotosChange
+  currentFiles,
+  onFilesChange,
+  isAnalyzing,
+  userId
 }: PhotoUploaderProps) {
   const { toast } = useToast();
-  const { showAiLoader, hideAiLoader } = useAiAnalysisLoader(); // hideAiLoader will be used
-  const [isUploading, setIsUploading] = useState(false); // Renamed from isAnalyzingLocal
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showCameraDialog, setShowCameraDialog] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -60,36 +45,39 @@ export function PhotoUploader({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const form = useForm<PhotoUploadFormData>({
-    resolver: zodResolver(photoUploadSchema),
-  });
-
   const addNewFiles = (newFilesArray: File[]) => {
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    const filteredNewFiles = newFilesArray.filter(file => validImageTypes.includes(file.type));
+    const validMediaTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm'];
+    
+    const filteredNewFiles = newFilesArray.filter(file => {
+      // Allow .mov files which might have 'application/octet-stream' type
+      if (file.type === 'application/octet-stream' && file.name.toLowerCase().endsWith('.mov')) {
+        return true;
+      }
+      return validMediaTypes.includes(file.type);
+    });
 
     if (filteredNewFiles.length !== newFilesArray.length) {
       toast({
         title: "Invalid File Type",
-        description: "Some files were not valid image types and were not added.",
+        description: "Some files were not valid image or video types and were not added.",
         variant: "destructive",
       });
     }
     
-    const totalAfterAdd = currentPhotos.length + filteredNewFiles.length;
-    if (totalAfterAdd > MAX_PHOTOS) {
+    const totalAfterAdd = currentFiles.length + filteredNewFiles.length;
+    if (totalAfterAdd > MAX_FILES) {
       toast({
-        title: "Photo Limit Exceeded",
-        description: `You can upload a maximum of ${MAX_PHOTOS} photos. ${MAX_PHOTOS - currentPhotos.length} more can be added.`,
+        title: `File Limit Exceeded`,
+        description: `You can upload a maximum of ${MAX_FILES} files. ${MAX_FILES - currentFiles.length} more can be added.`,
         variant: "destructive",
       });
-      const remainingSlots = MAX_PHOTOS - currentPhotos.length;
+      const remainingSlots = MAX_FILES - currentFiles.length;
       const filesToAdd = filteredNewFiles.slice(0, remainingSlots);
        if (filesToAdd.length > 0) {
-        onPhotosChange([...currentPhotos, ...filesToAdd]);
+        onFilesChange([...currentFiles, ...filesToAdd]);
       }
     } else if (filteredNewFiles.length > 0) {
-      onPhotosChange([...currentPhotos, ...filteredNewFiles]);
+      onFilesChange([...currentFiles, ...filteredNewFiles]);
     }
   };
 
@@ -214,161 +202,111 @@ export function PhotoUploader({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); 
     if (!userId) {
-      toast({ title: "Authentication Error", description: "User ID is missing. Cannot upload photos. Please ensure you are logged in.", variant: "destructive" });
-      onAnalysisComplete(undefined); // Pass undefined if critical error before upload
+      toast({ title: "Authentication Error", description: "User ID is missing. Cannot upload media.", variant: "destructive" });
       return;
     }
-    if (currentPhotos.length === 0) {
+    if (currentFiles.length === 0) {
       toast({
-        title: "No Photos",
-        description: "Please add or capture photos before analyzing.",
+        title: "No Media Selected",
+        description: "Please add or capture files before processing.",
         variant: "destructive",
       });
-      onAnalysisComplete(undefined); // Pass undefined if no photos
       return;
     }
-
-    showAiLoader(); // Show global AI loader for the upload process
-    setIsUploading(true); // Local state for uploader's button
     
-    let successfullyUploadedUrls: string[] = [];
-
-    try {
-      toast({ title: "Uploading Photos...", description: `Starting upload of ${currentPhotos.length} photo(s).`, duration: 2000 });
-      
-      for (let i = 0; i < currentPhotos.length; i++) {
-        const file = currentPhotos[i];
-        const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '')}`;
-        const imagePath = `roomAnalysisPhotos/${userId}/${roomId}/${uniqueFileName}`; 
-        const imageStorageRef = ref(storage, imagePath);
-        
-        toast({ title: `Uploading ${i+1}/${currentPhotos.length}`, description: file.name, duration: 1500});
-        await uploadBytes(imageStorageRef, file);
-        const downloadURL = await getDownloadURL(imageStorageRef);
-        successfullyUploadedUrls.push(downloadURL);
-      }
-      toast({ title: "Upload Complete", description: "Photos uploaded. Room page will now re-analyze all images.", duration: 3000 });
-      
-      // No direct AI call from here anymore.
-      // onAnalysisComplete will be called with the new URLs.
-      
-    } catch (error: any) {
-      console.error("Error during photo upload:", error);
-      toast({
-        title: "Upload Process Failed",
-        description: error.message || "Could not upload photos.",
-        variant: "destructive",
-      });
-      successfullyUploadedUrls = []; // Ensure empty array on failure
-    } finally {
-      setIsUploading(false); // Reset local button state
-      // The global AI loader (showAiLoader) will be hidden by RoomDetailPage after its full re-analysis.
-      // Do not hide it here.
-      onAnalysisComplete(successfullyUploadedUrls.length > 0 ? successfullyUploadedUrls : undefined);
-    }
+    onAnalysisComplete();
   }
 
   return (
     <Card className="shadow-lg w-full h-full flex flex-col">
       <CardHeader className="p-6">
         <CardTitle className="flex items-center gap-2">
-          <UploadCloud className="h-6 w-6 text-primary" /> Manage Room Photos
+          <UploadCloud className="h-6 w-6 text-primary" /> Manage Room Media
         </CardTitle>
         <CardDescription>
-          Add photos via file upload, drag & drop, or capture from camera. Max {MAX_PHOTOS} photos.
+          Add photos or videos via file upload, drag & drop, or camera. Max {MAX_FILES} files.
         </CardDescription>
       </CardHeader>
-      <Form {...form}>
-        <form onSubmit={onSubmit} className="flex flex-col flex-grow">
-          <CardContent className="p-6 flex-grow">
-            <div 
-              className={`h-full flex flex-col justify-center items-center ${isDraggingOver ? 'drop-zone-active' : 'drop-zone'}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <FormField
-                control={form.control}
-                name="photos" 
-                render={() => (
-                  <FormItem className="w-full">
-                    <Input
-                        id="photos-input"
-                        type="file"
-                        multiple
-                        accept="image/jpeg,image/png,image/webp,image/gif" 
-                        onChange={handleFileChange}
-                        ref={fileInputRef}
-                        className="hidden" 
-                      />
-                    <FormMessage /> 
-                    <div className="text-center text-muted-foreground py-4">
-                       Drag & drop images here, or use buttons below.
-                    </div>
-                  </FormItem>
-                )}
-              />
-              <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full px-4 sm:px-0">
-                <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1" disabled={isUploading}>
-                    <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
-                </Button>
-                <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
-                  <DialogTrigger asChild>
-                    <Button type="button" variant="outline" className="flex-1" disabled={isUploading}>
-                      <Camera className="mr-2 h-4 w-4" /> Capture Image
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                      <DialogTitle>Capture Image</DialogTitle>
-                      <DialogDescription>
-                        Position the camera and click "Snap Photo".
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      <video ref={videoRef} autoPlay muted playsInline className="camera-video-preview" />
-                      <canvas ref={canvasRef} className="hidden"></canvas>
-                       {hasCameraPermission === false && cameraError && (
-                        <Alert variant="destructive">
-                           <Camera className="h-4 w-4" />
-                          <AlertTitle>Camera Access Error</AlertTitle>
-                          <AlertDescription>{cameraError}</AlertDescription>
-                        </Alert>
-                      )}
-                       {hasCameraPermission === null && !cameraError && (
-                         <div className="flex items-center justify-center text-muted-foreground"> 
-                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                           Requesting camera access...
-                         </div>
-                      )}
-                    </div>
-                    <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                      <Button variant="outline" onClick={closeCamera}>Cancel</Button>
-                      <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>
-                        Snap Photo
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
+      <form onSubmit={onSubmit} className="flex flex-col flex-grow">
+        <CardContent className="p-6 flex-grow">
+          <div 
+            className={`h-full flex flex-col justify-center items-center ${isDraggingOver ? 'drop-zone-active' : 'drop-zone'}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <Input
+              id="media-input"
+              type="file"
+              multiple
+              accept="image/*,video/*,.mov" 
+              onChange={handleFileChange}
+              ref={fileInputRef}
+              className="hidden" 
+            />
+            <div className="text-center text-muted-foreground py-4">
+               Drag & drop images or videos here, or use buttons below.
             </div>
-          </CardContent>
-          <CardFooter className="p-6 border-t mt-auto">
-            <Button 
-              type="submit"
-              className="w-full"
-              disabled={isUploading || currentPhotos.length === 0 || !userId}
-            >
-              {isUploading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              {isUploading ? "Uploading..." : `Process ${currentPhotos.length} Photo(s)`}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full px-4 sm:px-0">
+              <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1" disabled={isAnalyzing}>
+                  <ImagePlus className="mr-2 h-4 w-4" /> Add Files
+              </Button>
+              <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline" className="flex-1" disabled={isAnalyzing}>
+                    <Camera className="mr-2 h-4 w-4" /> Use Camera
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Capture Image</DialogTitle>
+                    <DialogDescription>
+                      Position the camera and click "Snap Photo". Video capture is not supported here yet.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                    <video ref={videoRef} autoPlay muted playsInline className="camera-video-preview" />
+                    <canvas ref={canvasRef} className="hidden"></canvas>
+                     {hasCameraPermission === false && cameraError && (
+                      <Alert variant="destructive">
+                         <Camera className="h-4 w-4" />
+                        <AlertTitle>Camera Access Error</AlertTitle>
+                        <AlertDescription>{cameraError}</AlertDescription>
+                      </Alert>
+                    )}
+                     {hasCameraPermission === null && !cameraError && (
+                       <div className="flex items-center justify-center text-muted-foreground"> 
+                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                         Requesting camera access...
+                       </div>
+                    )}
+                  </div>
+                  <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+                    <Button variant="outline" onClick={closeCamera}>Cancel</Button>
+                    <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>
+                      Snap Photo
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="p-6 border-t mt-auto">
+          <Button 
+            type="submit"
+            className="w-full"
+            disabled={isAnalyzing || currentFiles.length === 0 || !userId}
+          >
+            {isAnalyzing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            {isAnalyzing ? "Processing..." : `Process ${currentFiles.length} File(s)`}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 }

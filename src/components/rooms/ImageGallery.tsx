@@ -8,155 +8,145 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 
 interface ImageGalleryProps {
-  pendingPhotos?: File[];
+  pendingFiles: File[];
   analyzedPhotoUrls: string[];
-  onRemovePendingPhoto?: (index: number) => void;
-  onRemoveAnalyzedPhoto?: (photoUrl: string) => void;
-  onImageClick: (urlsOrFiles: string[] | File[], startIndex: number, isPending?: boolean) => void; 
-  galleryTitle?: string;
-  emptyStateMessage?: string;
-  isVideos?: boolean;
+  analyzedVideoUrls: string[];
+  onRemovePendingMedia: (index: number) => void;
+  onRemoveAnalyzedMedia: (mediaUrl: string) => void;
+  onMediaClick: (urls: string[], startIndex: number, isVideo?: boolean) => void;
 }
 
 export function ImageGallery({ 
-  pendingPhotos = [],
+  pendingFiles = [],
   analyzedPhotoUrls, 
-  onRemovePendingPhoto, 
-  onRemoveAnalyzedPhoto,
-  onImageClick,
-  galleryTitle = "Image Gallery",
-  emptyStateMessage = 'No photos added for analysis yet. Click "Add Photos" to begin.',
-  isVideos = false,
+  analyzedVideoUrls,
+  onRemovePendingMedia, 
+  onRemoveAnalyzedMedia,
+  onMediaClick,
 }: ImageGalleryProps) {
-  const hasPendingPhotos = pendingPhotos.length > 0;
+  const hasPendingFiles = pendingFiles.length > 0;
   const hasAnalyzedPhotos = analyzedPhotoUrls.length > 0;
-  const GalleryIcon = isVideos ? PlayCircle : ImageIcon;
+  const hasAnalyzedVideos = analyzedVideoUrls.length > 0;
 
-  if (!hasPendingPhotos && !hasAnalyzedPhotos) {
-    return (
-      <Card className="shadow-lg border-dashed border-muted-foreground/30 bg-card/80 h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-muted-foreground">
-            <GalleryIcon className="h-6 w-6" /> {galleryTitle}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-grow flex items-center justify-center">
-          <p className="text-center text-muted-foreground py-8">
-            {emptyStateMessage}
-          </p>
-        </CardContent>
-      </Card>
-    );
+  if (!hasPendingFiles && !hasAnalyzedPhotos && !hasAnalyzedVideos) {
+    return null; // Don't render anything if there's no media at all
   }
 
-  const handlePendingImageClick = (index: number) => {
-    onImageClick(pendingPhotos, index, true); 
+  const handlePendingMediaClick = (index: number) => {
+    const urls = pendingFiles.map(file => URL.createObjectURL(file));
+    const isVideo = pendingFiles[index].type.startsWith('video/');
+    onMediaClick(urls, index, isVideo);
+    // URLs are revoked via onLoad in the Image component or handled by the lightbox
   };
 
-  const handleAnalyzedImageClick = (index: number) => {
-    onImageClick(analyzedPhotoUrls, index, false);
+  const handleAnalyzedPhotoClick = (index: number) => {
+    onMediaClick(analyzedPhotoUrls, index, false);
   };
+
+  const handleAnalyzedVideoClick = (index: number) => {
+    onMediaClick(analyzedVideoUrls, index, true);
+  };
+  
+  const renderMediaGrid = (files: (File | string)[], isPending: boolean) => {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {files.map((media, index) => {
+          const isFile = media instanceof File;
+          const url = isFile ? URL.createObjectURL(media) : media;
+          const isVideo = isFile ? media.type.startsWith('video/') : (media.includes('.mov') || media.includes('.mp4') || media.includes('.webm'));
+          const key = isFile ? `pending-${index}-${media.name}` : `analyzed-${index}-${url}`;
+
+          return (
+            <div 
+              key={key} 
+              className="relative group aspect-square rounded-md overflow-hidden border border-border shadow-sm cursor-pointer bg-black"
+              onClick={() => {
+                if(isPending) handlePendingMediaClick(index);
+                else if(isVideo) handleAnalyzedVideoClick(analyzedVideoUrls.indexOf(url));
+                else handleAnalyzedPhotoClick(analyzedPhotoUrls.indexOf(url));
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              {isVideo ? (
+                <video src={url} className="w-full h-full object-cover" preload="metadata" />
+              ) : (
+                <Image
+                  src={url}
+                  alt={`Media ${index + 1}`}
+                  layout="fill"
+                  objectFit="cover"
+                  data-ai-hint="analyzed room"
+                  onLoad={isFile ? (e) => URL.revokeObjectURL((e.target as HTMLImageElement).src) : undefined}
+                />
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Eye className="h-8 w-8 text-white" />
+              </div>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-destructive/80 z-10"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (isPending) onRemovePendingMedia(index);
+                  else onRemoveAnalyzedMedia(url);
+                }}
+                aria-label={`Remove ${isVideo ? 'video' : 'photo'}`}
+              >
+                {isPending ? <XCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    )
+  }
+
 
   return (
     <Card className="shadow-lg h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GalleryIcon className="h-6 w-6 text-primary" /> 
-          {galleryTitle}
+          <ImageIcon className="h-6 w-6 text-primary" /> 
+          Media Gallery
         </CardTitle>
         <CardDescription>
-          Review current media. Click to view.
+          Review current and analyzed media. Click to view.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-6">
-        {hasAnalyzedPhotos && (
+        {hasPendingFiles && (
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Analyzed Media ({analyzedPhotoUrls.length})
+              Pending Media for Analysis ({pendingFiles.length})
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {analyzedPhotoUrls.map((url, index) => (
-                <div 
-                  key={`analyzed-${index}-${url}`} 
-                  className="relative group aspect-square rounded-md overflow-hidden border border-border shadow-sm cursor-pointer bg-black"
-                  onClick={() => handleAnalyzedImageClick(index)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAnalyzedImageClick(index);}}
-                >
-                  {isVideos ? (
-                    <video src={url} className="w-full h-full object-cover" preload="metadata" />
-                  ) : (
-                    <Image
-                      src={url}
-                      alt={`Analyzed media ${index + 1}`}
-                      layout="fill"
-                      objectFit="cover"
-                      data-ai-hint="analyzed room"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Eye className="h-8 w-8 text-white" />
-                  </div>
-                  {onRemoveAnalyzedPhoto && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-destructive/80 z-10"
-                      onClick={(e) => { e.stopPropagation(); onRemoveAnalyzedPhoto(url); }}
-                      aria-label="Delete analyzed media"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+            {renderMediaGrid(pendingFiles, true)}
           </div>
         )}
 
-        {hasPendingPhotos && hasAnalyzedPhotos && <Separator />}
+        {(hasPendingFiles && (hasAnalyzedPhotos || hasAnalyzedVideos)) && <Separator />}
 
-        {hasPendingPhotos && (
+        {(hasAnalyzedPhotos || hasAnalyzedVideos) && (
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              New Media for Analysis ({pendingPhotos.length})
+             <h3 className="text-sm font-medium text-muted-foreground mb-3">
+              Analyzed Media ({analyzedPhotoUrls.length + analyzedVideoUrls.length})
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {pendingPhotos.map((file, index) => (
-                <div 
-                  key={`pending-${index}-${file.name}`} 
-                  className="relative group aspect-square rounded-md overflow-hidden border border-border shadow-sm cursor-pointer"
-                  onClick={() => handlePendingImageClick(index)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handlePendingImageClick(index);}}
-                >
-                  <Image
-                    src={URL.createObjectURL(file)}
-                    alt={`Preview ${file.name}`}
-                    layout="fill"
-                    objectFit="cover"
-                    data-ai-hint="room interior"
-                    onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
-                  />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Eye className="h-8 w-8 text-white" />
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-destructive/80 z-10"
-                    onClick={(e) => { e.stopPropagation(); onRemovePendingPhoto?.(index); }}
-                    aria-label="Remove image"
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {hasAnalyzedPhotos && (
+              <div className="mb-4">
+                <h4 className="text-xs font-semibold uppercase text-muted-foreground/80 mb-2">Photos</h4>
+                {renderMediaGrid(analyzedPhotoUrls, false)}
+              </div>
+            )}
+            {hasAnalyzedVideos && (
+              <div>
+                <h4 className="text-xs font-semibold uppercase text-muted-foreground/80 mb-2">Videos</h4>
+                {renderMediaGrid(analyzedVideoUrls, false)}
+              </div>
+            )}
           </div>
         )}
+
       </CardContent>
     </Card>
   );

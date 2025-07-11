@@ -18,12 +18,10 @@ export function AiAnalysisLoaderProvider({ children }: { children: ReactNode }) 
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
 
   const showAiLoader = useCallback(() => {
-    console.log("AI CONTEXT: showAiLoader called - setting isAiAnalyzing to true");
     setIsAiAnalyzing(true);
   }, []);
 
   const hideAiLoader = useCallback(() => {
-    console.log("AI CONTEXT: hideAiLoader called - setting isAiAnalyzing to false");
     setIsAiAnalyzing(false);
   }, []);
 

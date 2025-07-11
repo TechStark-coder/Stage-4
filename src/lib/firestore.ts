@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { db, storage } from "@/config/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
-import type { Home, Room, CreateHomeData, CreateRoomData, UpdateHomeData, UpdateRoomData, InspectionReport, TenantInspectionLink, CreateTenantInspectionLinkData, DescribeRoomObjectsOutput as VideoAnalysisResult } from "@/types";
+import type { Home, Room, CreateHomeData, CreateRoomData, UpdateHomeData, UpdateRoomData, InspectionReport, TenantInspectionLink, CreateTenantInspectionLinkData, DescribeRoomObjectsOutput } from "@/types";
 
 // Helper function to safely delete from Firebase Storage, handling full URLs
 const safeDeleteStorageObject = async (fileUrlOrPath: string) => {
@@ -207,8 +207,7 @@ export async function deleteHome(homeId: string, userId: string): Promise<void> 
   const roomsCollectionRef = collection(db, `homes/${homeId}/rooms`);
   const roomsSnapshot = await getDocs(roomsCollectionRef);
   for (const roomDoc of roomsSnapshot.docs) {
-    await deleteFolderContents(`roomAnalysisPhotos/${ownerIdToDelete}/${roomDoc.id}`);
-    await deleteFolderContents(`roomAnalysisVideos/${ownerIdToDelete}/${roomDoc.id}`); // Delete videos too
+    await deleteFolderContents(`roomAnalysis/${ownerIdToDelete}/${roomDoc.id}`);
     batch.delete(roomDoc.ref);
   }
 
@@ -237,11 +236,7 @@ export async function addRoom(homeId: string, data: CreateRoomData): Promise<str
     isAnalyzing: false,
     lastAnalyzedAt: null,
     analyzedPhotoUrls: [],
-    // Add fields for video analysis
-    videoAnalysisResult: null,
     analyzedVideoUrls: [],
-    isVideoAnalyzing: false,
-    lastVideoAnalyzedAt: null,
   });
   return docRef.id;
 }
@@ -270,28 +265,29 @@ export async function getRoom(homeId: string, roomId: string): Promise<Room | nu
   return null;
 }
 
-// --- Image Analysis Functions ---
+// --- Media Analysis Functions ---
 
 export async function updateRoomAnalysisData(
   homeId: string,
   roomId: string,
-  finalAnalyzedObjects: Array<{ name: string; count: number }>,
-  finalPhotoUrls: string[], 
-  userId: string 
+  finalAnalyzedObjects: DescribeRoomObjectsOutput,
+  finalPhotoUrls: string[],
+  finalVideoUrls: string[]
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
   await updateDoc(roomDocRef, {
-    analyzedObjects: finalAnalyzedObjects,
+    analyzedObjects: finalAnalyzedObjects.objects,
     isAnalyzing: false,
     lastAnalyzedAt: serverTimestamp(),
-    analyzedPhotoUrls: finalPhotoUrls, 
+    analyzedPhotoUrls: finalPhotoUrls,
+    analyzedVideoUrls: finalVideoUrls,
   });
 }
 
 export async function removeAnalyzedRoomPhoto(
   homeId: string,
   roomId: string,
-  photoUrlToRemove: string,
+  mediaUrlToRemove: string,
   userId: string 
 ): Promise<void> {
   const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
@@ -301,12 +297,20 @@ export async function removeAnalyzedRoomPhoto(
     throw new Error("Permission denied or home not found.");
   }
 
-  await safeDeleteStorageObject(photoUrlToRemove);
+  await safeDeleteStorageObject(mediaUrlToRemove);
 
-  await updateDoc(roomDocRef, {
-    analyzedPhotoUrls: arrayRemove(photoUrlToRemove),
-    isAnalyzing: false,
-  });
+  const roomSnap = await getDoc(roomDocRef);
+  const roomData = roomSnap.data() as Room;
+
+  const updatePayload: { [key: string]: any } = { isAnalyzing: false };
+  if (roomData.analyzedPhotoUrls?.includes(mediaUrlToRemove)) {
+    updatePayload.analyzedPhotoUrls = arrayRemove(mediaUrlToRemove);
+  }
+  if (roomData.analyzedVideoUrls?.includes(mediaUrlToRemove)) {
+    updatePayload.analyzedVideoUrls = arrayRemove(mediaUrlToRemove);
+  }
+
+  await updateDoc(roomDocRef, updatePayload);
 }
 
 
@@ -317,22 +321,15 @@ export async function clearRoomAnalysisData(homeId: string, roomId: string, user
   if (!parentHome || parentHome.ownerId !== userId) {
     throw new Error("Permission denied or home not found.");
   }
-
-  const roomSnap = await getDoc(roomDocRef);
-  if (roomSnap.exists()) {
-    const roomData = roomSnap.data() as Room;
-    if (roomData.analyzedPhotoUrls && roomData.analyzedPhotoUrls.length > 0) {
-      for (const url of roomData.analyzedPhotoUrls) {
-         await safeDeleteStorageObject(url);
-      }
-    }
-    await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
-  }
+  
+  await deleteFolderContents(`roomAnalysis/${userId}/${roomId}`);
+  
   await updateDoc(roomDocRef, {
     analyzedObjects: [],
     isAnalyzing: false,
     lastAnalyzedAt: null,
     analyzedPhotoUrls: [],
+    analyzedVideoUrls: [],
   });
 }
 
@@ -345,65 +342,6 @@ export async function setRoomAnalyzingStatus(
   await updateDoc(roomDocRef, { isAnalyzing });
 }
 
-// --- Video Analysis Functions ---
-
-export async function setRoomVideoAnalyzingStatus(
-  homeId: string,
-  roomId: string,
-  isAnalyzing: boolean
-): Promise<void> {
-  const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
-  await updateDoc(roomDocRef, { isVideoAnalyzing: isAnalyzing });
-}
-
-export async function updateRoomVideoAnalysisData(
-  homeId: string,
-  roomId: string,
-  result: VideoAnalysisResult,
-  newVideoUrls: string[],
-  userId: string
-): Promise<void> {
-  const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
-  const parentHome = await getHome(homeId);
-  if (!parentHome || parentHome.ownerId !== userId) {
-    throw new Error("Permission denied or home not found.");
-  }
-
-  await updateDoc(roomDocRef, {
-    videoAnalysisResult: result,
-    analyzedVideoUrls: arrayUnion(...newVideoUrls),
-    isVideoAnalyzing: false,
-    lastVideoAnalyzedAt: serverTimestamp(),
-  });
-}
-
-export async function clearRoomVideoAnalysisData(homeId: string, roomId: string, userId: string): Promise<void> {
-  const roomDocRef = doc(db, "homes", homeId, "rooms", roomId);
-  const parentHome = await getHome(homeId);
-  if (!parentHome || parentHome.ownerId !== userId) {
-    throw new Error("Permission denied or home not found.");
-  }
-
-  const roomSnap = await getDoc(roomDocRef);
-  if (roomSnap.exists()) {
-    const roomData = roomSnap.data() as Room;
-    if (roomData.analyzedVideoUrls && roomData.analyzedVideoUrls.length > 0) {
-      for (const url of roomData.analyzedVideoUrls) {
-        await safeDeleteStorageObject(url);
-      }
-    }
-    await deleteFolderContents(`roomAnalysisVideos/${userId}/${roomId}`);
-  }
-
-  await updateDoc(roomDocRef, {
-    videoAnalysisResult: null,
-    isVideoAnalyzing: false,
-    lastVideoAnalyzedAt: null,
-    analyzedVideoUrls: [],
-  });
-}
-
-// --- General Room ---
 
 export async function deleteRoom(homeId: string, roomId: string, userId: string): Promise<void> {
   const roomDocRef = doc(db, `homes/${homeId}/rooms`, roomId);
@@ -413,8 +351,7 @@ export async function deleteRoom(homeId: string, roomId: string, userId: string)
     throw new Error("Permission denied or home not found.");
   }
 
-  await deleteFolderContents(`roomAnalysisPhotos/${userId}/${roomId}`);
-  await deleteFolderContents(`roomAnalysisVideos/${userId}/${roomId}`); // Delete videos too
+  await deleteFolderContents(`roomAnalysis/${userId}/${roomId}`);
   await deleteDoc(roomDocRef);
 }
 
@@ -680,7 +617,7 @@ export async function createShortLink(longUrl: string): Promise<string> {
 // New function to get the long URL from a short code
 export async function getShortLink(shortCode: string): Promise<string | null> {
     const shortLinkDocRef = doc(db, "shortLinks", shortCode);
-    const docSnap = await getDoc(shortLinkDocRef);
+    const docSnap = await getDoc(docSnap.ref);
     if (docSnap.exists()) {
         return docSnap.data().longUrl as string;
     }

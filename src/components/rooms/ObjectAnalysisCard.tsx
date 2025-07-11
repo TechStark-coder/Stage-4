@@ -90,7 +90,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
 
   if (!room) {
     return (
-      <Card className="shadow-lg bg-card/80 mt-6">
+      <Card className="shadow-lg bg-card/80 h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ListTree className="h-6 w-6 text-muted-foreground" /> Object Analysis
@@ -104,7 +104,7 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
   }
   
   return (
-    <Card className="shadow-lg mt-6">
+    <Card className="shadow-lg h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Eye className="h-6 w-6 text-primary" /> Object Analysis Results
@@ -122,11 +122,11 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {room?.analyzedObjects && room.analyzedObjects.length > 0 ? (
           <div className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
-            <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border max-h-60 overflow-y-auto">
+            <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border max-h-96 overflow-y-auto">
               {room.analyzedObjects.map((item, index) => (
                 <li key={index} className="text-foreground">
                   {item.name}
@@ -138,15 +138,15 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
             </ol>
           </div>
         ) : !room.isAnalyzing ? ( 
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground h-full flex flex-col justify-center items-center">
             <ListTree className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="font-medium">No objects described yet.</p>
-            <p className="text-sm">Upload photos and click "Analyze Images" to see results here.</p>
+            <p className="text-sm">Upload media and click "Process" to see results here.</p>
           </div>
         ) : null }
       </CardContent>
       {(room?.analyzedObjects && room.analyzedObjects.length > 0 && !room.isAnalyzing) && (
-        <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-4">
+        <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-4 mt-auto border-t">
           <a 
             onClick={handleDownloadPdf} 
             className={`codepen-button ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -178,4 +178,3 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     </Card>
   );
 }
-

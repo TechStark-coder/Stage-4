@@ -1,7 +1,12 @@
 
 import type { Timestamp } from "firebase/firestore";
-import type { DescribeRoomObjectsOutput } from "@/ai/flows/describe-room-objects-from-video";
 
+export interface DescribeRoomObjectsOutput {
+  objects: Array<{
+    name: string;
+    count: number;
+  }>;
+}
 
 export interface FirebaseDocument {
   id: string;
@@ -36,15 +41,10 @@ export interface Room extends FirebaseDocument {
   name: string;
   homeId?: string;
   createdAt: Timestamp;
-  // Image analysis fields
   analyzedObjects: Array<{ name: string; count: number }> | null;
   isAnalyzing?: boolean;
   lastAnalyzedAt?: Timestamp | null;
   analyzedPhotoUrls?: string[];
-  // Video analysis fields
-  videoAnalysisResult: DescribeRoomObjectsOutput | null;
-  isVideoAnalyzing?: boolean;
-  lastVideoAnalyzedAt?: Timestamp | null;
   analyzedVideoUrls?: string[];
 }
 
@@ -101,5 +101,3 @@ export interface TenantInspectionLink extends FirebaseDocument {
 export interface CreateTenantInspectionLinkData {
   tenantName: string;
 }
-
-export { DescribeRoomObjectsOutput };
