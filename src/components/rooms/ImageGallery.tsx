@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { XCircle, ImageIcon, ImageOff as ImageOffIcon, Trash2, Eye, PlayCircle } from "lucide-react"; 
+import { XCircle, ImageIcon, Trash2, Eye, PlayCircle, X } from "lucide-react"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -14,6 +14,7 @@ interface ImageGalleryProps {
   onRemovePendingMedia: (index: number) => void;
   onRemoveAnalyzedMedia: (mediaUrl: string) => void;
   onMediaClick: (urls: string[], startIndex: number, isVideo?: boolean) => void;
+  onClearPendingMedia: () => void;
 }
 
 export function ImageGallery({ 
@@ -23,6 +24,7 @@ export function ImageGallery({
   onRemovePendingMedia, 
   onRemoveAnalyzedMedia,
   onMediaClick,
+  onClearPendingMedia,
 }: ImageGalleryProps) {
   const hasPendingFiles = pendingFiles.length > 0;
   const hasAnalyzedPhotos = analyzedPhotoUrls.length > 0;
@@ -53,7 +55,7 @@ export function ImageGallery({
         {files.map((media, index) => {
           const isFile = media instanceof File;
           const url = isFile ? URL.createObjectURL(media) : media;
-          const isVideo = isFile ? media.type.startsWith('video/') : (media.includes('.mov') || media.includes('.mp4') || media.includes('.webm'));
+          const isVideo = isFile ? media.type.startsWith('video/') : (url.includes('.mov') || url.includes('.mp4') || url.includes('.webm'));
           const key = isFile ? `pending-${index}-${media.name}` : `analyzed-${index}-${url}`;
 
           return (
@@ -81,7 +83,7 @@ export function ImageGallery({
                 />
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Eye className="h-8 w-8 text-white" />
+                {isVideo ? <PlayCircle className="h-10 w-10 text-white" /> : <Eye className="h-8 w-8 text-white" />}
               </div>
               <Button
                 variant="destructive"
@@ -106,14 +108,22 @@ export function ImageGallery({
 
   return (
     <Card className="shadow-lg h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="h-6 w-6 text-primary" /> 
-          Media Gallery
-        </CardTitle>
-        <CardDescription>
-          Review current and analyzed media. Click to view.
-        </CardDescription>
+      <CardHeader className="flex flex-row justify-between items-center">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-6 w-6 text-primary" /> 
+            Media Gallery
+          </CardTitle>
+          <CardDescription>
+            Review current and analyzed media. Click to view.
+          </CardDescription>
+        </div>
+        {hasPendingFiles && (
+          <Button variant="outline" size="sm" onClick={onClearPendingMedia}>
+            <X className="mr-2 h-4 w-4" />
+            Clear All
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="flex-grow space-y-6">
         {hasPendingFiles && (

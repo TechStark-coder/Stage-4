@@ -112,6 +112,10 @@ export default function RoomDetailPage() {
   const handleRemovePendingMedia = (indexToRemove: number) => {
     setMediaToUpload(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
   };
+
+  const handleClearPendingMedia = () => {
+    setMediaToUpload([]);
+  };
   
   const performFullRoomAnalysis = async (photoUrlsToAnalyze: string[], videoUrlsToAnalyze: string[]) => {
      if (!homeId || !roomId || !user?.uid) {
@@ -148,7 +152,19 @@ export default function RoomDetailPage() {
         photoResults = await describeRoomObjects({ photoDataUris: photoUrlsToAnalyze });
       }
       if (videoUrlsToAnalyze.length > 0) {
-        videoResults = await describeRoomObjectsFromVideo({ videoDataUris: videoUrlsToAnalyze });
+        const videoDataUrisToAnalyze = await Promise.all(
+          videoUrlsToAnalyze.map(async (url) => {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          })
+        );
+        videoResults = await describeRoomObjectsFromVideo({ videoDataUris: videoDataUrisToAnalyze });
       }
 
       // Merge results
@@ -414,6 +430,7 @@ export default function RoomDetailPage() {
           onMediaClick={(urls, index, isVideo) => {
             openLightbox(urls, index, isVideo);
           }}
+          onClearPendingMedia={handleClearPendingMedia}
         />
 
     </div>
