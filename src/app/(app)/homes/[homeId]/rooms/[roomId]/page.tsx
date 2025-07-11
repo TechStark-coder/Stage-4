@@ -7,10 +7,10 @@ import Link from "next/link";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getHome, getRoom, updateRoomAnalysisData, clearRoomAnalysisData, removeAnalyzedRoomPhoto, setRoomAnalyzingStatus } from "@/lib/firestore";
 import type { Home, Room, DescribeRoomObjectsOutput } from "@/types";
-import { PhotoUploader } from "@/components/rooms/PhotoUploader";
+import { MediaUploader } from "@/components/rooms/MediaUploader";
 import { ObjectAnalysisCard } from "@/components/rooms/ObjectAnalysisCard";
 import { ImageGallery } from "@/components/rooms/ImageGallery";
-import { ImageLightbox } from "@/components/rooms/ImageLightbox"; // Import the new lightbox component
+import { ImageLightbox } from "@/components/rooms/ImageLightbox";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { storage } from "@/config/firebase";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { ForestLoader } from "@/components/rooms/ForestLoader";
 
 export default function RoomDetailPage() {
   const { user } = useAuthContext();
@@ -122,11 +123,11 @@ export default function RoomDetailPage() {
       return;
     }
     
-    // Check if there's anything to analyze at all
+    // If there's nothing left to analyze, just clear the results in Firestore.
     if (photoUrlsToAnalyze.length === 0 && videoUrlsToAnalyze.length === 0) {
       showAiLoader();
       try {
-        await updateRoomAnalysisData(homeId, roomId, { objects: [] }, [], []);
+        await clearRoomAnalysisData(homeId, roomId, user.uid);
         toast({ title: "Analysis Cleared", description: "No media remaining. Object analysis for the room has been cleared." });
         fetchRoomDetails(false);
       } catch (error) {
@@ -219,7 +220,7 @@ export default function RoomDetailPage() {
         toast({ title: 'Uploading Media...', description: 'Preparing files for analysis.' });
 
         const uploadPromises = mediaToUpload.map(async file => {
-            const isVideo = file.type.startsWith('video/');
+            const isVideo = file.type.startsWith('video/') || file.name.toLowerCase().endsWith('.mov');
             const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
             const path = `roomAnalysis/${user.uid}/${roomId}/${uniqueFileName}`;
             const storageRef = ref(storage, path);
@@ -308,7 +309,7 @@ export default function RoomDetailPage() {
       await clearRoomAnalysisData(homeId, roomId, user.uid);
       toast({ title: "Results Cleared", description: "The analysis results and stored media have been cleared." });
       setMediaToUpload([]); 
-      fetchRoomDetails();
+      fetchRoomDetails(false); // Refetch to update UI with cleared state
     } catch (error: any) {
       console.error("Failed to clear results:", error);
       toast({ title: "Error", description: "Failed to clear analysis results: " + error.message, variant: "destructive" });
@@ -325,7 +326,6 @@ export default function RoomDetailPage() {
     }
     
     if (mediaToDelete.isAnalyzed) {
-        showAiLoader();
         let mediaSuccessfullyRemoved = false;
         try {
           await removeAnalyzedRoomPhoto(homeId, roomId, mediaToDelete.url, user.uid);
@@ -345,6 +345,7 @@ export default function RoomDetailPage() {
           if (updatedRoomData) {
             await performFullRoomAnalysis(updatedRoomData.analyzedPhotoUrls || [], updatedRoomData.analyzedVideoUrls || []);
           } else {
+            // This case might occur if the room was deleted in another tab.
             await performFullRoomAnalysis([], []);
           }
         }
@@ -394,7 +395,7 @@ export default function RoomDetailPage() {
     );
   }
 
-  const displayAnalyzing = room.isAnalyzing || isGlobalAiAnalyzing;
+  const displayAnalyzing = isGlobalAiAnalyzing;
 
   return (
     <>
@@ -418,12 +419,13 @@ export default function RoomDetailPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <PhotoUploader
+        <MediaUploader
           onAnalysisComplete={handleAnalysisComplete}
           currentFiles={mediaToUpload}
           onFilesChange={handleFilesChange}
           isAnalyzing={displayAnalyzing}
           userId={user?.uid || ""}
+          onClearPendingMedia={handleClearPendingMedia}
         />
         <ObjectAnalysisCard
          room={{...room, isAnalyzing: displayAnalyzing }}
@@ -441,8 +443,6 @@ export default function RoomDetailPage() {
           onMediaClick={(urls, index, isVideo) => {
             openLightbox(urls, index, isVideo);
           }}
-          onClearPendingMedia={handleClearPendingMedia}
-          onClearAnalyzedMedia={handleClearAnalyzedResults}
         />
 
     </div>
