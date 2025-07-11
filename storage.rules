@@ -1,28 +1,45 @@
-
 rules_version = '2';
 
-// Allow read access by all, but only allow write access for authenticated users to their own folders.
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Match any file in the root and subdirectories
-    match /{allPaths=**} {
-      allow read: if true; // Public read access
-    }
-
-    // Rules for Home Cover Images
-    match /homeCovers/{userId}/{allPaths=**} {
+    // Home Cover Images:
+    // Allows public read.
+    // Allows write only if the user is authenticated and the {userId} in the path matches their UID.
+    match /homeCovers/{userId}/{homeId}/{fileName} {
+      allow read;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Rules for Room Photo Analysis
-    match /roomAnalysisPhotos/{userId}/{allPaths=**} {
+    // Unified Room Media (Photos & Videos):
+    // Allows public read.
+    // Allows write only if the user is authenticated and the {userId} in the path matches their UID.
+    match /roomAnalysis/{userId}/{roomId}/{fileName} {
+      allow read;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Rules for Room Video Analysis
-    match /roomAnalysisVideos/{userId}/{allPaths=**} {
+    // --- DEPRECATED PATHS ---
+    // These paths are no longer used by the app but are kept for reference or if old data exists.
+    // They can be removed later.
+    match /roomAnalysisPhotos/{userId}/{roomId}/{fileName} {
+      allow read;
       allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /roomAnalysisVideos/{userId}/{roomId}/{fileName} {
+      allow read;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    // --- END DEPRECATED ---
+
+
+    match /Homiestan.png {
+      allow read; // Allows public read access to this specific file
+    }
+
+    match /Homeistan-black.png {
+      allow read; // Allows public read access to this specific file
     }
   }
 }
