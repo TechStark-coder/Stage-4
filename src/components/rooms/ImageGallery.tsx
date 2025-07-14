@@ -76,7 +76,7 @@ export function ImageGallery({
               {isVideo ? (
                 <video preload="metadata" className="w-full h-full object-cover">
                   {/* Provide a more compatible type for .mov files for broader browser support */}
-                  <source src={url} type={'video/mp4'} />
+                  <source src={url} type={mediaName.endsWith('.mov') ? 'video/mp4' : (isFile ? media.type : 'video/mp4')} />
                 </video>
               ) : (
                 <Image
@@ -84,7 +84,7 @@ export function ImageGallery({
                   alt={`Media ${index + 1}`}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                  objectFit="cover"
+                  className="object-cover"
                   data-ai-hint="analyzed room"
                   onLoad={isFile ? (e) => URL.revokeObjectURL((e.target as HTMLImageElement).src) : undefined}
                 />

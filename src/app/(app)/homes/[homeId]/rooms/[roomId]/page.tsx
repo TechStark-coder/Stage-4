@@ -416,7 +416,7 @@ export default function RoomDetailPage() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 items-start lg:h-[550px]">
+      <div className="grid lg:grid-cols-2 gap-8 items-start">
         <MediaUploader
           onAnalysisComplete={handleAnalysisComplete}
           currentFiles={mediaToUpload}
@@ -481,3 +481,4 @@ export default function RoomDetailPage() {
     
 
     
+
