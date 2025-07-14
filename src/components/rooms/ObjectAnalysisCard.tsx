@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ObjectAnalysisCardProps {
   room: Room | null;
@@ -79,7 +80,6 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     setIsClearing(true);
     try {
       await onClearResults();
-      // Success toast is likely handled by the onClearResults callback or the page itself
     } catch (error) {
       console.error("Failed to clear results via ObjectAnalysisCard:", error);
       toast({ title: "Error Clearing Results", description: "An unexpected error occurred while clearing results.", variant: "destructive" });
@@ -122,21 +122,23 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow min-h-0">
         {room?.analyzedObjects && room.analyzedObjects.length > 0 ? (
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
-            <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border max-h-96 overflow-y-auto">
-              {room.analyzedObjects.map((item, index) => (
-                <li key={index} className="text-foreground">
-                  {item.name}
-                  {item.count > 1 && (
-                    <span className="text-muted-foreground/80"> (Count: {item.count})</span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div>
+          <ScrollArea className="h-full">
+            <div className="space-y-3 pr-4">
+              <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
+              <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border">
+                {room.analyzedObjects.map((item, index) => (
+                  <li key={index} className="text-foreground">
+                    {item.name}
+                    {item.count > 1 && (
+                      <span className="text-muted-foreground/80"> (Count: {item.count})</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </ScrollArea>
         ) : !room.isAnalyzing ? ( 
           <div className="text-center py-8 text-muted-foreground h-full flex flex-col justify-center items-center">
             <ListTree className="h-12 w-12 mx-auto mb-4 opacity-50" />

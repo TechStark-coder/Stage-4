@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useRef, useEffect, type DragEvent, type FormEvent } from "react";
+import { useState, useRef, useEffect, type DragEvent, type FormEvent, type ChangeEvent } from "react";
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MediaUploaderProps {
   onAnalysisComplete: () => void;
@@ -85,7 +87,7 @@ export function MediaUploader({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       addNewFiles(Array.from(files));
@@ -231,70 +233,72 @@ export function MediaUploader({
           Add photos or videos via file upload, drag & drop, or camera. Max {MAX_FILES} files.
         </CardDescription>
       </CardHeader>
-      <form onSubmit={onSubmit} className="flex flex-col flex-grow">
-        <CardContent className="p-6 flex-grow">
-          <div 
-            className={`h-full flex flex-col justify-center items-center ${isDraggingOver ? 'drop-zone-active' : 'drop-zone'}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <Input
-              id="media-input"
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              onChange={handleFileChange}
-              ref={fileInputRef}
-              className="hidden" 
-            />
-            <div className="text-center text-muted-foreground py-4">
-               Drag & drop images or videos here, or use buttons below.
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full px-4 sm:px-0">
-              <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1" disabled={isAnalyzing}>
-                  <ImagePlus className="mr-2 h-4 w-4" /> Add Files
-              </Button>
-              <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
-                <DialogTrigger asChild>
-                  <Button type="button" variant="outline" className="flex-1" disabled={isAnalyzing}>
-                    <Camera className="mr-2 h-4 w-4" /> Use Camera
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>Capture Image</DialogTitle>
-                    <DialogDescription>
-                      Position the camera and click "Snap Photo".
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <video ref={videoRef} autoPlay muted playsInline className="camera-video-preview" />
-                    <canvas ref={canvasRef} className="hidden"></canvas>
-                     {hasCameraPermission === false && cameraError && (
-                      <Alert variant="destructive">
-                         <Camera className="h-4 w-4" />
-                        <AlertTitle>Camera Access Error</AlertTitle>
-                        <AlertDescription>{cameraError}</AlertDescription>
-                      </Alert>
-                    )}
-                     {hasCameraPermission === null && !cameraError && (
-                       <div className="flex items-center justify-center text-muted-foreground"> 
-                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                         Requesting camera access...
-                       </div>
-                    )}
-                  </div>
-                  <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                    <Button variant="outline" onClick={closeCamera}>Cancel</Button>
-                    <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>
-                      Snap Photo
+      <form onSubmit={onSubmit} className="flex flex-col flex-grow min-h-0">
+        <CardContent className="p-6 flex-grow flex flex-col min-h-0">
+          <ScrollArea className="flex-grow">
+            <div 
+              className={`h-full flex flex-col justify-center items-center p-4 ${isDraggingOver ? 'drop-zone-active' : 'drop-zone'}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <Input
+                id="media-input"
+                type="file"
+                multiple
+                accept="image/*,video/*,.mov"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                className="hidden" 
+              />
+              <div className="text-center text-muted-foreground py-4">
+                 Drag & drop images or videos here, or use buttons below.
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full px-4 sm:px-0">
+                <Button type="button" onClick={triggerFileInput} variant="outline" className="flex-1" disabled={isAnalyzing}>
+                    <ImagePlus className="mr-2 h-4 w-4" /> Add Files
+                </Button>
+                <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" className="flex-1" disabled={isAnalyzing}>
+                      <Camera className="mr-2 h-4 w-4" /> Use Camera
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Capture Image</DialogTitle>
+                      <DialogDescription>
+                        Position the camera and click "Snap Photo".
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      <video ref={videoRef} autoPlay muted playsInline className="camera-video-preview" />
+                      <canvas ref={canvasRef} className="hidden"></canvas>
+                       {hasCameraPermission === false && cameraError && (
+                        <Alert variant="destructive">
+                           <Camera className="h-4 w-4" />
+                          <AlertTitle>Camera Access Error</AlertTitle>
+                          <AlertDescription>{cameraError}</AlertDescription>
+                        </Alert>
+                      )}
+                       {hasCameraPermission === null && !cameraError && (
+                         <div className="flex items-center justify-center text-muted-foreground"> 
+                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                           Requesting camera access...
+                         </div>
+                      )}
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+                      <Button variant="outline" onClick={closeCamera}>Cancel</Button>
+                      <Button onClick={handleSnapPhoto} disabled={!cameraStream || hasCameraPermission === false || hasCameraPermission === null}>
+                        Snap Photo
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
-          </div>
+          </ScrollArea>
         </CardContent>
         <CardFooter className="p-6 border-t mt-auto">
           <Button 
@@ -314,5 +318,3 @@ export function MediaUploader({
     </Card>
   );
 }
-
-    

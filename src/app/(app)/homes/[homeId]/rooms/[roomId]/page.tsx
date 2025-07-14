@@ -300,20 +300,19 @@ export default function RoomDetailPage() {
 
   const handleClearAnalyzedResults = async () => {
     if (!homeId || !roomId || !user?.uid) {
-      toast({ title: "Error", description: "Cannot clear results. Missing required information.", variant: "destructive" });
-      return;
+        toast({ title: "Error", description: "Cannot clear results. Missing required information.", variant: "destructive" });
+        return;
     }
     showAiLoader();
     try {
-      await clearRoomAnalysisData(homeId, roomId, user.uid);
-      toast({ title: "Results Cleared", description: "The analysis results and stored media have been cleared." });
-      setMediaToUpload([]); 
-      fetchRoomDetails(false); // Refetch to update UI with cleared state
+        await clearRoomAnalysisData(homeId, roomId, user.uid);
+        toast({ title: "Results Cleared", description: "The analysis results and stored media have been cleared." });
+        fetchRoomDetails(false);
     } catch (error: any) {
-      console.error("Failed to clear results:", error);
-      toast({ title: "Error", description: "Failed to clear analysis results: " + error.message, variant: "destructive" });
+        console.error("Failed to clear results:", error);
+        toast({ title: "Error", description: "Failed to clear analysis results: " + error.message, variant: "destructive" });
     } finally {
-      hideAiLoader();
+        hideAiLoader();
     }
   };
 
@@ -417,7 +416,7 @@ export default function RoomDetailPage() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 items-start">
+      <div className="grid lg:grid-cols-2 gap-8 items-start lg:h-[550px]">
         <MediaUploader
           onAnalysisComplete={handleAnalysisComplete}
           currentFiles={mediaToUpload}

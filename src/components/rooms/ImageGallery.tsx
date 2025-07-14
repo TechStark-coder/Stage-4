@@ -47,7 +47,7 @@ export function ImageGallery({
 
   const handleAnalyzedMediaClick = (index: number) => {
       const url = allAnalyzedMedia[index];
-      const isVideo = (analyzedVideoUrls || []).includes(url) || url.toLowerCase().endsWith('.mov');
+      const isVideo = (analyzedVideoUrls || []).includes(url) || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.mp4');
       onMediaClick(allAnalyzedMedia, index, isVideo);
   };
   
@@ -57,9 +57,9 @@ export function ImageGallery({
         {files.map((media, index) => {
           const isFile = media instanceof File;
           const url = isFile ? URL.createObjectURL(media) : media;
-          const isVideo = isFile 
-              ? media.type.startsWith('video/') || media.name.toLowerCase().endsWith('.mov')
-              : (analyzedVideoUrls || []).includes(url) || url.toLowerCase().endsWith('.mov');
+          const mediaName = isFile ? media.name.toLowerCase() : url.toLowerCase();
+          const isVideo = (isFile && media.type.startsWith('video/')) || mediaName.endsWith('.mov') || mediaName.endsWith('.mp4');
+
           const key = isFile ? `pending-${index}-${media.name}` : `analyzed-${index}-${url}`;
 
           return (
@@ -76,7 +76,7 @@ export function ImageGallery({
               {isVideo ? (
                 <video preload="metadata" className="w-full h-full object-cover">
                   {/* Provide a more compatible type for .mov files for broader browser support */}
-                  <source src={url} type={url.toLowerCase().endsWith('.mov') ? 'video/mp4' : (isFile ? media.type : 'video/mp4')} />
+                  <source src={url} type={'video/mp4'} />
                 </video>
               ) : (
                 <Image
