@@ -617,7 +617,7 @@ export async function createShortLink(longUrl: string): Promise<string> {
 // New function to get the long URL from a short code
 export async function getShortLink(shortCode: string): Promise<string | null> {
     const shortLinkDocRef = doc(db, "shortLinks", shortCode);
-    const docSnap = await getDoc(docSnap.ref);
+    const docSnap = await getDoc(shortLinkDocRef);
     if (docSnap.exists()) {
         return docSnap.data().longUrl as string;
     }
