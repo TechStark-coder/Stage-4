@@ -124,7 +124,6 @@ export default function RoomDetailPage() {
     
     // If there's nothing left to analyze, just clear the results in Firestore.
     if (photoUrlsToAnalyze.length === 0 && videoUrlsToAnalyze.length === 0) {
-      showAiLoader();
       try {
         await clearRoomAnalysisData(homeId, roomId, user.uid);
         toast({ title: "Analysis Cleared", description: "No media remaining. Object analysis for the room has been cleared." });
@@ -132,8 +131,6 @@ export default function RoomDetailPage() {
       } catch (error) {
         console.error("Error clearing room analysis data:", error);
         toast({ title: "Update Error", description: "Failed to clear analysis results.", variant: "destructive" });
-      } finally {
-        hideAiLoader();
       }
       return;
     }
@@ -325,6 +322,7 @@ export default function RoomDetailPage() {
     
     if (mediaToDelete.isAnalyzed) {
         let mediaSuccessfullyRemoved = false;
+        showAiLoader();
         try {
           await removeAnalyzedRoomPhoto(homeId, roomId, mediaToDelete.url, user.uid);
           toast({ title: "Media Removed", description: "Media deleted. Re-analyzing remaining files..." });
@@ -334,6 +332,7 @@ export default function RoomDetailPage() {
           toast({ title: "Error Deleting Media", description: error.message, variant: "destructive" });
         } finally {
           setMediaToDelete(null); 
+          hideAiLoader();
         }
 
         if (mediaSuccessfullyRemoved) {
@@ -416,24 +415,20 @@ export default function RoomDetailPage() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 items-start" style={{ gridTemplateRows: 'auto 1fr' }}>
-        <div className="lg:h-[500px]">
-          <MediaUploader
-            onAnalysisComplete={handleAnalysisComplete}
-            currentFiles={mediaToUpload}
-            onFilesChange={handleFilesChange}
-            isAnalyzing={!!displayAnalyzing}
-            userId={user?.uid || ""}
-            onClearPendingMedia={handleClearPendingMedia}
-          />
-        </div>
-        <div className="lg:h-[500px]">
-          <ObjectAnalysisCard
+      <div className="grid lg:grid-cols-2 gap-8 items-start">
+        <MediaUploader
+          onAnalysisComplete={handleAnalysisComplete}
+          currentFiles={mediaToUpload}
+          onFilesChange={handleFilesChange}
+          isAnalyzing={!!displayAnalyzing}
+          userId={user?.uid || ""}
+          onClearPendingMedia={handleClearPendingMedia}
+        />
+        <ObjectAnalysisCard
           room={{...room, isAnalyzing: !!displayAnalyzing }}
           onClearResults={handleClearAnalyzedResults}
           homeName={home.name}
-          />
-        </div>
+        />
       </div>
 
        <ImageGallery 
@@ -479,13 +474,3 @@ export default function RoomDetailPage() {
     </>
   );
 }
-
-    
-
-    
-
-    
-
-
-
-    

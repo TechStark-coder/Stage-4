@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as _React from 'react'; // Keep React for useState
+import * as _React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Room } from "@/types";
 import { Eye, ListTree, Sparkles, Download, Trash2, Loader2 } from "lucide-react"; 
@@ -123,9 +123,9 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
         )}
       </CardHeader>
       <CardContent className="flex-grow min-h-0">
-        {room?.analyzedObjects && room.analyzedObjects.length > 0 ? (
-          <ScrollArea className="h-full">
-            <div className="space-y-3 pr-4">
+        <ScrollArea className="h-full pr-4">
+          {room?.analyzedObjects && room.analyzedObjects.length > 0 ? (
+            <div className="space-y-3">
               <p className="text-sm font-medium text-muted-foreground">Identified Objects:</p>
               <ol className="list-decimal list-inside space-y-1.5 bg-background/50 p-4 rounded-md border">
                 {room.analyzedObjects.map((item, index) => (
@@ -138,14 +138,14 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
                 ))}
               </ol>
             </div>
-          </ScrollArea>
-        ) : !room.isAnalyzing ? ( 
-          <div className="text-center py-8 text-muted-foreground h-full flex flex-col justify-center items-center">
-            <ListTree className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">No objects described yet.</p>
-            <p className="text-sm">Upload media and click "Process" to see results here.</p>
-          </div>
-        ) : null }
+          ) : !room.isAnalyzing ? (
+            <div className="text-center py-8 text-muted-foreground h-full flex flex-col justify-center items-center">
+              <ListTree className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium">No objects described yet.</p>
+              <p className="text-sm">Upload media and click "Process" to see results here.</p>
+            </div>
+          ) : null}
+        </ScrollArea>
       </CardContent>
       {(room?.analyzedObjects && room.analyzedObjects.length > 0 && !room.isAnalyzing) && (
         <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-4 mt-auto border-t">
@@ -180,7 +180,3 @@ export function ObjectAnalysisCard({ room, onClearResults, homeName }: ObjectAna
     </Card>
   );
 }
-
-    
-
-    
