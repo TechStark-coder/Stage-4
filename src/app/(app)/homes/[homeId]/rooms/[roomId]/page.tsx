@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
+import { useLoader } from "@/contexts/LoaderContext"; // Import useLoader
 import { describeRoomObjects } from "@/ai/flows/describe-room-objects";
 import { describeRoomObjectsFromVideo } from "@/ai/flows/describe-room-objects-from-video";
 import {
@@ -38,7 +39,7 @@ export default function RoomDetailPage() {
   const roomId = params.roomId as string;
   const { toast } = useToast();
   const { showAiLoader, hideAiLoader, isAiAnalyzing: isGlobalAiAnalyzing } = useAiAnalysisLoader();
-  const { showLoader: showGenericLoader, hideLoader: hideGenericLoader } = useAiAnalysisLoader();
+  const { showLoader: showGenericLoader, hideLoader: hideGenericLoader } = useLoader(); // Correctly use useLoader
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
