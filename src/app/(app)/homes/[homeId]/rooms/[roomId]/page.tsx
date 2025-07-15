@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, DoorOpen, Home as HomeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAiAnalysisLoader } from "@/contexts/AiAnalysisLoaderContext";
-import { useLoader } from "@/contexts/LoaderContext"; // Import useLoader
+import { useLoader } from "@/contexts/LoaderContext";
 import { describeRoomObjects } from "@/ai/flows/describe-room-objects";
 import { describeRoomObjectsFromVideo } from "@/ai/flows/describe-room-objects-from-video";
 import {
@@ -39,7 +39,7 @@ export default function RoomDetailPage() {
   const roomId = params.roomId as string;
   const { toast } = useToast();
   const { showAiLoader, hideAiLoader, isAiAnalyzing: isGlobalAiAnalyzing } = useAiAnalysisLoader();
-  const { showLoader: showGenericLoader, hideLoader: hideGenericLoader } = useLoader(); // Correctly use useLoader
+  const { showLoader: showGenericLoader, hideLoader: hideGenericLoader } = useLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
@@ -303,7 +303,6 @@ export default function RoomDetailPage() {
         return;
     }
     
-    // Show a general loader, not necessarily the full AI loader unless you want to.
     showGenericLoader(); 
 
     try {
@@ -334,7 +333,7 @@ export default function RoomDetailPage() {
     
     if (mediaToDelete.isAnalyzed) {
         let mediaSuccessfullyRemoved = false;
-        showAiLoader();
+        showGenericLoader(); // Use generic loader for faster operations
         try {
           await removeAnalyzedRoomPhoto(homeId, roomId, mediaToDelete.url, user.uid);
           toast({ title: "Media Removed", description: "Media deleted. Re-analyzing remaining files..." });
@@ -344,7 +343,7 @@ export default function RoomDetailPage() {
           toast({ title: "Error Deleting Media", description: error.message, variant: "destructive" });
         } finally {
           setMediaToDelete(null); 
-          hideAiLoader();
+          hideGenericLoader();
         }
 
         if (mediaSuccessfullyRemoved) {
