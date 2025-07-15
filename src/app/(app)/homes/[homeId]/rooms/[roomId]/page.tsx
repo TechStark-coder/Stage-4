@@ -38,6 +38,7 @@ export default function RoomDetailPage() {
   const roomId = params.roomId as string;
   const { toast } = useToast();
   const { showAiLoader, hideAiLoader, isAiAnalyzing: isGlobalAiAnalyzing } = useAiAnalysisLoader();
+  const { showLoader: showGenericLoader, hideLoader: hideGenericLoader } = useAiAnalysisLoader();
 
   const [home, setHome] = useState<Home | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
@@ -302,8 +303,7 @@ export default function RoomDetailPage() {
     }
     
     // Show a general loader, not necessarily the full AI loader unless you want to.
-    const { showLoader, hideLoader } = useAiAnalysisLoader();
-    showLoader(); 
+    showGenericLoader(); 
 
     try {
         await clearRoomAnalysisData(homeId, roomId, user.uid);
@@ -320,7 +320,7 @@ export default function RoomDetailPage() {
         console.error("Failed to clear results:", error);
         toast({ title: "Error", description: "Failed to clear analysis results: " + error.message, variant: "destructive" });
     } finally {
-        hideLoader();
+        hideGenericLoader();
     }
   };
 
