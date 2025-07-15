@@ -192,7 +192,7 @@ export function MediaUploader({
     }
   };
   
-  useEffect(() => {
+  React.useEffect(() => {
     if (showCameraDialog) {
       openCamera();
     }
@@ -318,5 +318,3 @@ export function MediaUploader({
     </Card>
   );
 }
-
-    
