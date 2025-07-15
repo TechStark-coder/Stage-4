@@ -416,20 +416,24 @@ export default function RoomDetailPage() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <MediaUploader
-          onAnalysisComplete={handleAnalysisComplete}
-          currentFiles={mediaToUpload}
-          onFilesChange={handleFilesChange}
-          isAnalyzing={!!displayAnalyzing}
-          userId={user?.uid || ""}
-          onClearPendingMedia={handleClearPendingMedia}
-        />
-        <ObjectAnalysisCard
-         room={{...room, isAnalyzing: !!displayAnalyzing }}
-         onClearResults={handleClearAnalyzedResults}
-         homeName={home.name}
-        />
+      <div className="grid lg:grid-cols-2 gap-8 items-start" style={{ gridTemplateRows: 'auto 1fr' }}>
+        <div className="lg:h-[500px]">
+          <MediaUploader
+            onAnalysisComplete={handleAnalysisComplete}
+            currentFiles={mediaToUpload}
+            onFilesChange={handleFilesChange}
+            isAnalyzing={!!displayAnalyzing}
+            userId={user?.uid || ""}
+            onClearPendingMedia={handleClearPendingMedia}
+          />
+        </div>
+        <div className="lg:h-[500px]">
+          <ObjectAnalysisCard
+          room={{...room, isAnalyzing: !!displayAnalyzing }}
+          onClearResults={handleClearAnalyzedResults}
+          homeName={home.name}
+          />
+        </div>
       </div>
 
        <ImageGallery 
@@ -482,3 +486,6 @@ export default function RoomDetailPage() {
 
     
 
+
+
+    
