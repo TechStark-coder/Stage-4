@@ -166,5 +166,3 @@ export function ImageGallery({
     </Card>
   );
 }
-
-    
