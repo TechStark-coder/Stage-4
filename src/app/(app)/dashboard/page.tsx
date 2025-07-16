@@ -123,9 +123,8 @@ export default function DashboardPage() {
           />
           <h2 className="text-2xl font-semibold mb-2 text-foreground">No Homes Yet!</h2>
           <p className="text-muted-foreground mb-6 px-4">
-            Get started by creating your first home.
+            Get started by creating your first home using the button above.
           </p>
-          <CreateHomeDialog onHomeCreated={handleHomesUpdated} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
