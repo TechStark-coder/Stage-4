@@ -15,6 +15,13 @@ import Image from "next/image";
 import { ArrowLeft, DoorOpen, Home as HomeIcon, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GenerateTenantLinkDialog } from "@/components/dashboard/GenerateTenantLinkDialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 export default function HomeDetailPage() {
   const { user } = useAuthContext();
@@ -94,6 +101,8 @@ export default function HomeDetailPage() {
     );
   }
 
+  const noRoomsExist = rooms.length === 0;
+
   return (
     <div className="space-y-8">
        <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -105,9 +114,23 @@ export default function HomeDetailPage() {
         {user && home && home.ownerId === user.uid && (
           <div className="w-full sm:w-auto flex justify-end">
             <GenerateTenantLinkDialog home={home} currentUserUid={user.uid}>
-              <Button variant="default" size="sm">
-                <Link2 className="mr-2 h-4 w-4" /> Generate Tenant Link
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {/* The disabled button needs a span wrapper for Tooltip to work */}
+                    <span tabIndex={noRoomsExist ? 0 : undefined}>
+                      <Button variant="default" size="sm" disabled={noRoomsExist}>
+                        <Link2 className="mr-2 h-4 w-4" /> Generate Tenant Link
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {noRoomsExist && (
+                    <TooltipContent>
+                      <p>Add at least one room to generate an inspection link.</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </GenerateTenantLinkDialog>
           </div>
         )}
