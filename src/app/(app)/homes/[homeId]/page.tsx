@@ -131,7 +131,6 @@ export default function HomeDetailPage() {
           <p className="text-muted-foreground mb-6 px-4">
             Add rooms to this home to start analyzing objects.
           </p>
-          <CreateRoomDialog homeId={homeId} onRoomCreated={fetchHomeAndRooms} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
