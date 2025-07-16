@@ -12,6 +12,8 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+export const maxDuration = 60; // 60-second timeout for this flow
+
 const ExpectedItemSchema = z.object({
   name: z.string().describe('The name of the expected item.'),
   count: z.number().int().positive().describe('The expected count of this item.'),

@@ -12,6 +12,8 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+export const maxDuration = 60; // 60-second timeout for this flow
+
 const DescribeRoomObjectsInputSchema = z.object({
   photoDataUris: z
     .array(z.string())
