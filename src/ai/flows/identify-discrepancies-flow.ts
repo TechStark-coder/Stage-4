@@ -12,7 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const maxDuration = 60; // 60-second timeout for this flow
+const maxDuration = 60; // 60-second timeout for this flow
 
 const ExpectedItemSchema = z.object({
   name: z.string().describe('The name of the expected item.'),
@@ -75,7 +75,7 @@ You will be given:
 Your task is to:
 A. **CRITICAL FIRST STEP: Meticulously analyze ONLY the 'tenantPhotos' to create a detailed, independent inventory of all distinct objects and their counts visible in them.** Be very specific with names (e.g., "red leather armchair", "Samsung 55-inch TV"). When creating this inventory, you must strictly follow these exclusion rules:
     *   **ABSOLUTELY DO NOT INCLUDE:** 'WALL', 'FLOOR', 'CEILING', 'WINDOW', 'DOOR', or 'CABINETS'.
-    *   **ALSO EXCLUDE THEIR PARTS:** This exclusion also applies to all parts of these structures, such as 'door knobs', 'hinges', 'window frames', 'light switches', 'power outlets', 'baseboards', or 'cabinet handles'.
+    *   **ALSO EXCLUDE THEIR PARTS:** This exclusion also applies to all parts of these structures, such as 'door knobs', 'hinges', 'window frames', 'light switches', 'power outlets', 'baseboards', 'or 'cabinet handles'.
     *   **ADDITIONALLY, EXCLUDE:** 'cables' and 'wires'. Only list the electronic device they are connected to, not the cables themselves.
     *   Focus ONLY on movable objects, furniture, electronics, decorations, and personal belongings.
     *   Perform this independent inventory BEFORE comparing against the 'expectedItems' list.
