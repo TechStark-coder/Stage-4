@@ -225,7 +225,7 @@ export function MediaUploader({
 
   return (
     <Card className="shadow-lg w-full h-full flex flex-col">
-      <CardHeader className="p-6">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UploadCloud className="h-6 w-6 text-primary" /> Manage Room Media
         </CardTitle>
